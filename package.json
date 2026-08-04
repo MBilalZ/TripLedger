@@ -1,0 +1,14 @@
+{
+  "name": "tripledger",
+  "private": true,
+  "packageManager": "pnpm@9.15.0",
+  "scripts": {
+    "dev": "pnpm --filter @tripledger/web dev --host",
+    "build": "pnpm -r build",
+    "test": "pnpm -r test",
+    "test:engine": "pnpm --filter @tripledger/engine test"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

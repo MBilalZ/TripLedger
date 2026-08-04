@@ -1,0 +1,17 @@
+{
+  "name": "TripLedger",
+  "short_name": "TripLedger",
+  "description": "Offline multi-pool trip expense settlement",
+  "theme_color": "#0f766e",
+  "background_color": "#0b1220",
+  "display": "standalone",
+  "start_url": "/",
+  "icons": [
+    {
+      "src": "favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
