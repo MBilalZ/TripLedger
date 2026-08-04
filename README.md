@@ -38,12 +38,38 @@ pnpm dev           # http://localhost:5173
 
 If the Pools UI looks stale after upgrading, delete the old sample trip and click **Load sample trip** again (IndexedDB schema migrates automatically).
 
-## Deploy (optional, still free)
+## Deploy (GitHub Pages)
 
-Build static files and host on Cloudflare Pages (or any static host):
+TripLedger is a static SPA. Hosting only serves files — trip data stays in each browser’s IndexedDB.
+
+**Live URL:** https://MBilalZ.github.io/TripLedger/
+
+### One-time setup
+
+1. Open the repo on GitHub → **Settings** → **Pages**.
+2. Under **Build and deployment**, set **Source** to **GitHub Actions**.
+
+### Deploy
+
+Pushes to the `prod` branch trigger [.github/workflows/deploy-pages.yml](.github/workflows/deploy-pages.yml):
+
+1. Install with pnpm and build `@tripledger/web` with `VITE_BASE=/TripLedger/`.
+2. Copy `index.html` → `404.html` so Vue Router deep links work on refresh.
+3. Publish `apps/web/dist` to GitHub Pages.
 
 ```bash
-pnpm --filter @tripledger/web build
+git checkout prod
+git merge main   # or open a PR into prod
+git push origin prod
 ```
 
-Upload `apps/web/dist`.
+Watch the run under **Actions**. When it finishes, open the live URL above.
+
+### Local production preview
+
+```bash
+VITE_BASE=/TripLedger/ pnpm --filter @tripledger/web build
+pnpm --filter @tripledger/web preview
+```
+
+Then open the preview URL and navigate under `/TripLedger/`. Local `pnpm dev` keeps `base` as `/` and does not need `VITE_BASE`.
