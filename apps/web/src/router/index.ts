@@ -3,7 +3,7 @@ import HomeView from "@/views/HomeView.vue";
 import TripView from "@/views/TripView.vue";
 
 const router = createRouter({
-  history: createWebHistory(),
+  history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
     { path: "/", name: "home", component: HomeView },
     { path: "/trips/:tripId", name: "trip", component: TripView, props: true },
