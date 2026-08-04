@@ -14,7 +14,7 @@ The web app prefers this function when available and falls back to local `settle
 
 Drains `push_events` (filled by DB triggers on expenses, trip members, adjustments, settlement snapshots) and delivers Web Push to member subscriptions.
 
-**Auth:** `Authorization: Bearer <SUPABASE_SERVICE_ROLE_KEY>` only (cron/ops). User JWTs and forged `role` claims are rejected. The web app does **not** invoke this function.
+**Auth:** `Authorization: Bearer <PUSH_DRAIN_SECRET>` only (cron/ops). User JWTs and forged `role` claims are rejected. The web app does **not** invoke this function.
 
 ### VAPID keys
 
@@ -45,13 +45,19 @@ Apply migration `20260805000000_push_notifications.sql` (via `pnpm setup:supabas
 
 ### Cron / ops drain
 
-Invoke periodically with the **service role** key (never ship this key to the browser):
+Set a dedicated drain secret (not the service-role JWT):
+
+```bash
+supabase secrets set PUSH_DRAIN_SECRET="$(openssl rand -base64 32)"
+```
+
+Invoke periodically (GitHub Actions workflow `drain-push.yml` does this every 5 minutes):
 
 ```bash
 curl -X POST "$SUPABASE_URL/functions/v1/send-push" \
-  -H "Authorization: Bearer $SUPABASE_SERVICE_ROLE_KEY" \
+  -H "Authorization: Bearer $PUSH_DRAIN_SECRET" \
   -H "Content-Type: application/json" \
   -d '{}'
 ```
 
-Schedule via Supabase cron, GitHub Actions, or an external scheduler. See [docs/RUNBOOK.md](../../docs/RUNBOOK.md).
+See [docs/RUNBOOK.md](../../docs/RUNBOOK.md).

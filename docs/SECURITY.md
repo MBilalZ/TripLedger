@@ -15,7 +15,8 @@ TripLedger is a small-group expense app on GitHub Pages + optional Supabase. Att
 |---|---|---|
 | `VITE_SUPABASE_ANON_KEY` | SPA + GH Pages | Yes (expected) |
 | `VITE_VAPID_PUBLIC_KEY` | SPA | Yes |
-| `SUPABASE_SERVICE_ROLE_KEY` | Edge / cron / setup only | **Never** |
+| `SUPABASE_SERVICE_ROLE_KEY` | Edge / setup only | **Never** |
+| `PUSH_DRAIN_SECRET` | Edge + GitHub Actions cron | **Never** (not `VITE_*`) |
 | `VAPID_PRIVATE_KEY` | Edge secrets | **Never** |
 | DB password / access token | Local `.env.supabase` / ops | **Never** |
 
@@ -43,7 +44,7 @@ Tighten these in the Supabase dashboard if you need a stricter posture.
 ## Edge Functions
 
 - `recompute-settlement` uses the caller’s JWT with the anon client (RLS applies to reads; upsert via RPC).
-- `send-push` accepts **only** the real `SUPABASE_SERVICE_ROLE_KEY` as `Authorization: Bearer …`. It does **not** trust unverified JWT payloads. Schedule drains with cron/ops; the web app does not drain the global queue.
+- `send-push` accepts **only** `PUSH_DRAIN_SECRET` as `Authorization: Bearer …`. It does **not** trust unverified JWT payloads. Schedule drains with cron/ops (GitHub Actions); the web app does not drain the global queue.
 
 ## Browser hardening
 
