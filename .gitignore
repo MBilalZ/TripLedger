@@ -11,3 +11,4 @@ dist-ssr
 coverage
 .vite
 dev-dist
+supabase/.temp/
