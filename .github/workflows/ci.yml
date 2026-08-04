@@ -8,15 +8,17 @@ on:
 jobs:
   check:
     runs-on: ubuntu-latest
+    env:
+      GIT_CONFIG_COUNT: 1
+      GIT_CONFIG_KEY_0: init.defaultBranch
+      GIT_CONFIG_VALUE_0: main
     steps:
-      - uses: actions/checkout@v5
-      - uses: pnpm/action-setup@v6
+      - uses: actions/checkout@v7
+      - uses: pnpm/setup@v1
         with:
-          version: 9.15.0
-      - uses: actions/setup-node@v5
-        with:
-          node-version: 24
-          cache: pnpm
+          runtime: node@24
+          cache: true
+          install: false
       - name: Install
         run: pnpm install --frozen-lockfile
       - name: Test engine
@@ -27,4 +29,3 @@ jobs:
         run: pnpm --filter @tripledger/web typecheck
       - name: Audit (high+)
         run: pnpm audit --audit-level=high
-        continue-on-error: true

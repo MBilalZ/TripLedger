@@ -1,7 +1,7 @@
 {
   "name": "tripledger",
   "private": true,
-  "packageManager": "pnpm@9.15.0",
+  "packageManager": "pnpm@11.20.0",
   "scripts": {
     "dev": "pnpm --filter @tripledger/web dev --host",
     "build": "pnpm -r build",
@@ -14,10 +14,5 @@
   },
   "engines": {
     "node": ">=24"
-  },
-  "pnpm": {
-    "overrides": {
-      "uuid": "^11.1.1"
-    }
   }
 }
