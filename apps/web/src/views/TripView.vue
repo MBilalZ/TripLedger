@@ -23,6 +23,8 @@ import { downloadTripJson } from "@/lib/backup";
 import { copyWhatsAppSummary } from "@/lib/whatsapp";
 import { exportTripExcel } from "@/lib/exportExcel";
 import { exportTripPdf } from "@/lib/exportPdf";
+import { cloudCreateInvite } from "@/lib/cloud/tripsApi";
+import { isSupabaseConfigured } from "@/lib/supabase";
 import { useTripsStore } from "@/stores/trips";
 import SplitMatrix, {
   type SplitPerson,
@@ -65,9 +67,11 @@ const {
   reviseExpense,
   voidExpense,
   addAdjustment,
+  addSplitAdjustments,
   updateAdjustment,
   removeAdjustment,
   updateSettlementSettings,
+  statusMessage,
 } = useTripWorkspace(() => props.tripId);
 
 const SPLIT_MODES: { label: string; value: SplitMode }[] = [
@@ -106,6 +110,11 @@ const customSplitMode = ref<SplitMode>("equal");
 const customSplits = ref<SplitPerson[]>([]);
 
 const editingAdjustmentId = ref<string | null>(null);
+const adjMode = ref<"simple" | "split">("simple");
+const adjSplitMode = ref<SplitMode>("equal");
+const adjDebtors = ref<SplitPerson[]>([]);
+const inviting = ref(false);
+let poolMemberPersistTimer: ReturnType<typeof setTimeout> | null = null;
 
 const expenseForm = reactive({
   description: "",
@@ -121,6 +130,7 @@ const adjForm = reactive({
   toId: "",
   amountRupees: null as number | null,
   reason: "",
+  creditorId: "",
 });
 
 watch(
@@ -205,7 +215,48 @@ async function onPoolMemberChange(
   if (patch.shares !== undefined) clean.shares = patch.shares;
   if (patch.percentBps !== undefined) clean.percentBps = patch.percentBps;
   if (patch.exactPaisa !== undefined) clean.exactPaisa = patch.exactPaisa;
-  await upsertPoolMember(poolId, participantId, clean);
+  // Debounce keyboard/stepper spam so focus/scroll stay stable
+  if (poolMemberPersistTimer) clearTimeout(poolMemberPersistTimer);
+  const delay = patch.included !== undefined ? 0 : 250;
+  poolMemberPersistTimer = setTimeout(() => {
+    void upsertPoolMember(poolId, participantId, clean);
+  }, delay);
+}
+
+async function copyInviteLink() {
+  if (!isSupabaseConfigured() || !trips.cloud) {
+    toast.add({
+      severity: "warn",
+      summary: "Shared invites need Supabase",
+      detail: "Configure cloud env vars to invite members by link.",
+      life: 4000,
+    });
+    return;
+  }
+  inviting.value = true;
+  try {
+    const token = await cloudCreateInvite(props.tripId);
+    const url = new URL(
+      `join/${token}`,
+      `${window.location.origin}${import.meta.env.BASE_URL}`,
+    ).href;
+    await navigator.clipboard.writeText(url);
+    toast.add({
+      severity: "success",
+      summary: "Invite link copied",
+      detail: "Share it so friends can join with their name.",
+      life: 4000,
+    });
+  } catch (e) {
+    toast.add({
+      severity: "error",
+      summary: "Invite failed",
+      detail: e instanceof Error ? e.message : String(e),
+      life: 4000,
+    });
+  } finally {
+    inviting.value = false;
+  }
 }
 
 function startEditTrip() {
@@ -471,11 +522,33 @@ const canAddExpenses = computed(() => participants.value.length > 0);
 
 function clearAdjForm() {
   editingAdjustmentId.value = null;
+  adjMode.value = "simple";
   adjForm.fromId = "";
   adjForm.toId = "";
+  adjForm.creditorId = "";
   adjForm.amountRupees = null;
   adjForm.reason = "";
+  adjSplitMode.value = "equal";
+  syncAdjDebtors();
 }
+
+function syncAdjDebtors() {
+  adjDebtors.value = participants.value.map((p) => {
+    const prev = adjDebtors.value.find((x) => x.participantId === p.id);
+    return (
+      prev ?? {
+        participantId: p.id,
+        displayName: p.displayName,
+        included: true,
+        shares: 1,
+        percentBps: 0,
+        exactPaisa: 0,
+      }
+    );
+  });
+}
+
+watch(participants, () => syncAdjDebtors(), { immediate: true });
 
 function startEditAdjustment(id: string) {
   const a = adjustments.value.find((x) => x.id === id);
@@ -489,6 +562,22 @@ function startEditAdjustment(id: string) {
 
 async function onSaveAdj() {
   try {
+    if (adjMode.value === "split" && !editingAdjustmentId.value) {
+      await addSplitAdjustments({
+        creditorId: adjForm.creditorId,
+        amountRupees: Number(adjForm.amountRupees ?? 0),
+        reason: adjForm.reason,
+        splitMode: adjSplitMode.value,
+        debtors: adjDebtors.value,
+      });
+      toast.add({
+        severity: "success",
+        summary: "Split adjustment added",
+        life: 2000,
+      });
+      clearAdjForm();
+      return;
+    }
     const payload = {
       fromId: adjForm.fromId,
       toId: adjForm.toId,
@@ -653,9 +742,12 @@ const chartByCategory = computed(() => {
 </script>
 
 <template>
-  <div v-if="loading" class="text-tl-muted">Loading…</div>
+  <div v-if="loading" class="text-tl-muted" role="status">Loading…</div>
   <div v-else-if="!trip" class="tl-card">Trip not found.</div>
   <div v-else class="tl-has-bottom-nav space-y-4">
+    <div class="sr-only" aria-live="polite" aria-atomic="true">
+      {{ statusMessage }}
+    </div>
     <!-- Trip header -->
     <div class="tl-card space-y-3">
       <div class="flex items-start justify-between gap-2">
@@ -702,7 +794,18 @@ const chartByCategory = computed(() => {
             </span>
           </div>
         </div>
-        <div class="flex shrink-0 gap-1">
+        <div class="flex shrink-0 flex-wrap justify-end gap-1">
+          <Button
+            v-if="trips.cloud"
+            icon="pi pi-user-plus"
+            severity="secondary"
+            outlined
+            rounded
+            aria-label="Copy invite link"
+            v-tooltip="'Copy invite link'"
+            :loading="inviting"
+            @click="copyInviteLink"
+          />
           <Button
             icon="pi pi-trash"
             severity="danger"
@@ -915,6 +1018,9 @@ const chartByCategory = computed(() => {
             <div class="text-xs text-tl-muted">
               Paid {{ formatPkr(p.paidPaisa, 0) }} · Share
               {{ formatPkr(p.sharePaisa) }}
+              <template v-if="p.adjNetPaisa">
+                · Adj {{ formatPkr(p.adjNetPaisa) }}
+              </template>
             </div>
           </div>
           <div
@@ -1129,30 +1235,54 @@ const chartByCategory = computed(() => {
 
         <!-- People -->
         <div v-if="moreSection === 'people'" class="tl-card space-y-3">
-          <div class="flex flex-col gap-2 sm:flex-row">
+          <div v-if="trips.cloud" class="space-y-2">
+            <p class="text-sm text-tl-muted">
+              Prefer inviting friends — they enter their own name and can edit
+              expenses with you.
+            </p>
+            <Button
+              label="Copy invite link"
+              icon="pi pi-link"
+              size="small"
+              :loading="inviting"
+              @click="copyInviteLink"
+            />
+          </div>
+          <p class="text-xs text-tl-muted">
+            {{
+              trips.cloud
+                ? "Or add a placeholder name (secondary)."
+                : "Add everyone who paid or shares costs."
+            }}
+          </p>
+          <form
+            class="flex flex-col gap-2 sm:flex-row"
+            @submit.prevent="saveParticipant"
+          >
             <InputText
               v-model="newParticipant"
               :placeholder="editingParticipantId ? 'Edit name' : 'Name'"
               class="w-full"
-              @keyup.enter="saveParticipant"
+              aria-label="Person name"
             />
             <div class="flex gap-2">
               <Button
+                type="submit"
                 :label="editingParticipantId ? 'Save' : 'Add'"
                 :icon="editingParticipantId ? 'pi pi-check' : 'pi pi-plus'"
-                @click="saveParticipant"
               />
               <Button
                 v-if="editingParticipantId"
+                type="button"
                 label="Cancel"
                 severity="secondary"
                 outlined
                 @click="cancelEditParticipant"
               />
             </div>
-          </div>
-          <div class="divide-y">
-            <div
+          </form>
+          <ul class="divide-y list-none p-0 m-0" aria-label="People on this trip">
+            <li
               v-for="p in participants"
               :key="p.id"
               class="tl-list-row"
@@ -1163,6 +1293,7 @@ const chartByCategory = computed(() => {
                   icon="pi pi-pencil"
                   text
                   rounded
+                  :aria-label="`Edit ${p.displayName}`"
                   @click="startEditParticipant(p.id, p.displayName)"
                 />
                 <Button
@@ -1170,15 +1301,15 @@ const chartByCategory = computed(() => {
                   severity="danger"
                   text
                   rounded
-                  aria-label="Remove person"
+                  :aria-label="`Remove ${p.displayName}`"
                   @click="confirmRemoveParticipant(p.id, p.displayName)"
                 />
               </div>
-            </div>
-            <p v-if="!participants.length" class="text-sm text-tl-muted">
-              No people yet. Add everyone who paid or shares costs.
-            </p>
-          </div>
+            </li>
+            <li v-if="!participants.length" class="text-sm text-tl-muted py-2">
+              No people yet.
+            </li>
+          </ul>
         </div>
 
         <!-- Pools -->
@@ -1274,26 +1405,84 @@ const chartByCategory = computed(() => {
                 @click="clearAdjForm"
               />
             </div>
-            <div>
-              <label class="tl-input-label">From (owes)</label>
-              <Select
-                v-model="adjForm.fromId"
-                :options="participants"
-                option-label="displayName"
-                option-value="id"
-                class="w-full"
+            <p class="text-sm text-tl-muted">
+              Use expenses for trip spending. Use adjustments for prior payments
+              or remainders between people.
+            </p>
+            <div v-if="!editingAdjustmentId" class="flex flex-wrap gap-2">
+              <Button
+                label="Simple (A owes B)"
+                size="small"
+                :severity="adjMode === 'simple' ? undefined : 'secondary'"
+                :outlined="adjMode !== 'simple'"
+                @click="adjMode = 'simple'"
+              />
+              <Button
+                label="Split a total"
+                size="small"
+                :severity="adjMode === 'split' ? undefined : 'secondary'"
+                :outlined="adjMode !== 'split'"
+                @click="adjMode = 'split'"
               />
             </div>
-            <div>
-              <label class="tl-input-label">To (is owed)</label>
-              <Select
-                v-model="adjForm.toId"
-                :options="participants"
-                option-label="displayName"
-                option-value="id"
-                class="w-full"
+            <template v-if="adjMode === 'simple' || editingAdjustmentId">
+              <div>
+                <label class="tl-input-label">From (owes)</label>
+                <Select
+                  v-model="adjForm.fromId"
+                  :options="participants"
+                  option-label="displayName"
+                  option-value="id"
+                  placeholder="Select person"
+                  class="w-full"
+                />
+              </div>
+              <div>
+                <label class="tl-input-label">To (is owed)</label>
+                <Select
+                  v-model="adjForm.toId"
+                  :options="participants"
+                  option-label="displayName"
+                  option-value="id"
+                  placeholder="Select person"
+                  class="w-full"
+                />
+              </div>
+            </template>
+            <template v-else>
+              <div>
+                <label class="tl-input-label">Creditor (is owed)</label>
+                <Select
+                  v-model="adjForm.creditorId"
+                  :options="participants"
+                  option-label="displayName"
+                  option-value="id"
+                  placeholder="Select person"
+                  class="w-full"
+                />
+              </div>
+              <div>
+                <label class="tl-input-label">Split among debtors</label>
+                <Select
+                  v-model="adjSplitMode"
+                  :options="SPLIT_MODES"
+                  option-label="label"
+                  option-value="value"
+                  class="w-full"
+                />
+              </div>
+              <SplitMatrix
+                :mode="adjSplitMode"
+                :people="adjDebtors"
+                :total-paisa="Math.round(Number(adjForm.amountRupees ?? 0) * 100)"
+                @change="
+                  (pid, patch) => {
+                    const row = adjDebtors.find((x) => x.participantId === pid);
+                    if (row) Object.assign(row, patch);
+                  }
+                "
               />
-            </div>
+            </template>
             <div>
               <label class="tl-input-label">Amount (Rs)</label>
               <InputNumber
@@ -1313,6 +1502,7 @@ const chartByCategory = computed(() => {
                   editingAdjustmentId ? 'Save adjustment' : 'Add adjustment'
                 "
                 :icon="editingAdjustmentId ? 'pi pi-check' : 'pi pi-plus'"
+                type="button"
                 @click="onSaveAdj"
               />
             </div>
@@ -1365,33 +1555,37 @@ const chartByCategory = computed(() => {
       <button
         type="button"
         :class="{ 'is-active': activeTab === 'expenses' }"
+        :aria-current="activeTab === 'expenses' ? 'page' : undefined"
         @click="setTab('expenses')"
       >
-        <i class="pi pi-receipt" />
+        <i class="pi pi-receipt" aria-hidden="true" />
         Expenses
       </button>
       <button
         type="button"
         :class="{ 'is-active': activeTab === 'balances' }"
+        :aria-current="activeTab === 'balances' ? 'page' : undefined"
         @click="setTab('balances')"
       >
-        <i class="pi pi-chart-bar" />
+        <i class="pi pi-chart-bar" aria-hidden="true" />
         Balances
       </button>
       <button
         type="button"
         :class="{ 'is-active': activeTab === 'settle' }"
+        :aria-current="activeTab === 'settle' ? 'page' : undefined"
         @click="setTab('settle')"
       >
-        <i class="pi pi-sync" />
+        <i class="pi pi-sync" aria-hidden="true" />
         Settle
       </button>
       <button
         type="button"
         :class="{ 'is-active': activeTab === 'more' }"
+        :aria-current="activeTab === 'more' ? 'page' : undefined"
         @click="setTab('more')"
       >
-        <i class="pi pi-ellipsis-h" />
+        <i class="pi pi-ellipsis-h" aria-hidden="true" />
         More
       </button>
     </nav>

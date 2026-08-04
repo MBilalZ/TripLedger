@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@primevue/themes": "^4.2.5",
+    "@supabase/supabase-js": "^2.112.0",
     "@tripledger/engine": "workspace:*",
     "@tripledger/types": "workspace:*",
     "@tripledger/validation": "workspace:*",

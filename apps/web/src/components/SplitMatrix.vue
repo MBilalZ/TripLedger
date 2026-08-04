@@ -72,6 +72,7 @@ function bump(
         <input
           type="checkbox"
           :checked="p.included"
+          :aria-label="`Include ${p.displayName}`"
           @change="
             emit('change', p.participantId, {
               included: ($event.target as HTMLInputElement).checked,
@@ -82,13 +83,21 @@ function bump(
       </label>
 
       <div v-if="p.included && mode === 'shares'" class="stepper">
-        <span class="field-label">Heads</span>
-        <button type="button" class="btn" @click="bump(p, 'shares', -1)">−</button>
+        <span class="field-label" :id="`heads-${p.participantId}`">Heads</span>
+        <button
+          type="button"
+          class="btn"
+          :aria-label="`Decrease heads for ${p.displayName}`"
+          @click="bump(p, 'shares', -1)"
+        >
+          −
+        </button>
         <input
           class="num"
           type="number"
           min="1"
           :value="p.shares"
+          :aria-labelledby="`heads-${p.participantId}`"
           @change="
             emit('change', p.participantId, {
               shares: Math.max(
@@ -98,7 +107,14 @@ function bump(
             })
           "
         />
-        <button type="button" class="btn" @click="bump(p, 'shares', 1)">+</button>
+        <button
+          type="button"
+          class="btn"
+          :aria-label="`Increase heads for ${p.displayName}`"
+          @click="bump(p, 'shares', 1)"
+        >
+          +
+        </button>
       </div>
 
       <div v-else-if="p.included && mode === 'percent'" class="stepper">

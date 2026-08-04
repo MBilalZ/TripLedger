@@ -28,7 +28,11 @@ export function buildWhatsAppSummary(
   ];
 
   for (const p of result.participants) {
-    lines.push(`${p.displayName}: ${formatPkr(p.paidPaisa, 0)}`);
+    const adj =
+      p.adjNetPaisa !== 0 ? ` · Adj ${formatPkr(p.adjNetPaisa)}` : "";
+    lines.push(
+      `${p.displayName}: Paid ${formatPkr(p.paidPaisa, 0)} · Share ${formatPkr(p.sharePaisa)}${adj}`,
+    );
   }
 
   lines.push("", "*Final Settlement*");
