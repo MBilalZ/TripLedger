@@ -92,7 +92,6 @@ const categories = ["Fuel", "Food", "Hotel", "Toll", "Shopping", "Misc"];
 
 const editingTrip = ref(false);
 const tripNameDraft = ref("");
-const tripCurrencyDraft = ref("PKR");
 
 const editingParticipantId = ref<string | null>(null);
 const newParticipant = ref("");
@@ -211,7 +210,6 @@ function startEditTrip() {
   if (!trip.value) return;
   editingTrip.value = true;
   tripNameDraft.value = trip.value.name;
-  tripCurrencyDraft.value = trip.value.currency;
 }
 
 function cancelEditTrip() {
@@ -222,7 +220,7 @@ async function saveTrip() {
   try {
     await updateTrip({
       name: tripNameDraft.value,
-      currency: tripCurrencyDraft.value,
+      currency: "PKR",
     });
     editingTrip.value = false;
     toast.add({ severity: "success", summary: "Trip updated", life: 2000 });
@@ -234,6 +232,82 @@ async function saveTrip() {
       life: 3000,
     });
   }
+}
+
+function confirmRemoveParticipant(id: string, displayName: string) {
+  confirm.require({
+    message: `Remove ${displayName} from this trip?`,
+    header: "Remove person",
+    icon: "pi pi-exclamation-triangle",
+    acceptClass: "p-button-danger",
+    accept: async () => {
+      try {
+        await removeParticipant(id);
+        toast.add({ severity: "success", summary: "Person removed", life: 2000 });
+      } catch (e) {
+        toast.add({
+          severity: "error",
+          summary: "Cannot remove",
+          detail: e instanceof Error ? e.message : String(e),
+          life: 5000,
+        });
+      }
+    },
+  });
+}
+
+function confirmRemovePool(id: string, poolLabel: string) {
+  confirm.require({
+    message: `Delete pool “${poolLabel}”?`,
+    header: "Delete pool",
+    icon: "pi pi-exclamation-triangle",
+    acceptClass: "p-button-danger",
+    accept: async () => {
+      try {
+        await removePool(id);
+        toast.add({ severity: "success", summary: "Pool deleted", life: 2000 });
+      } catch (e) {
+        toast.add({
+          severity: "error",
+          summary: "Cannot delete",
+          detail: e instanceof Error ? e.message : String(e),
+          life: 5000,
+        });
+      }
+    },
+  });
+}
+
+function confirmVoidExpense(id: string, description: string) {
+  confirm.require({
+    message: `Void expense “${description || "Untitled"}”? It will no longer count in settlement.`,
+    header: "Void expense",
+    icon: "pi pi-exclamation-triangle",
+    acceptClass: "p-button-danger",
+    accept: async () => {
+      await voidExpense(id);
+      if (editingExpenseId.value === id) clearExpenseForm();
+      toast.add({ severity: "success", summary: "Expense voided", life: 2000 });
+    },
+  });
+}
+
+function confirmRemoveAdjustment(id: string) {
+  confirm.require({
+    message: "Delete this adjustment?",
+    header: "Delete adjustment",
+    icon: "pi pi-exclamation-triangle",
+    acceptClass: "p-button-danger",
+    accept: async () => {
+      await removeAdjustment(id);
+      if (editingAdjustmentId.value === id) clearAdjForm();
+      toast.add({
+        severity: "success",
+        summary: "Adjustment deleted",
+        life: 2000,
+      });
+    },
+  });
 }
 
 function startEditParticipant(id: string, name: string) {
@@ -356,9 +430,6 @@ function expensePayload() {
 
 async function onSaveExpense() {
   try {
-    if (!expenseForm.poolId) expenseForm.poolId = pools.value[0]?.id ?? "";
-    if (!expenseForm.paidById)
-      expenseForm.paidById = participants.value[0]?.id ?? "";
     const payload = expensePayload();
     if (editingExpenseId.value) {
       await reviseExpense(editingExpenseId.value, payload);
@@ -377,6 +448,10 @@ async function onSaveExpense() {
     });
   }
 }
+
+const canAddExpenses = computed(
+  () => participants.value.length > 0 && pools.value.length > 0,
+);
 
 function clearAdjForm() {
   editingAdjustmentId.value = null;
@@ -430,26 +505,72 @@ async function onSaveAdj() {
   }
 }
 
-async function copyWa() {
-  if (!trip.value || !settlement.value) return;
-  if (!settlement.value.consistency.ok) {
+function assertBalancedForExport(): boolean {
+  if (!settlement.value?.consistency.ok) {
     toast.add({
       severity: "warn",
       summary: "Not balanced",
-      detail: "Fix consistency errors before sharing settlement",
+      detail: "Fix consistency errors before sharing or exporting settlement",
       life: 4000,
     });
-    return;
+    return false;
   }
-  await copyWhatsAppSummary(trip.value.name, settlement.value);
-  toast.add({ severity: "success", summary: "Copied for WhatsApp", life: 2000 });
+  return true;
+}
+
+async function copyWa() {
+  if (!trip.value || !settlement.value) return;
+  if (!assertBalancedForExport()) return;
+  try {
+    await copyWhatsAppSummary(
+      trip.value.name,
+      settlement.value,
+      trip.value.settlementRounding,
+    );
+    toast.add({
+      severity: "success",
+      summary: "Copied for WhatsApp",
+      life: 2000,
+    });
+  } catch (e) {
+    toast.add({
+      severity: "error",
+      summary: "Copy failed",
+      detail: e instanceof Error ? e.message : String(e),
+      life: 4000,
+    });
+  }
+}
+
+async function runExport(
+  label: string,
+  action: () => Promise<void>,
+  requireBalanced: boolean,
+) {
+  if (requireBalanced && !assertBalancedForExport()) return;
+  try {
+    await action();
+    toast.add({
+      severity: "success",
+      summary: `${label} ready`,
+      life: 2000,
+    });
+  } catch (e) {
+    toast.add({
+      severity: "error",
+      summary: `${label} failed`,
+      detail: e instanceof Error ? e.message : String(e),
+      life: 4000,
+    });
+  }
 }
 
 function deleteTrip() {
   confirm.require({
     message: "Delete this trip from this device?",
-    header: "Confirm",
+    header: "Delete trip",
     icon: "pi pi-exclamation-triangle",
+    acceptClass: "p-button-danger",
     accept: async () => {
       await trips.deleteTrip(props.tripId);
       router.push("/");
@@ -476,24 +597,19 @@ const exportItems = computed<MenuItem[]>(() => [
   {
     label: "Excel",
     icon: "pi pi-file-excel",
-    command: () => exportTripExcel(props.tripId),
+    command: () =>
+      runExport("Excel", () => exportTripExcel(props.tripId), true),
   },
   {
     label: "PDF",
     icon: "pi pi-file-pdf",
-    command: () => exportTripPdf(props.tripId),
+    command: () => runExport("PDF", () => exportTripPdf(props.tripId), true),
   },
   {
     label: "JSON",
     icon: "pi pi-download",
-    command: () => downloadTripJson(props.tripId),
-  },
-  { separator: true },
-  {
-    label: "Delete trip",
-    icon: "pi pi-trash",
-    class: "tl-menu-danger",
-    command: () => deleteTrip(),
+    command: () =>
+      runExport("JSON", () => downloadTripJson(props.tripId), false),
   },
 ]);
 
@@ -548,11 +664,8 @@ const chartByCategory = computed(() => {
               <label class="tl-input-label">Trip name</label>
               <InputText v-model="tripNameDraft" class="w-full" />
             </div>
-            <div class="flex flex-wrap items-end gap-2">
-              <div>
-                <label class="tl-input-label">Currency</label>
-                <InputText v-model="tripCurrencyDraft" class="w-24" />
-              </div>
+            <p class="text-xs text-tl-muted">Currency: PKR (Rs.)</p>
+            <div class="flex flex-wrap gap-2">
               <Button label="Save" size="small" @click="saveTrip" />
               <Button
                 label="Cancel"
@@ -573,7 +686,16 @@ const chartByCategory = computed(() => {
             </span>
           </div>
         </div>
-        <div>
+        <div class="flex shrink-0 gap-1">
+          <Button
+            icon="pi pi-trash"
+            severity="danger"
+            outlined
+            rounded
+            aria-label="Delete trip"
+            v-tooltip="'Delete trip'"
+            @click="deleteTrip"
+          />
           <Button
             icon="pi pi-share-alt"
             severity="secondary"
@@ -581,6 +703,7 @@ const chartByCategory = computed(() => {
             rounded
             aria-haspopup="true"
             aria-controls="trip_export_menu"
+            aria-label="Share and export"
             v-tooltip="'Share & export'"
             @click="toggleExport"
           />
@@ -596,7 +719,38 @@ const chartByCategory = computed(() => {
 
     <!-- Expenses -->
     <div v-show="activeTab === 'expenses'" class="space-y-4">
-      <div class="tl-card grid gap-3">
+      <div v-if="!canAddExpenses" class="tl-card space-y-3">
+        <h3 class="tl-section-title mb-0">Set up this trip first</h3>
+        <p class="text-sm text-tl-muted">
+          Add people and at least one pool before logging expenses.
+        </p>
+        <div class="flex flex-wrap gap-2">
+          <Button
+            v-if="!participants.length"
+            label="Add people"
+            icon="pi pi-users"
+            size="small"
+            @click="openMore('people')"
+          />
+          <Button
+            v-if="participants.length && !pools.length"
+            label="Add a pool"
+            icon="pi pi-th-large"
+            size="small"
+            @click="openMore('pools')"
+          />
+          <Button
+            v-if="!participants.length"
+            label="Then add a pool"
+            icon="pi pi-th-large"
+            size="small"
+            severity="secondary"
+            outlined
+            @click="openMore('pools')"
+          />
+        </div>
+      </div>
+      <div v-else class="tl-card grid gap-3">
         <div class="flex items-center justify-between">
           <h3 class="tl-section-title mb-0">{{ expenseFormTitle }}</h3>
           <Button
@@ -736,7 +890,8 @@ const chartByCategory = computed(() => {
                   severity="danger"
                   rounded
                   size="small"
-                  @click="voidExpense(e.id)"
+                  aria-label="Void expense"
+                  @click="confirmVoidExpense(e.id, e.description)"
                 />
               </div>
             </div>
@@ -1014,10 +1169,14 @@ const chartByCategory = computed(() => {
                   severity="danger"
                   text
                   rounded
-                  @click="removeParticipant(p.id)"
+                  aria-label="Remove person"
+                  @click="confirmRemoveParticipant(p.id, p.displayName)"
                 />
               </div>
             </div>
+            <p v-if="!participants.length" class="text-sm text-tl-muted">
+              No people yet. Add everyone who paid or shares costs.
+            </p>
           </div>
         </div>
 
@@ -1040,6 +1199,13 @@ const chartByCategory = computed(() => {
                 newPool = '';
               "
             />
+          </div>
+          <div
+            v-if="!pools.length"
+            class="tl-card text-sm text-tl-muted"
+          >
+            No pools yet. Create a pool (shared budget group) before adding
+            expenses.
           </div>
           <div v-for="pool in pools" :key="pool.id" class="tl-card">
             <div class="mb-3 flex flex-col gap-2">
@@ -1071,7 +1237,8 @@ const chartByCategory = computed(() => {
                     severity="danger"
                     text
                     class="ml-auto"
-                    @click="removePool(pool.id)"
+                    aria-label="Delete pool"
+                    @click="confirmRemovePool(pool.id, pool.name)"
                   />
                 </template>
               </div>
@@ -1182,7 +1349,8 @@ const chartByCategory = computed(() => {
                   icon="pi pi-times"
                   text
                   severity="danger"
-                  @click="removeAdjustment(a.id)"
+                  aria-label="Delete adjustment"
+                  @click="confirmRemoveAdjustment(a.id)"
                 />
               </div>
             </div>
