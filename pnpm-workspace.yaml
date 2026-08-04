@@ -1,3 +1,17 @@
 packages:
   - "apps/*"
   - "packages/*"
+
+overrides:
+  uuid: "^11.1.1"
+
+# pnpm 11 defaults to strictDepBuilds; allow known build scripts.
+allowBuilds:
+  esbuild: true
+  vue-demi: true
+
+# Keep the 1-day release-age default, but browserslist metadata packages churn daily.
+minimumReleaseAgeExclude:
+  - electron-to-chromium
+  - node-releases
+  - terser
