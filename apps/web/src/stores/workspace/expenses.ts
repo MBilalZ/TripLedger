@@ -101,9 +101,8 @@ export function createExpenseActions(
 
   async function voidExpense(expenseId: string) {
     const old = state.expenses.value.find((e) => e.id === expenseId);
-    if (!old || old.supersededById) return;
-    const voidId = `voided_${expenseId}`;
-    await getWorkspaceRepo().voidExpense(expenseId, voidId);
+    if (!old || old.supersededById || old.voided) return;
+    await getWorkspaceRepo().voidExpense(expenseId, state.tripId.value);
     state.expenses.value = state.expenses.value.filter((e) => e.id !== expenseId);
     state.expenseSplits.value = state.expenseSplits.value.filter(
       (s) => s.expenseId !== expenseId,

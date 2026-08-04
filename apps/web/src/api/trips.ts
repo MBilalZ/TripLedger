@@ -35,46 +35,21 @@ export async function createTrip(
     "You";
   const tripId = newId("trip");
   const participantId = newId("p");
-  const now = new Date().toISOString();
   const trimmed = name.trim();
   if (!trimmed) throw new Error("Trip name is required");
 
   await apiMutate((sb) =>
-    sb.from("trips").insert({
-      id: tripId,
-      name: trimmed,
-      currency: "PKR",
-      created_at: now,
-      updated_at: now,
-      transfer_mode: options.transferMode ?? "minimize",
-      settlement_rounding: options.settlementRounding ?? "rupee",
-      settlement_hub_id: null,
-      created_by: uid,
+    sb.rpc("create_trip_with_owner", {
+      p_trip_id: tripId,
+      p_name: trimmed,
+      p_participant_id: participantId,
+      p_owner_display_name: ownerName,
+      p_transfer_mode: options.transferMode ?? "minimize",
+      p_settlement_rounding: options.settlementRounding ?? "rupee",
     }),
   );
 
-  await apiMutate(
-    (sb) =>
-      sb.from("participants").insert({
-        id: participantId,
-        trip_id: tripId,
-        display_name: ownerName,
-        user_id: uid,
-      }),
-    { requireAuth: false },
-  );
-
-  await apiMutate(
-    (sb) =>
-      sb.from("trip_members").insert({
-        trip_id: tripId,
-        user_id: uid,
-        participant_id: participantId,
-        role: "owner",
-      }),
-    { requireAuth: false },
-  );
-
+  void uid;
   return tripId;
 }
 
@@ -98,4 +73,35 @@ export async function updateTrip(
   patch: Record<string, unknown>,
 ): Promise<void> {
   await apiMutate((sb) => sb.from("trips").update(patch).eq("id", tripId));
+}
+
+export async function fetchMyTripRole(
+  tripId: string,
+): Promise<"owner" | "member" | null> {
+  return apiCall(async (sb) => {
+    const uid = await requireUser();
+    const res = await sb
+      .from("trip_members")
+      .select("role")
+      .eq("trip_id", tripId)
+      .eq("user_id", uid)
+      .maybeSingle();
+    if (res.error) return { data: null, error: res.error };
+    const role = res.data?.role;
+    if (role === "owner" || role === "member") {
+      return { data: role, error: null };
+    }
+    return { data: null, error: null };
+  });
+}
+
+export async function leaveTrip(tripId: string): Promise<void> {
+  const uid = await requireUser();
+  await apiMutate((sb) =>
+    sb
+      .from("trip_members")
+      .delete()
+      .eq("trip_id", tripId)
+      .eq("user_id", uid),
+  );
 }

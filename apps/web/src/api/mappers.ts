@@ -142,6 +142,7 @@ export function expenseFromDb(r: {
   superseded_by_id: string | null;
   created_at: string;
   split_mode: string | null;
+  voided?: boolean | null;
 }): ExpenseRow {
   return {
     id: r.id,
@@ -156,6 +157,7 @@ export function expenseFromDb(r: {
     supersededById: r.superseded_by_id,
     createdAt: r.created_at,
     splitMode: (r.split_mode as SplitMode | null) ?? null,
+    voided: !!r.voided,
   };
 }
 
@@ -173,6 +175,7 @@ export function expenseToDb(row: ExpenseRow): Record<string, unknown> {
     superseded_by_id: row.supersededById,
     created_at: row.createdAt,
     split_mode: row.splitMode,
+    voided: row.voided ?? false,
   };
 }
 

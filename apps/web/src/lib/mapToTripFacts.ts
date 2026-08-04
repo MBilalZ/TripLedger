@@ -22,7 +22,9 @@ export type TripFactsSource = {
 
 /** Build engine TripFacts from workspace rows (in-memory or Dexie-loaded). */
 export function mapToTripFacts(args: TripFactsSource): TripFacts {
-  const activeExpenses = args.expenses.filter((e) => !e.supersededById);
+  const activeExpenses = args.expenses.filter(
+    (e) => !e.supersededById && !e.voided,
+  );
   return {
     participants: args.participants.map((p) => ({
       id: p.id,

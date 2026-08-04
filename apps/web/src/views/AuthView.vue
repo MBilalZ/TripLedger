@@ -36,8 +36,8 @@ async function submit() {
     formError.value = "Email and password are required.";
     return;
   }
-  if (mode.value === "signup" && pw.length < 6) {
-    formError.value = "Password must be at least 6 characters.";
+  if (mode.value === "signup" && pw.length < 8) {
+    formError.value = "Password must be at least 8 characters.";
     return;
   }
   submitting.value = true;

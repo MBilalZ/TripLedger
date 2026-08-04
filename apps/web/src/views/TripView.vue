@@ -16,7 +16,7 @@ import TripSettlePanel from "@/components/trip/TripSettlePanel.vue";
 const props = defineProps<{ tripId: string }>();
 const auth = useAuthStore();
 
-const { trip, settlement, loading, statusMessage } = useTripWorkspace(
+const { trip, settlement, loading, statusMessage, isOwner } = useTripWorkspace(
   () => props.tripId,
 );
 
@@ -52,7 +52,9 @@ const balanced = computed(() => settlement.value?.consistency.ok ?? false);
       :trip-total-paisa="settlement?.summary.tripTotalPaisa ?? 0"
       :editing-trip="editingTrip"
       v-model:trip-name-draft="tripNameDraft"
-      :show-invite="auth.cloud"
+      :show-invite="auth.cloud && isOwner"
+      :can-edit-trip="isOwner"
+      :can-delete-trip="isOwner"
       :inviting="inviting"
       :export-items="exportItems"
       @start-edit="startEditTrip"

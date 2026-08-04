@@ -5,17 +5,17 @@ import type {
   SettleTripResult,
   SplitMode,
   TripFacts,
-} from "@tripledger/types";
-import { DEFAULT_TRIP_SETTINGS } from "@tripledger/types";
-import { allocateSplit } from "./allocation.js";
-import { checkInvariants } from "./consistency.js";
-import { roundBalancesToRupees } from "./rounding.js";
-import { buildTransfers } from "./settlement.js";
+} from "./types.ts";
+import { DEFAULT_TRIP_SETTINGS } from "./types.ts";
+import { allocateSplit } from "./allocation.ts";
+import { checkInvariants } from "./consistency.ts";
+import { roundBalancesToRupees } from "./rounding.ts";
+import { buildTransfers } from "./settlement.ts";
 import {
   asSplitLine,
   resolveExpenseSplit,
   validateInput,
-} from "./settleTripValidate.js";
+} from "./settleTripValidate.ts";
 
 function memberShareWeight(m: PoolMember, mode: SplitMode): number {
   if (!m.included) return 0;

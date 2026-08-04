@@ -32,7 +32,7 @@ export function usePeoplePoolsUi() {
   async function saveTrip() {
     await run(
       async () => {
-        await store.updateTrip({ name: tripNameDraft.value, currency: "PKR" });
+        await store.updateTrip({ name: tripNameDraft.value });
         editingTrip.value = false;
       },
       { success: "Trip updated" },

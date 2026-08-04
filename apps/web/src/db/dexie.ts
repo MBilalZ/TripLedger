@@ -55,6 +55,8 @@ export interface ExpenseRow {
   supersededById: string | null;
   createdAt: string;
   splitMode: SplitMode | null;
+  /** Soft-void; preferred over fake superseded_by_id sentinels. */
+  voided?: boolean;
 }
 
 export interface ExpenseSplitRow {

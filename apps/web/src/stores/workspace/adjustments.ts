@@ -64,14 +64,21 @@ export function createAdjustmentActions(
     const groupId = newId("adjg");
     for (const slice of alloc.slices) {
       if (slice.sharePaisa <= 0) continue;
-      await addAdjustment({
+      const row: AdjustmentRow = {
+        id: newId("adj"),
+        tripId: state.tripId.value,
         fromId: slice.participantId,
         toId: input.creditorId,
-        amountRupees: slice.sharePaisa / 100,
+        amountPaisa: slice.sharePaisa,
         reason: input.reason,
+        createdAt: new Date().toISOString(),
         groupId,
-      });
+      };
+      await getWorkspaceRepo().addAdjustment(row);
+      state.adjustments.value = [...state.adjustments.value, row];
     }
+    await core.touch();
+    core.recomputeSettlement();
     state.announce("Split adjustment added");
   }
 

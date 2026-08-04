@@ -82,11 +82,7 @@ async function save() {
         />
       </div>
 
-      <div>
-        <label class="tl-input-label">Currency</label>
-        <InputText model-value="PKR" class="w-24" disabled />
-        <p class="mt-1 text-xs text-tl-muted">Amounts are shown as Rs. (PKR).</p>
-      </div>
+      <p class="text-xs text-tl-muted">Amounts are in Pakistani rupees (Rs.).</p>
 
       <div>
         <label class="tl-input-label">Transfer mode</label>

@@ -21,6 +21,7 @@ export function createWorkspaceState() {
   const expenseSplits = ref<ExpenseSplitRow[]>([]);
   const adjustments = ref<AdjustmentRow[]>([]);
   const settlement = ref<SettleTripResult | null>(null);
+  const myRole = ref<"owner" | "member" | null>(null);
   const loading = ref(true);
   const statusMessage = ref("");
 
@@ -32,6 +33,7 @@ export function createWorkspaceState() {
     expenses.value = data.expenses;
     expenseSplits.value = data.expenseSplits;
     adjustments.value = data.adjustments;
+    myRole.value = data.myRole ?? null;
   }
 
   function announce(msg: string) {
@@ -48,6 +50,7 @@ export function createWorkspaceState() {
     expenseSplits,
     adjustments,
     settlement,
+    myRole,
     loading,
     statusMessage,
     applySnapshot,

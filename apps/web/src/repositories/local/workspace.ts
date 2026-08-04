@@ -35,9 +35,10 @@ export const localWorkspaceRepo: WorkspaceRepo = {
       participants,
       pools,
       poolMembers,
-      expenses,
+      expenses: expenses.filter((e) => !e.voided),
       expenseSplits,
       adjustments,
+      myRole: "owner" as const,
     };
   },
 
@@ -98,7 +99,6 @@ export const localWorkspaceRepo: WorkspaceRepo = {
       if (!name) throw new Error("Trip name is required");
       updates.name = name;
     }
-    if (patch.currency !== undefined) updates.currency = "PKR";
     await db.trips.update(tripId, updates);
     return updates;
   },
@@ -191,9 +191,12 @@ export const localWorkspaceRepo: WorkspaceRepo = {
     });
   },
 
-  async voidExpense(expenseId, voidId) {
+  async voidExpense(expenseId, _tripIdOrVoidId) {
     await db.transaction("rw", [db.expenses, db.expenseSplits], async () => {
-      await db.expenses.update(expenseId, { supersededById: voidId });
+      await db.expenses.update(expenseId, {
+        voided: true,
+        supersededById: null,
+      });
       await db.expenseSplits.where("expenseId").equals(expenseId).delete();
     });
   },

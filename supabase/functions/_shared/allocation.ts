@@ -1,4 +1,4 @@
-import type { Id, SplitLine, SplitMode } from "@tripledger/types";
+import type { Id, SplitLine, SplitMode } from "./types.ts";
 
 export interface ShareSlice {
   participantId: Id;

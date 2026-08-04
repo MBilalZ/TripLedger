@@ -1,4 +1,4 @@
-import { PAISA_PER_RUPEE } from "./money.js";
+import { PAISA_PER_RUPEE } from "./money.ts";
 
 export interface RoundedBalance {
   participantId: string;

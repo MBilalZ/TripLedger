@@ -15,6 +15,8 @@ defineProps<{
   editingTrip: boolean;
   tripNameDraft: string;
   showInvite: boolean;
+  canEditTrip: boolean;
+  canDeleteTrip: boolean;
   inviting: boolean;
   exportItems: MenuItem[];
 }>();
@@ -45,6 +47,7 @@ function toggleExport(event: Event) {
         <div v-if="!editingTrip" class="mt-1 flex flex-wrap items-center gap-2">
           <h1 class="text-2xl font-semibold text-tl">{{ trip.name }}</h1>
           <Button
+            v-if="canEditTrip"
             icon="pi pi-pencil"
             text
             rounded
@@ -52,7 +55,7 @@ function toggleExport(event: Event) {
             v-tooltip="'Edit trip'"
             @click="emit('startEdit')"
           />
-          <span class="text-sm text-tl-muted">{{ trip.currency }}</span>
+          <span class="text-sm text-tl-muted">Rs. (PKR)</span>
         </div>
         <div v-else class="mt-2 flex flex-col gap-2">
           <div>
@@ -63,7 +66,6 @@ function toggleExport(event: Event) {
               @update:model-value="emit('update:tripNameDraft', String($event))"
             />
           </div>
-          <p class="text-xs text-tl-muted">Currency: PKR (Rs.)</p>
           <div class="flex flex-wrap gap-2">
             <Button label="Save" size="small" @click="emit('save')" />
             <Button
@@ -98,6 +100,7 @@ function toggleExport(event: Event) {
           @click="emit('invite')"
         />
         <Button
+          v-if="canDeleteTrip"
           icon="pi pi-trash"
           severity="danger"
           outlined

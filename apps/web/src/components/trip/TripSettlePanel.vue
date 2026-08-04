@@ -9,64 +9,70 @@ import { useWorkspaceStore } from "@/stores/workspace";
 defineProps<{ visible: boolean }>();
 
 const store = useWorkspaceStore();
-const { trip, participants, settlement } = storeToRefs(store);
+const { trip, participants, settlement, isOwner } = storeToRefs(store);
 </script>
 
 <template>
   <div v-show="visible" class="space-y-4">
     <div v-if="trip" class="tl-card grid gap-4">
-      <div>
-        <label class="tl-input-label">Transfer strategy</label>
-        <Select
-          :model-value="trip.transferMode"
-          :options="TRANSFER_MODES"
-          option-label="label"
-          option-value="value"
-          class="w-full"
-          @update:model-value="
-            (v) => store.updateSettlementSettings({ transferMode: v as TransferMode })
-          "
-        />
-        <p class="mt-1 text-xs text-tl-muted">
-          Minimize = fewest payments. Settle to one = everyone pays/receives via
-          a hub. Pairwise = each debtor pays each creditor proportionally.
-        </p>
-      </div>
-      <div>
-        <label class="tl-input-label">Rounding</label>
-        <Select
-          :model-value="trip.settlementRounding"
-          :options="ROUNDING_MODES"
-          option-label="label"
-          option-value="value"
-          class="w-full"
-          @update:model-value="
-            (v) =>
-              store.updateSettlementSettings({
-                settlementRounding: v as SettlementRounding,
-              })
-          "
-        />
-      </div>
-      <div v-if="trip.transferMode === 'settle_to_one'">
-        <label class="tl-input-label">Hub person</label>
-        <Select
-          :model-value="trip.settlementHubId ?? ''"
-          :options="[
-            { id: '', displayName: 'Largest creditor (auto)' },
-            ...participants,
-          ]"
-          option-label="displayName"
-          option-value="id"
-          class="w-full"
-          @update:model-value="
-            (v) =>
-              store.updateSettlementSettings({
-                settlementHubId: v ? String(v) : null,
-              })
-          "
-        />
-      </div>
+      <template v-if="isOwner">
+        <div>
+          <label class="tl-input-label">Transfer strategy</label>
+          <Select
+            :model-value="trip.transferMode"
+            :options="TRANSFER_MODES"
+            option-label="label"
+            option-value="value"
+            class="w-full"
+            @update:model-value="
+              (v) =>
+                store.updateSettlementSettings({ transferMode: v as TransferMode })
+            "
+          />
+          <p class="mt-1 text-xs text-tl-muted">
+            Minimize = fewest payments. Settle to one = everyone pays/receives via
+            a hub.
+          </p>
+        </div>
+        <div>
+          <label class="tl-input-label">Rounding</label>
+          <Select
+            :model-value="trip.settlementRounding"
+            :options="ROUNDING_MODES"
+            option-label="label"
+            option-value="value"
+            class="w-full"
+            @update:model-value="
+              (v) =>
+                store.updateSettlementSettings({
+                  settlementRounding: v as SettlementRounding,
+                })
+            "
+          />
+        </div>
+        <div v-if="trip.transferMode === 'settle_to_one'">
+          <label class="tl-input-label">Hub person</label>
+          <Select
+            :model-value="trip.settlementHubId ?? ''"
+            :options="[
+              { id: '', displayName: 'Largest creditor (auto)' },
+              ...participants,
+            ]"
+            option-label="displayName"
+            option-value="id"
+            class="w-full"
+            @update:model-value="
+              (v) =>
+                store.updateSettlementSettings({
+                  settlementHubId: v ? String(v) : null,
+                })
+            "
+          />
+        </div>
+      </template>
+      <p v-else class="text-sm text-tl-muted">
+        Settlement settings are managed by the trip owner.
+      </p>
     </div>
     <div class="tl-card">
       <h2 class="tl-section-title">Preview</h2>

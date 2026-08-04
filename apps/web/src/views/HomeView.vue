@@ -199,7 +199,7 @@ function confirmDeleteTrip(tripId: string, tripName: string, event: Event) {
           <div class="font-medium text-tl">{{ t.name }}</div>
           <div class="text-xs text-tl-muted">
             Updated {{ new Date(t.updatedAt).toLocaleString() }} ·
-            {{ t.currency }}
+            PKR
           </div>
         </div>
         <Button
