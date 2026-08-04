@@ -14,5 +14,10 @@
   },
   "engines": {
     "node": ">=24"
+  },
+  "pnpm": {
+    "overrides": {
+      "uuid": "^11.1.1"
+    }
   }
 }
