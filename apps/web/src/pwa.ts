@@ -67,6 +67,12 @@ export function initPwaInstallCapture(): void {
   if (typeof window === "undefined") return;
 
   window.addEventListener("beforeinstallprompt", (e) => {
+    // Only hijack the native banner when we will show our own Install UI.
+    // If the user dismissed us, let Chrome show its install affordance instead.
+    if (isPwaStandalone() || wasInstallDismissed()) {
+      deferredPrompt = null;
+      return;
+    }
     e.preventDefault();
     deferredPrompt = e as BeforeInstallPromptEvent;
     notifyInstallListeners();

@@ -109,7 +109,6 @@ function switchMode(next: "signin" | "signup") {
           class="w-full"
           placeholder="you@example.com"
           autocomplete="email"
-          autofocus
         />
       </div>
       <div>
