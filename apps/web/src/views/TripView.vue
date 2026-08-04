@@ -181,7 +181,7 @@ function peopleForPool(poolId: string): SplitPerson[] {
     return {
       participantId: p.id,
       displayName: p.displayName,
-      included: m?.included ?? false,
+      included: m?.included ?? true,
       shares: m?.shares ?? 1,
       percentBps: m?.percentBps ?? 0,
       exactPaisa: m?.exactPaisa ?? 0,
@@ -198,12 +198,14 @@ async function onPoolMemberChange(
   participantId: string,
   patch: Partial<SplitPerson>,
 ) {
-  await upsertPoolMember(poolId, participantId, {
-    included: patch.included,
-    shares: patch.shares,
-    percentBps: patch.percentBps,
-    exactPaisa: patch.exactPaisa,
-  });
+  const clean: Partial<
+    Pick<SplitPerson, "included" | "shares" | "percentBps" | "exactPaisa">
+  > = {};
+  if (patch.included !== undefined) clean.included = patch.included;
+  if (patch.shares !== undefined) clean.shares = patch.shares;
+  if (patch.percentBps !== undefined) clean.percentBps = patch.percentBps;
+  if (patch.exactPaisa !== undefined) clean.exactPaisa = patch.exactPaisa;
+  await upsertPoolMember(poolId, participantId, clean);
 }
 
 function startEditTrip() {
@@ -342,6 +344,22 @@ async function saveParticipant() {
   }
 }
 
+async function onAddPool() {
+  try {
+    const id = await addPool(newPool.value);
+    if (!id) return;
+    newPool.value = "";
+    toast.add({ severity: "success", summary: "Pool added", life: 2000 });
+  } catch (e) {
+    toast.add({
+      severity: "error",
+      summary: "Cannot add pool",
+      detail: e instanceof Error ? e.message : String(e),
+      life: 4000,
+    });
+  }
+}
+
 function startEditPoolName(id: string, name: string) {
   editingPoolId.value = id;
   poolNameDraft.value = name;
@@ -449,9 +467,7 @@ async function onSaveExpense() {
   }
 }
 
-const canAddExpenses = computed(
-  () => participants.value.length > 0 && pools.value.length > 0,
-);
+const canAddExpenses = computed(() => participants.value.length > 0);
 
 function clearAdjForm() {
   editingAdjustmentId.value = null;
@@ -720,35 +736,17 @@ const chartByCategory = computed(() => {
     <!-- Expenses -->
     <div v-show="activeTab === 'expenses'" class="space-y-4">
       <div v-if="!canAddExpenses" class="tl-card space-y-3">
-        <h3 class="tl-section-title mb-0">Set up this trip first</h3>
+        <h3 class="tl-section-title mb-0">Add people first</h3>
         <p class="text-sm text-tl-muted">
-          Add people and at least one pool before logging expenses.
+          Add at least one person before logging expenses. A default
+          “General” pool is created automatically if you have not made one.
         </p>
-        <div class="flex flex-wrap gap-2">
-          <Button
-            v-if="!participants.length"
-            label="Add people"
-            icon="pi pi-users"
-            size="small"
-            @click="openMore('people')"
-          />
-          <Button
-            v-if="participants.length && !pools.length"
-            label="Add a pool"
-            icon="pi pi-th-large"
-            size="small"
-            @click="openMore('pools')"
-          />
-          <Button
-            v-if="!participants.length"
-            label="Then add a pool"
-            icon="pi pi-th-large"
-            size="small"
-            severity="secondary"
-            outlined
-            @click="openMore('pools')"
-          />
-        </div>
+        <Button
+          label="Add people"
+          icon="pi pi-users"
+          size="small"
+          @click="openMore('people')"
+        />
       </div>
       <div v-else class="tl-card grid gap-3">
         <div class="flex items-center justify-between">
@@ -783,8 +781,11 @@ const chartByCategory = computed(() => {
               :options="pools"
               option-label="name"
               option-value="id"
-              placeholder="Select pool"
+              :placeholder="
+                pools.length ? 'Select pool' : 'General (auto-created on save)'
+              "
               class="w-full"
+              :show-clear="!!pools.length"
             />
           </div>
           <div>
@@ -1182,30 +1183,27 @@ const chartByCategory = computed(() => {
 
         <!-- Pools -->
         <div v-else-if="moreSection === 'pools'" class="space-y-4">
-          <div class="tl-card flex flex-col gap-2 sm:flex-row">
+          <div
+            v-if="!participants.length"
+            class="tl-card text-sm text-tl-muted"
+          >
+            Add people first before creating a pool.
+          </div>
+          <div v-else class="tl-card flex flex-col gap-2 sm:flex-row">
             <InputText
               v-model="newPool"
               placeholder="Pool name (e.g. Part A)"
               class="w-full"
-              @keyup.enter="
-                addPool(newPool);
-                newPool = '';
-              "
+              @keyup.enter="onAddPool"
             />
-            <Button
-              label="Add pool"
-              @click="
-                addPool(newPool);
-                newPool = '';
-              "
-            />
+            <Button label="Add pool" @click="onAddPool" />
           </div>
           <div
-            v-if="!pools.length"
+            v-if="participants.length && !pools.length"
             class="tl-card text-sm text-tl-muted"
           >
-            No pools yet. Create a pool (shared budget group) before adding
-            expenses.
+            No pools yet. Optional — saving an expense will create a
+            “General” pool automatically.
           </div>
           <div v-for="pool in pools" :key="pool.id" class="tl-card">
             <div class="mb-3 flex flex-col gap-2">

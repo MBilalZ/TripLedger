@@ -206,6 +206,9 @@ export function useTripWorkspace(tripId: () => string) {
   async function addPool(name: string) {
     const n = name.trim();
     if (!n) return;
+    if (!participants.value.length) {
+      throw new Error("Add at least one person before creating a pool");
+    }
     const poolId = newId("pool");
     await db.pools.add({
       id: poolId,
@@ -227,6 +230,18 @@ export function useTripWorkspace(tripId: () => string) {
     }
     await touch();
     await reload();
+    return poolId;
+  }
+
+  /** Create "General" pool when none exist; otherwise return first pool id. */
+  async function ensureDefaultPool(): Promise<string> {
+    if (pools.value.length > 0) return pools.value[0]!.id;
+    if (!participants.value.length) {
+      throw new Error("Add at least one person before adding expenses");
+    }
+    const poolId = await addPool("General");
+    if (!poolId) throw new Error("Could not create default pool");
+    return poolId;
   }
 
   function poolDeleteBlockers(id: string): string[] {
@@ -265,34 +280,45 @@ export function useTripWorkspace(tripId: () => string) {
       Pick<PoolMemberRow, "included" | "shares" | "percentBps" | "exactPaisa">
     >,
   ) {
+    const clean = Object.fromEntries(
+      Object.entries(patch).filter(([, v]) => v !== undefined),
+    ) as Partial<
+      Pick<PoolMemberRow, "included" | "shares" | "percentBps" | "exactPaisa">
+    >;
     const existing = poolMembers.value.find(
       (m) => m.poolId === poolId && m.participantId === participantId,
     );
     if (existing) {
-      await db.poolMembers.update(existing.id, patch);
+      if (Object.keys(clean).length) {
+        await db.poolMembers.update(existing.id, clean);
+      }
     } else {
       await db.poolMembers.add({
         id: newId("pm"),
         tripId: tripId(),
         poolId,
         participantId,
-        included: patch.included ?? true,
-        shares: patch.shares ?? 1,
-        percentBps: patch.percentBps ?? 0,
-        exactPaisa: patch.exactPaisa ?? 0,
+        included: clean.included ?? true,
+        shares: clean.shares ?? 1,
+        percentBps: clean.percentBps ?? 0,
+        exactPaisa: clean.exactPaisa ?? 0,
       });
     }
     await touch();
     await reload();
   }
 
+  async function resolveExpensePoolId(poolId: string): Promise<string> {
+    if (poolId && pools.value.some((p) => p.id === poolId)) return poolId;
+    if (pools.value.length > 0) {
+      throw new Error("Select a pool");
+    }
+    return ensureDefaultPool();
+  }
+
   function assertExpenseInput(input: ExpenseInput) {
     if (!input.description.trim()) throw new Error("Description is required");
-    if (!input.poolId) throw new Error("Select a pool");
     if (!input.paidById) throw new Error("Select who paid");
-    if (!pools.value.some((p) => p.id === input.poolId)) {
-      throw new Error("Select a valid pool");
-    }
     if (!participants.value.some((p) => p.id === input.paidById)) {
       throw new Error("Select a valid payer");
     }
@@ -300,6 +326,7 @@ export function useTripWorkspace(tripId: () => string) {
 
   async function addExpense(input: ExpenseInput) {
     assertExpenseInput(input);
+    const poolId = await resolveExpensePoolId(input.poolId);
     const amountPaisa = Math.round(input.amountRupees * 100);
     if (amountPaisa <= 0) throw new Error("Amount must be > 0");
     const expenseId = newId("exp");
@@ -307,7 +334,7 @@ export function useTripWorkspace(tripId: () => string) {
       await db.expenses.add({
         id: expenseId,
         tripId: tripId(),
-        poolId: input.poolId,
+        poolId,
         description: input.description.trim(),
         category: input.category,
         amountPaisa,
@@ -338,6 +365,7 @@ export function useTripWorkspace(tripId: () => string) {
     const old = await db.expenses.get(expenseId);
     if (!old || old.supersededById) throw new Error("Expense not found");
     assertExpenseInput(input);
+    const poolId = await resolveExpensePoolId(input.poolId);
     const amountPaisa = Math.round(input.amountRupees * 100);
     if (amountPaisa <= 0) throw new Error("Amount must be > 0");
     const newExpenseId = newId("exp");
@@ -345,7 +373,7 @@ export function useTripWorkspace(tripId: () => string) {
       await db.expenses.add({
         id: newExpenseId,
         tripId: tripId(),
-        poolId: input.poolId,
+        poolId,
         description: input.description.trim(),
         category: input.category,
         amountPaisa,
