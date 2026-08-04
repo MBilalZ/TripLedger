@@ -46,7 +46,7 @@ export async function exportTripPdf(tripId: string): Promise<void> {
   line("Per Person", 13, true);
   for (const p of result.participants) {
     line(
-      `${p.displayName}: Paid ${paisaToRupees(p.paidPaisa).toFixed(0)} | Share ${paisaToRupees(p.sharePaisa).toFixed(2)} | Bal ${paisaToRupees(p.balancePaisa).toFixed(2)}`,
+      `${p.displayName}: Paid ${paisaToRupees(p.paidPaisa).toFixed(0)} | Share ${paisaToRupees(p.sharePaisa).toFixed(2)} | Adj ${paisaToRupees(p.adjNetPaisa).toFixed(2)} | Bal ${paisaToRupees(p.balancePaisa).toFixed(2)}`,
       10,
     );
   }

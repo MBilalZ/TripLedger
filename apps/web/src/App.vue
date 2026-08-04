@@ -1,9 +1,17 @@
 <script setup lang="ts">
+import { onMounted } from "vue";
 import Toast from "primevue/toast";
 import ConfirmDialog from "primevue/confirmdialog";
 import { useTheme } from "@/composables/useTheme";
+import { useTripsStore } from "@/stores/trips";
+import { isSupabaseConfigured } from "@/lib/supabase";
 
 const { isDark, toggle } = useTheme();
+const trips = useTripsStore();
+
+onMounted(() => {
+  void trips.initAuth().then(() => trips.refresh());
+});
 </script>
 
 <template>
@@ -19,7 +27,9 @@ const { isDark, toggle } = useTheme();
           >
         </router-link>
         <div class="flex items-center gap-2">
-          <span class="tl-tagline">Offline · $0 forever</span>
+          <span class="tl-tagline">{{
+            isSupabaseConfigured() ? "Shared · free tier" : "Local · this device"
+          }}</span>
           <button
             type="button"
             class="tl-icon-btn"

@@ -8,6 +8,7 @@ import Menu from "primevue/menu";
 import type { MenuItem } from "primevue/menuitem";
 import { useTripsStore } from "@/stores/trips";
 import { downloadFullBackup, importBackupFile } from "@/lib/backup";
+import { isSupabaseConfigured } from "@/lib/supabase";
 
 const store = useTripsStore();
 const router = useRouter();
@@ -17,7 +18,10 @@ const fileInput = ref<HTMLInputElement | null>(null);
 const toolsMenu = ref<InstanceType<typeof Menu> | null>(null);
 const isDev = import.meta.env.DEV;
 
-onMounted(() => store.refresh());
+onMounted(async () => {
+  if (!store.authReady) await store.initAuth();
+  await store.refresh();
+});
 
 async function seed() {
   const id = await store.seedSample();
@@ -40,10 +44,12 @@ async function onImport(ev: Event) {
     toast.add({
       severity: "success",
       summary: "Imported",
-      detail: `${ids.length} trip(s)`,
-      life: 3000,
+      detail: store.cloud
+        ? "Imported locally. Re-create or migrate to cloud separately if needed."
+        : `${ids.length} trip(s)`,
+      life: 4000,
     });
-    if (ids[0]) router.push(`/trips/${ids[0]}`);
+    if (ids[0] && !store.cloud) router.push(`/trips/${ids[0]}`);
   } catch (e) {
     toast.add({
       severity: "error",
@@ -57,7 +63,7 @@ async function onImport(ev: Event) {
 }
 
 const toolItems = computed<MenuItem[]>(() => [
-  ...(isDev
+  ...(isDev && !store.cloud
     ? [
         {
           label: "Load sample trip",
@@ -86,7 +92,7 @@ function confirmDeleteTrip(tripId: string, tripName: string, event: Event) {
   event.preventDefault();
   event.stopPropagation();
   confirm.require({
-    message: `Delete “${tripName}” from this device? This cannot be undone.`,
+    message: `Delete “${tripName}”${store.cloud ? " for everyone" : " from this device"}? This cannot be undone.`,
     header: "Delete trip",
     icon: "pi pi-exclamation-triangle",
     acceptClass: "p-button-danger",
@@ -109,7 +115,17 @@ function confirmDeleteTrip(tripId: string, tripName: string, event: Event) {
         Your trips
       </h1>
       <p class="mb-4 text-sm text-tl-muted">
-        Everything stays on this device. Export JSON to share or back up.
+        <template v-if="store.cloud">
+          Shared trips sync for everyone you invite. Copy an invite link from a
+          trip to add members.
+        </template>
+        <template v-else-if="isSupabaseConfigured() && store.authError">
+          Cloud sign-in failed: {{ store.authError }}. Using this device only.
+        </template>
+        <template v-else>
+          Everything stays on this device. Add Supabase env vars to enable
+          shared trips and invites.
+        </template>
       </p>
       <div class="flex flex-col gap-3 sm:flex-row">
         <Button
@@ -146,9 +162,11 @@ function confirmDeleteTrip(tripId: string, tripName: string, event: Event) {
       </div>
     </section>
 
-    <section class="grid gap-3">
+    <section class="grid gap-3" aria-label="Trip list">
       <div v-if="!store.trips.length" class="tl-card text-center text-tl-muted">
-        No trips yet. Create one{{ isDev ? " or load the sample" : "" }}.
+        No trips yet. Create one{{
+          isDev && !store.cloud ? " or load the sample" : ""
+        }}.
       </div>
       <div
         v-for="t in store.trips"

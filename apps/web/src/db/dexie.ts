@@ -76,6 +76,8 @@ export interface AdjustmentRow {
   amountPaisa: number;
   reason: string;
   createdAt: string;
+  /** Groups fan-out rows from a split-total adjustment. */
+  groupId?: string | null;
 }
 
 export interface ReceiptRow {

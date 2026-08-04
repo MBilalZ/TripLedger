@@ -75,6 +75,8 @@ async function save() {
         <h1 class="mt-1 text-2xl font-semibold text-tl">New trip</h1>
         <p class="mt-1 text-sm text-tl-muted">
           Nothing is saved until you tap Save. Back discards this draft.
+          After saving, invite friends with a share link so everyone can manage
+          expenses together (when Supabase is configured).
         </p>
       </div>
 

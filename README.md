@@ -1,76 +1,89 @@
 # TripLedger
 
-Offline-first multi-pool trip expense settlement for family & friends.
+Multi-pool trip expense settlement for family & friends.
 
-**Cost: $0 forever** — no backend, no accounts. Data lives in your browser (IndexedDB). After the first visit, the app shell is cached for offline use. Share trips via JSON export/import.
+**Cost: free-tier friendly** — Vue SPA on GitHub Pages + optional **Supabase** (anonymous auth, Postgres, Realtime) for shared trips and invite links. Without Supabase env vars, the app runs locally on this device (IndexedDB).
 
 ## Stack
 
 - Vue 3 + Vite + Pinia + PrimeVue
-- Dexie (IndexedDB)
-- Pure settlement engine (`packages/engine`) — integer paisa math, greedy min-transfers, consistency invariants
+- Dexie (local / offline fallback)
+- Supabase (shared trips, invites, realtime)
+- Pure settlement engine (`packages/engine`) — integer paisa math
 
 ## Develop
 
 ```bash
 pnpm install
-pnpm test:engine   # golden + fuzz tests
+pnpm test:engine
 pnpm --filter @tripledger/web typecheck
-pnpm dev           # http://localhost:5173
+pnpm dev
 ```
 
-In local dev, **Tools → Load sample trip** seeds an Abbottabad-style demo (hidden in production builds).
+### Local-only (default)
+
+No env vars needed. Data stays in IndexedDB. Dev Tools → **Load sample trip** seeds Abbottabad demo numbers.
+
+### Shared trips (Supabase)
+
+1. Create a free project at [supabase.com](https://supabase.com).
+2. Enable **Anonymous sign-ins** (Authentication → Providers → Anonymous).
+3. Run [`supabase/migrations/20260304120000_init.sql`](supabase/migrations/20260304120000_init.sql) in the SQL editor.
+4. Copy Project URL and anon key into `apps/web/.env.local`:
+
+```bash
+VITE_SUPABASE_URL=https://YOUR_PROJECT.supabase.co
+VITE_SUPABASE_ANON_KEY=your_anon_key
+```
+
+5. Auth → URL configuration: add `http://localhost:5173` (and production URL below).
+
+Restart `pnpm dev`. Create a trip → **Copy invite link** → open in another browser/profile → enter display name → both see the same expenses live.
 
 ## Use
 
-1. Open the app → **New trip** → enter a name → **Save trip** (back before Save discards the draft).
-2. Under **More**, add people and at least one pool, then log expenses.
-3. **Balances** shows who owes whom when the trip is balanced.
-4. Export **WhatsApp** / **Excel** / **PDF** / **JSON** from the trip header (settlement exports require a balanced trip).
-5. On another device: **Tools → Import JSON**. Delete trips from the home list or the trip header trash control.
-
-## Architecture
-
-- Persist only facts: participants, pools, pool members, expenses, expense splits, adjustments, trip settlement settings.
-- Split modes (pool default + per-expense override): **equal**, **shares/heads**, **percent**, **exact**.
-- Settlement transfer modes: **minimize**, **settle to one**, **pairwise**; rounding: whole rupees or exact paisa.
-- Never persist balances or settlements — always derived via `settleTrip()`.
-- Expense deletes supersede rows (`supersededById`); history stays auditable.
-
-If the Pools UI looks stale after upgrading, delete the old sample trip and (in local dev) click **Load sample trip** again (IndexedDB schema migrates automatically).
+1. **New trip** → name → Save (draft until Save).
+2. Invite members (cloud) or add people under **More → People**.
+3. Log expenses (a **General** pool is created automatically if needed).
+4. Adjustments: simple A→B or **Split a total** (equal/shares/percent/exact).
+5. Export WhatsApp / Excel / PDF / JSON when balanced.
 
 ## Deploy (GitHub Pages)
 
-TripLedger is a static SPA. Hosting only serves files — trip data stays in each browser’s IndexedDB.
-
 **Live URL:** https://MBilalZ.github.io/TripLedger/
 
-### One-time setup
+### Secrets (for shared mode on prod)
 
-1. Open the repo on GitHub → **Settings** → **Pages**.
-2. Under **Build and deployment**, set **Source** to **GitHub Actions**.
+Repo → Settings → Secrets and variables → Actions:
+
+- `VITE_SUPABASE_URL`
+- `VITE_SUPABASE_ANON_KEY`
+
+In Supabase Auth URL config add: `https://MBilalZ.github.io/TripLedger`
 
 ### Deploy
 
-Pushes to the `prod` branch trigger [.github/workflows/deploy-pages.yml](.github/workflows/deploy-pages.yml):
-
-1. Install with pnpm, run engine tests and web typecheck, then build `@tripledger/web` with `VITE_BASE=/TripLedger/`.
-2. Copy `index.html` → `404.html` so Vue Router deep links work on refresh.
-3. Publish `apps/web/dist` to GitHub Pages.
+Pushes to `prod` run [.github/workflows/deploy-pages.yml](.github/workflows/deploy-pages.yml): engine tests, web typecheck, build with `VITE_BASE=/TripLedger/` + Supabase secrets, then publish.
 
 ```bash
 git checkout prod
-git merge main   # or open a PR into prod
+git merge main
 git push origin prod
 ```
-
-Watch the run under **Actions**. When it finishes, open the live URL above.
 
 ### Local production preview
 
 ```bash
-VITE_BASE=/TripLedger/ pnpm --filter @tripledger/web build
+VITE_BASE=/TripLedger/ \
+VITE_SUPABASE_URL=... \
+VITE_SUPABASE_ANON_KEY=... \
+pnpm --filter @tripledger/web build
 pnpm --filter @tripledger/web preview
 ```
 
-Then open the preview URL and navigate under `/TripLedger/`. Local `pnpm dev` keeps `base` as `/` and does not need `VITE_BASE`.
+## Architecture
+
+- Facts only: participants, pools, members, expenses, splits, adjustments, settlement settings.
+- Settlement always derived via `settleTrip()` (never persisted).
+- Expense edits supersede rows; adjustments can be grouped (`adjustment_group_id`) for split fan-out.
+- RLS: only trip members read/write; invite join via `join_trip_with_token` RPC.
