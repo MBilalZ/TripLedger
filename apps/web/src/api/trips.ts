@@ -2,7 +2,7 @@ import type { SettlementRounding, TransferMode } from "@tripledger/types";
 import { newId, type TripRow } from "@/db/dexie";
 import { tripFromDb, type DbTrip } from "./mappers";
 import { apiCall, apiMutate } from "./client";
-import { ensureAuthSession } from "./supabase";
+import { fetchUserProfile, requireUser } from "./supabase";
 
 export type CreateTripOptions = {
   transferMode?: TransferMode;
@@ -27,7 +27,12 @@ export async function createTrip(
   name: string,
   options: CreateTripOptions = {},
 ): Promise<string> {
-  const uid = await ensureAuthSession();
+  const uid = await requireUser();
+  const profile = await fetchUserProfile();
+  const ownerName =
+    profile?.displayName?.trim() ||
+    profile?.email?.split("@")[0] ||
+    "You";
   const tripId = newId("trip");
   const participantId = newId("p");
   const now = new Date().toISOString();
@@ -53,7 +58,7 @@ export async function createTrip(
       sb.from("participants").insert({
         id: participantId,
         trip_id: tripId,
-        display_name: "You",
+        display_name: ownerName,
         user_id: uid,
       }),
     { requireAuth: false },

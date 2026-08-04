@@ -60,7 +60,8 @@ button.tl-list-row {
   transform: scale(0.99);
 }
 
-.tl-trip-link:hover {
+.tl-trip-row:hover,
+.tl-trip-row:focus-within {
   border-color: var(--tl-accent-dim);
 }
 

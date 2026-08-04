@@ -6,11 +6,14 @@ import { useConfirm } from "primevue/useconfirm";
 import Button from "primevue/button";
 import Menu from "primevue/menu";
 import type { MenuItem } from "primevue/menuitem";
+import { useAuthStore } from "@/stores/auth";
 import { useTripsStore } from "@/stores/trips";
 import { downloadFullBackup, importBackupFile } from "@/lib/backup";
 import { isSupabaseConfigured } from "@/api/supabase";
+import { toApiError } from "@/api/errors";
 
 const store = useTripsStore();
+const auth = useAuthStore();
 const router = useRouter();
 const toast = useToast();
 const confirm = useConfirm();
@@ -19,8 +22,10 @@ const toolsMenu = ref<InstanceType<typeof Menu> | null>(null);
 const isDev = import.meta.env.DEV;
 
 onMounted(async () => {
-  if (!store.authReady) await store.initAuth();
-  await store.refresh();
+  if (!auth.authReady) await auth.initAuth();
+  if (auth.cloud || !isSupabaseConfigured()) {
+    await store.refresh();
+  }
 });
 
 async function seed() {
@@ -54,7 +59,7 @@ async function onImport(ev: Event) {
     toast.add({
       severity: "error",
       summary: "Import failed",
-      detail: e instanceof Error ? e.message : String(e),
+      detail: toApiError(e).message,
       life: 4000,
     });
   } finally {
@@ -119,8 +124,12 @@ function confirmDeleteTrip(tripId: string, tripName: string, event: Event) {
           Shared trips sync for everyone you invite. Copy an invite link from a
           trip to add members.
         </template>
+        <template v-else-if="isSupabaseConfigured() && !auth.isSignedIn">
+          Sign in to create shared trips and join invite links. Your account
+          works on every device.
+        </template>
         <template v-else-if="isSupabaseConfigured() && store.authError">
-          Cloud sign-in failed: {{ store.authError }}. Using this device only.
+          Cloud auth error: {{ store.authError }}.
         </template>
         <template v-else>
           Everything stays on this device. Add Supabase env vars to enable
@@ -129,6 +138,14 @@ function confirmDeleteTrip(tripId: string, tripName: string, event: Event) {
       </p>
       <div class="flex flex-col gap-3 sm:flex-row">
         <Button
+          v-if="isSupabaseConfigured() && !auth.isSignedIn"
+          label="Sign in"
+          icon="pi pi-sign-in"
+          class="w-full sm:w-auto"
+          @click="router.push({ name: 'auth' })"
+        />
+        <Button
+          v-else
           label="New trip"
           icon="pi pi-plus"
           class="w-full sm:w-auto"
@@ -171,35 +188,34 @@ function confirmDeleteTrip(tripId: string, tripName: string, event: Event) {
       <div
         v-for="t in store.trips"
         :key="t.id"
-        class="tl-card tl-pressable tl-trip-link flex items-center justify-between gap-3"
+        class="tl-card tl-pressable tl-trip-row relative flex items-center gap-3"
       >
         <router-link
           :to="`/trips/${t.id}`"
-          class="min-w-0 flex-1 no-underline"
-        >
+          class="tl-trip-link absolute inset-0 z-0 rounded-[inherit] no-underline"
+          :aria-label="`Open ${t.name}`"
+        />
+        <div class="relative z-10 min-w-0 flex-1 pointer-events-none">
           <div class="font-medium text-tl">{{ t.name }}</div>
           <div class="text-xs text-tl-muted">
             Updated {{ new Date(t.updatedAt).toLocaleString() }} ·
             {{ t.currency }}
           </div>
-        </router-link>
+        </div>
         <Button
           icon="pi pi-trash"
           severity="danger"
           text
           rounded
+          class="relative z-10"
           aria-label="Delete trip"
           v-tooltip="'Delete trip'"
           @click="confirmDeleteTrip(t.id, t.name, $event)"
         />
-        <router-link
-          :to="`/trips/${t.id}`"
-          class="text-tl-muted no-underline"
+        <i
+          class="pi pi-chevron-right relative z-10 text-tl-muted pointer-events-none"
           aria-hidden="true"
-          tabindex="-1"
-        >
-          <i class="pi pi-chevron-right" />
-        </router-link>
+        />
       </div>
     </section>
   </div>
