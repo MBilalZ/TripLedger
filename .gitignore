@@ -6,6 +6,7 @@ dist-ssr
 *.log
 .env
 .env.*
+.env.supabase
 !.env.example
 coverage
 .vite

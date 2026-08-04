@@ -26,19 +26,22 @@ No env vars needed. Data stays in IndexedDB. Dev Tools → **Load sample trip** 
 
 ### Shared trips (Supabase)
 
-1. Create a free project at [supabase.com](https://supabase.com).
-2. Enable **Anonymous sign-ins** (Authentication → Providers → Anonymous).
-3. Run [`supabase/migrations/20260304120000_init.sql`](supabase/migrations/20260304120000_init.sql) in the SQL editor.
-4. Copy Project URL and anon key into `apps/web/.env.local`:
+One-command setup (applies SQL migration, writes `apps/web/.env.local`, sets GitHub Actions secrets; with an access token also enables anonymous auth + redirect URLs):
 
 ```bash
-VITE_SUPABASE_URL=https://YOUR_PROJECT.supabase.co
-VITE_SUPABASE_ANON_KEY=your_anon_key
+cp .env.example .env.supabase
+# edit .env.supabase with anon key, DB password, optional service role + access token
+
+pnpm install
+pnpm setup:supabase
+pnpm dev
 ```
 
-5. Auth → URL configuration: add `http://localhost:5173` (and production URL below).
+Or export the same vars in your shell. See [`.env.example`](.env.example). Secrets are never committed (`.env.supabase` / `.env.local` are gitignored).
 
-Restart `pnpm dev`. Create a trip → **Copy invite link** → open in another browser/profile → enter display name → both see the same expenses live.
+If you skip `SUPABASE_ACCESS_TOKEN`, enable **Authentication → Providers → Anonymous** and add Site URL / redirects in the dashboard once.
+
+Then: create a trip → **Copy invite link** → open in another browser → enter display name → both see expenses live.
 
 ## Use
 
@@ -54,12 +57,12 @@ Restart `pnpm dev`. Create a trip → **Copy invite link** → open in another b
 
 ### Secrets (for shared mode on prod)
 
-Repo → Settings → Secrets and variables → Actions:
+`pnpm setup:supabase` sets these via `gh` when available:
 
 - `VITE_SUPABASE_URL`
 - `VITE_SUPABASE_ANON_KEY`
 
-In Supabase Auth URL config add: `https://MBilalZ.github.io/TripLedger`
+Or set them manually under Repo → Settings → Secrets. Auth Site URL should include `https://MBilalZ.github.io/TripLedger`.
 
 ### Deploy
 
