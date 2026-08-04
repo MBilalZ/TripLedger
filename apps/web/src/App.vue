@@ -5,6 +5,7 @@ import Toast from "primevue/toast";
 import ConfirmDialog from "primevue/confirmdialog";
 import Button from "primevue/button";
 import { isSupabaseConfigured } from "@/api/supabase";
+import PwaInstallBanner from "@/components/PwaInstallBanner.vue";
 import { useTheme } from "@/composables/useTheme";
 import { useAuthStore } from "@/stores/auth";
 import { useTripsStore } from "@/stores/trips";
@@ -78,5 +79,6 @@ async function onSignOut() {
     <main class="mx-auto max-w-6xl px-4 py-6">
       <router-view />
     </main>
+    <PwaInstallBanner />
   </div>
 </template>

@@ -9,9 +9,10 @@ import Tooltip from "primevue/tooltip";
 import App from "./App.vue";
 import router from "./router";
 import { initTheme } from "./composables/useTheme";
-import { registerPwaUpdates } from "./pwa";
+import { initPwaInstallCapture, registerPwaUpdates } from "./pwa";
 import "./style.css";
 
+initPwaInstallCapture();
 registerPwaUpdates();
 
 const TripLedgerPreset = definePreset(Aura, {
