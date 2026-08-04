@@ -79,9 +79,7 @@ function assertTripExportShape(data: unknown, label: string): void {
  * Validate TripLedger JSON before writing to IndexedDB.
  * Accepts a single trip export or a full backup (`trips` array).
  */
-export function assertBackupPayload(
-  text: string,
-): Record<string, unknown> {
+export function assertBackupPayload(text: string): Record<string, unknown> {
   if (typeof text !== "string") {
     throw new Error("Invalid backup: expected JSON text");
   }
@@ -108,9 +106,7 @@ export function assertBackupPayload(
       throw new Error("Invalid backup: trips array is empty");
     }
     if (trips.length > MAX_TRIPS_IN_BACKUP) {
-      throw new Error(
-        `Invalid backup: too many trips (max ${MAX_TRIPS_IN_BACKUP})`,
-      );
+      throw new Error(`Invalid backup: too many trips (max ${MAX_TRIPS_IN_BACKUP})`);
     }
     const version = parsed.version;
     if (version !== 1 && version !== 2) {

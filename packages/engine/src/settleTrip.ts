@@ -11,11 +11,7 @@ import { allocateSplit } from "./allocation.js";
 import { checkInvariants } from "./consistency.js";
 import { roundBalancesToRupees } from "./rounding.js";
 import { buildTransfers } from "./settlement.js";
-import {
-  asSplitLine,
-  resolveExpenseSplit,
-  validateInput,
-} from "./settleTripValidate.js";
+import { asSplitLine, resolveExpenseSplit, validateInput } from "./settleTripValidate.js";
 
 function memberShareWeight(m: PoolMember, mode: SplitMode): number {
   if (!m.included) return 0;
@@ -40,9 +36,7 @@ export function settleTrip(raw: TripFacts): SettleTripResult {
   };
   const settings = facts.settings;
   const inputViolations = validateInput(facts);
-  const nameById = new Map(
-    facts.participants.map((p) => [p.id, p.displayName] as const),
-  );
+  const nameById = new Map(facts.participants.map((p) => [p.id, p.displayName] as const));
 
   const activeExpenses = facts.expenses.filter((e) => !e.supersededById);
 
@@ -169,8 +163,7 @@ export function settleTrip(raw: TripFacts): SettleTripResult {
   });
 
   const uniqueInputEarly = inputViolations.filter(
-    (v, i, arr) =>
-      arr.findIndex((x) => x.id === v.id && x.message === v.message) === i,
+    (v, i, arr) => arr.findIndex((x) => x.id === v.id && x.message === v.message) === i,
   );
   const failClosed = uniqueInputEarly.length > 0;
 

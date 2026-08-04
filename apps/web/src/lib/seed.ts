@@ -1,5 +1,5 @@
 import { rupeesToPaisa } from "@tripledger/engine";
-import { db, newId, type ExpenseRow, type PoolMemberRow } from "@/db/dexie";
+import { db, type ExpenseRow, newId, type PoolMemberRow } from "@/db/dexie";
 
 function pm(
   tripId: string,
@@ -33,14 +33,7 @@ export async function seedSampleTrip(): Promise<string> {
 
   await db.transaction(
     "rw",
-    [
-      db.trips,
-      db.participants,
-      db.pools,
-      db.poolMembers,
-      db.expenses,
-      db.adjustments,
-    ],
+    [db.trips, db.participants, db.pools, db.poolMembers, db.expenses, db.adjustments],
     async () => {
       await db.trips.add({
         id: tripId,

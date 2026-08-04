@@ -17,9 +17,7 @@ export function checkInvariants(args: {
   /** When true, skip I1–I9 that assume successful allocation (fail-closed path). */
   skipBalanceChecks?: boolean;
 }): ConsistencyResult {
-  const violations: ConsistencyViolation[] = [
-    ...(args.inputViolations ?? []),
-  ];
+  const violations: ConsistencyViolation[] = [...(args.inputViolations ?? [])];
 
   const push = (id: ConsistencyViolation["id"], message: string) => {
     violations.push({ id, message });
@@ -36,10 +34,7 @@ export function checkInvariants(args: {
     );
   }
   if (args.paidSumPaisa !== args.tripTotalPaisa) {
-    push(
-      "I2",
-      `Sum of paid ${args.paidSumPaisa} != trip total ${args.tripTotalPaisa}`,
-    );
+    push("I2", `Sum of paid ${args.paidSumPaisa} != trip total ${args.tripTotalPaisa}`);
   }
   if (args.shareSumPaisa !== args.tripTotalPaisa) {
     push(
@@ -54,10 +49,7 @@ export function checkInvariants(args: {
     0,
   );
   if (balanceSum !== 0) {
-    push(
-      "I4",
-      `Sum of (paid - share + adj) is ${balanceSum}, expected 0`,
-    );
+    push("I4", `Sum of (paid - share + adj) is ${balanceSum}, expected 0`);
   }
 
   if (args.adjNetSumPaisa !== 0) {
@@ -69,10 +61,7 @@ export function checkInvariants(args: {
     push("I6", `Sum of final balances is ${finalSum}, expected 0`);
   }
 
-  const roundedSum = args.participants.reduce(
-    (s, p) => s + p.balanceRupeesPaisa,
-    0,
-  );
+  const roundedSum = args.participants.reduce((s, p) => s + p.balanceRupeesPaisa, 0);
   if (roundedSum !== 0) {
     push("I6", `Sum of settlement balances is ${roundedSum}, expected 0`);
   }
@@ -87,14 +76,8 @@ export function checkInvariants(args: {
   for (const t of args.settlements) {
     transferOut += t.amountPaisa;
     transferIn += t.amountPaisa;
-    netFromTransfers.set(
-      t.fromId,
-      (netFromTransfers.get(t.fromId) ?? 0) - t.amountPaisa,
-    );
-    netFromTransfers.set(
-      t.toId,
-      (netFromTransfers.get(t.toId) ?? 0) + t.amountPaisa,
-    );
+    netFromTransfers.set(t.fromId, (netFromTransfers.get(t.fromId) ?? 0) - t.amountPaisa);
+    netFromTransfers.set(t.toId, (netFromTransfers.get(t.toId) ?? 0) + t.amountPaisa);
   }
 
   for (const p of args.participants) {
@@ -120,7 +103,10 @@ export function checkInvariants(args: {
   const creditorRecv = args.participants
     .filter((p) => p.balanceRupeesPaisa > 0)
     .reduce((s, p) => s + p.balanceRupeesPaisa, 0);
-  if (debtorPay !== creditorRecv || (args.settlements.length > 0 && fromSum !== debtorPay)) {
+  if (
+    debtorPay !== creditorRecv ||
+    (args.settlements.length > 0 && fromSum !== debtorPay)
+  ) {
     push(
       "I8",
       `Transfer totals ${fromSum} do not match debtor/creditor sides (${debtorPay}/${creditorRecv})`,
@@ -129,10 +115,7 @@ export function checkInvariants(args: {
 
   for (const t of args.settlements) {
     if (t.amountPaisa <= 0 || t.fromId === t.toId) {
-      push(
-        "I9",
-        `Invalid transfer ${t.fromName} → ${t.toName} amount ${t.amountPaisa}`,
-      );
+      push("I9", `Invalid transfer ${t.fromName} → ${t.toName} amount ${t.amountPaisa}`);
     }
   }
 

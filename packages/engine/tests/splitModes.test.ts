@@ -1,7 +1,7 @@
-import { describe, expect, it } from "vitest";
 import type { TripFacts } from "@tripledger/types";
 import { DEFAULT_TRIP_SETTINGS } from "@tripledger/types";
-import { settleTrip, rupeesToPaisa } from "../src/index.js";
+import { describe, expect, it } from "vitest";
+import { rupeesToPaisa, settleTrip } from "../src/index.js";
 
 function basePeople() {
   return [
@@ -17,9 +17,30 @@ describe("split modes", () => {
       participants: basePeople(),
       pools: [{ id: "p", name: "P", splitMode: "equal" }],
       poolMembers: [
-        { poolId: "p", participantId: "a", included: true, shares: 1, percentBps: 0, exactPaisa: 0 },
-        { poolId: "p", participantId: "b", included: true, shares: 1, percentBps: 0, exactPaisa: 0 },
-        { poolId: "p", participantId: "c", included: false, shares: 1, percentBps: 0, exactPaisa: 0 },
+        {
+          poolId: "p",
+          participantId: "a",
+          included: true,
+          shares: 1,
+          percentBps: 0,
+          exactPaisa: 0,
+        },
+        {
+          poolId: "p",
+          participantId: "b",
+          included: true,
+          shares: 1,
+          percentBps: 0,
+          exactPaisa: 0,
+        },
+        {
+          poolId: "p",
+          participantId: "c",
+          included: false,
+          shares: 1,
+          percentBps: 0,
+          exactPaisa: 0,
+        },
       ],
       expenses: [
         {
@@ -47,9 +68,30 @@ describe("split modes", () => {
       participants: basePeople(),
       pools: [{ id: "p", name: "P", splitMode: "percent" }],
       poolMembers: [
-        { poolId: "p", participantId: "a", included: true, shares: 1, percentBps: 5000, exactPaisa: 0 },
-        { poolId: "p", participantId: "b", included: true, shares: 1, percentBps: 3000, exactPaisa: 0 },
-        { poolId: "p", participantId: "c", included: true, shares: 1, percentBps: 2000, exactPaisa: 0 },
+        {
+          poolId: "p",
+          participantId: "a",
+          included: true,
+          shares: 1,
+          percentBps: 5000,
+          exactPaisa: 0,
+        },
+        {
+          poolId: "p",
+          participantId: "b",
+          included: true,
+          shares: 1,
+          percentBps: 3000,
+          exactPaisa: 0,
+        },
+        {
+          poolId: "p",
+          participantId: "c",
+          included: true,
+          shares: 1,
+          percentBps: 2000,
+          exactPaisa: 0,
+        },
       ],
       expenses: [
         {
@@ -77,9 +119,30 @@ describe("split modes", () => {
       participants: basePeople(),
       pools: [{ id: "p", name: "P", splitMode: "exact" }],
       poolMembers: [
-        { poolId: "p", participantId: "a", included: true, shares: 1, percentBps: 0, exactPaisa: rupeesToPaisa(700) },
-        { poolId: "p", participantId: "b", included: true, shares: 1, percentBps: 0, exactPaisa: rupeesToPaisa(300) },
-        { poolId: "p", participantId: "c", included: false, shares: 1, percentBps: 0, exactPaisa: 0 },
+        {
+          poolId: "p",
+          participantId: "a",
+          included: true,
+          shares: 1,
+          percentBps: 0,
+          exactPaisa: rupeesToPaisa(700),
+        },
+        {
+          poolId: "p",
+          participantId: "b",
+          included: true,
+          shares: 1,
+          percentBps: 0,
+          exactPaisa: rupeesToPaisa(300),
+        },
+        {
+          poolId: "p",
+          participantId: "c",
+          included: false,
+          shares: 1,
+          percentBps: 0,
+          exactPaisa: 0,
+        },
       ],
       expenses: [
         {
@@ -106,9 +169,30 @@ describe("split modes", () => {
       participants: basePeople(),
       pools: [{ id: "p", name: "P", splitMode: "shares" }],
       poolMembers: [
-        { poolId: "p", participantId: "a", included: true, shares: 9, percentBps: 0, exactPaisa: 0 },
-        { poolId: "p", participantId: "b", included: true, shares: 1, percentBps: 0, exactPaisa: 0 },
-        { poolId: "p", participantId: "c", included: true, shares: 1, percentBps: 0, exactPaisa: 0 },
+        {
+          poolId: "p",
+          participantId: "a",
+          included: true,
+          shares: 9,
+          percentBps: 0,
+          exactPaisa: 0,
+        },
+        {
+          poolId: "p",
+          participantId: "b",
+          included: true,
+          shares: 1,
+          percentBps: 0,
+          exactPaisa: 0,
+        },
+        {
+          poolId: "p",
+          participantId: "c",
+          included: true,
+          shares: 1,
+          percentBps: 0,
+          exactPaisa: 0,
+        },
       ],
       expenses: [
         {
@@ -121,9 +205,30 @@ describe("split modes", () => {
         },
       ],
       expenseSplits: [
-        { expenseId: "e1", participantId: "a", included: true, shares: 1, percentBps: 0, exactPaisa: 0 },
-        { expenseId: "e1", participantId: "b", included: true, shares: 1, percentBps: 0, exactPaisa: 0 },
-        { expenseId: "e1", participantId: "c", included: false, shares: 1, percentBps: 0, exactPaisa: 0 },
+        {
+          expenseId: "e1",
+          participantId: "a",
+          included: true,
+          shares: 1,
+          percentBps: 0,
+          exactPaisa: 0,
+        },
+        {
+          expenseId: "e1",
+          participantId: "b",
+          included: true,
+          shares: 1,
+          percentBps: 0,
+          exactPaisa: 0,
+        },
+        {
+          expenseId: "e1",
+          participantId: "c",
+          included: false,
+          shares: 1,
+          percentBps: 0,
+          exactPaisa: 0,
+        },
       ],
       adjustments: [],
       settings: { ...DEFAULT_TRIP_SETTINGS },
@@ -142,9 +247,30 @@ describe("transfer modes", () => {
     participants: basePeople(),
     pools: [{ id: "p", name: "P", splitMode: "equal" }],
     poolMembers: [
-      { poolId: "p", participantId: "a", included: true, shares: 1, percentBps: 0, exactPaisa: 0 },
-      { poolId: "p", participantId: "b", included: true, shares: 1, percentBps: 0, exactPaisa: 0 },
-      { poolId: "p", participantId: "c", included: true, shares: 1, percentBps: 0, exactPaisa: 0 },
+      {
+        poolId: "p",
+        participantId: "a",
+        included: true,
+        shares: 1,
+        percentBps: 0,
+        exactPaisa: 0,
+      },
+      {
+        poolId: "p",
+        participantId: "b",
+        included: true,
+        shares: 1,
+        percentBps: 0,
+        exactPaisa: 0,
+      },
+      {
+        poolId: "p",
+        participantId: "c",
+        included: true,
+        shares: 1,
+        percentBps: 0,
+        exactPaisa: 0,
+      },
     ],
     expenses: [
       {

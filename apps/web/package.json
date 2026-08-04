@@ -8,10 +8,13 @@
     "build": "NODE_OPTIONS=--experimental-global-webcrypto vite build",
     "preview": "vite preview",
     "typecheck": "vue-tsc --noEmit",
-    "test": "pnpm --filter @tripledger/validation test"
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:e2e": "playwright test"
   },
   "dependencies": {
     "@primevue/themes": "^4.2.5",
+    "@sentry/vue": "^9.46.0",
     "@supabase/supabase-js": "^2.112.0",
     "@tripledger/engine": "workspace:*",
     "@tripledger/types": "workspace:*",
@@ -28,11 +31,13 @@
     "workbox-window": "^7.4.1"
   },
   "devDependencies": {
+    "@playwright/test": "^1.54.2",
     "@types/file-saver": "^2.0.7",
     "@vitejs/plugin-vue": "^5.2.4",
     "typescript": "~5.7.3",
     "vite": "^6.4.3",
     "vite-plugin-pwa": "^0.21.2",
+    "vitest": "^3.2.6",
     "vue-tsc": "^2.2.0"
   }
 }

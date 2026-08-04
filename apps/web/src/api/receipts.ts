@@ -1,7 +1,7 @@
 import { newId } from "@/db/dexie";
 import { apiCall, apiMutate } from "./client";
-import { getSupabase, requireUser } from "./supabase";
 import { toApiError } from "./errors";
+import { getSupabase, requireUser } from "./supabase";
 
 export type ExpenseReceiptMeta = {
   id: string;
@@ -92,13 +92,8 @@ export async function getReceiptSignedUrl(path: string): Promise<string> {
   return res.data.signedUrl;
 }
 
-export async function deleteReceipt(
-  id: string,
-  storagePath: string,
-): Promise<void> {
+export async function deleteReceipt(id: string, storagePath: string): Promise<void> {
   const sb = getSupabase();
   await sb.storage.from(BUCKET).remove([storagePath]);
-  await apiMutate((client) =>
-    client.from("expense_receipts").delete().eq("id", id),
-  );
+  await apiMutate((client) => client.from("expense_receipts").delete().eq("id", id));
 }

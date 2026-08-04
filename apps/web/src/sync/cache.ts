@@ -1,6 +1,7 @@
+import type { WorkspaceSnapshot } from "@/api/workspace";
 import {
-  db,
   type AdjustmentRow,
+  db,
   type ExpenseRow,
   type ExpenseSplitRow,
   type ParticipantRow,
@@ -8,7 +9,6 @@ import {
   type PoolRow,
   type TripRow,
 } from "@/db/dexie";
-import type { WorkspaceSnapshot } from "@/api/workspace";
 
 export async function readCachedWorkspace(
   tripId: string,
@@ -18,25 +18,19 @@ export async function readCachedWorkspace(
   if (!trip || trip.cloudUserId !== userId) return null;
 
   const meta = await db.syncMeta.get(tripId);
-  const [
-    participants,
-    pools,
-    poolMembers,
-    expenses,
-    expenseSplits,
-    adjustments,
-  ] = await Promise.all([
-    db.participants.where("tripId").equals(tripId).toArray(),
-    db.pools.where("tripId").equals(tripId).toArray(),
-    db.poolMembers.where("tripId").equals(tripId).toArray(),
-    db.expenses
-      .where("tripId")
-      .equals(tripId)
-      .filter((e) => !e.supersededById && !e.voided)
-      .sortBy("createdAt"),
-    db.expenseSplits.where("tripId").equals(tripId).toArray(),
-    db.adjustments.where("tripId").equals(tripId).toArray(),
-  ]);
+  const [participants, pools, poolMembers, expenses, expenseSplits, adjustments] =
+    await Promise.all([
+      db.participants.where("tripId").equals(tripId).toArray(),
+      db.pools.where("tripId").equals(tripId).toArray(),
+      db.poolMembers.where("tripId").equals(tripId).toArray(),
+      db.expenses
+        .where("tripId")
+        .equals(tripId)
+        .filter((e) => !e.supersededById && !e.voided)
+        .sortBy("createdAt"),
+      db.expenseSplits.where("tripId").equals(tripId).toArray(),
+      db.adjustments.where("tripId").equals(tripId).toArray(),
+    ]);
 
   return {
     trip,
@@ -94,9 +88,7 @@ export async function writeCachedWorkspace(
         await db.expenses.bulkPut(snapshot.expenses as ExpenseRow[]);
       }
       if (snapshot.expenseSplits.length) {
-        await db.expenseSplits.bulkPut(
-          snapshot.expenseSplits as ExpenseSplitRow[],
-        );
+        await db.expenseSplits.bulkPut(snapshot.expenseSplits as ExpenseSplitRow[]);
       }
       if (snapshot.adjustments.length) {
         await db.adjustments.bulkPut(snapshot.adjustments as AdjustmentRow[]);
@@ -144,9 +136,6 @@ export async function deleteCachedTrip(tripId: string): Promise<void> {
 }
 
 export async function listCachedCloudTrips(userId: string): Promise<TripRow[]> {
-  const rows = await db.trips
-    .where("cloudUserId")
-    .equals(userId)
-    .sortBy("updatedAt");
+  const rows = await db.trips.where("cloudUserId").equals(userId).sortBy("updatedAt");
   return rows.reverse();
 }

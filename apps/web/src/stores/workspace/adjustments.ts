@@ -1,15 +1,12 @@
 import { allocateSplit } from "@tripledger/engine";
 import type { SplitMode } from "@tripledger/types";
 import { parseRupeesToPaisa } from "@tripledger/validation";
-import { newId, type AdjustmentRow } from "@/db/dexie";
+import { type AdjustmentRow, newId } from "@/db/dexie";
 import { getWorkspaceRepo } from "@/repositories";
 import type { CoreActions } from "./core";
 import type { WorkspaceState } from "./state";
 
-export function createAdjustmentActions(
-  state: WorkspaceState,
-  core: CoreActions,
-) {
+export function createAdjustmentActions(state: WorkspaceState, core: CoreActions) {
   async function addAdjustment(input: {
     fromId: string;
     toId: string;
@@ -121,16 +118,11 @@ export function createAdjustmentActions(
   async function removeAdjustment(id: string) {
     const target = state.adjustments.value.find((a) => a.id === id);
     const groupId = target?.groupId;
-    const ids =
-      groupId && groupId.length
-        ? state.adjustments.value
-            .filter((a) => a.groupId === groupId)
-            .map((a) => a.id)
-        : [id];
+    const ids = groupId?.length
+      ? state.adjustments.value.filter((a) => a.groupId === groupId).map((a) => a.id)
+      : [id];
     await getWorkspaceRepo().removeAdjustments(ids);
-    state.adjustments.value = state.adjustments.value.filter(
-      (a) => !ids.includes(a.id),
-    );
+    state.adjustments.value = state.adjustments.value.filter((a) => !ids.includes(a.id));
     await core.touch();
     core.recomputeSettlement();
     state.announce("Adjustment deleted");

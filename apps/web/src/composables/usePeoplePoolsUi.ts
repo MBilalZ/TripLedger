@@ -1,6 +1,6 @@
-import { ref } from "vue";
-import { storeToRefs } from "pinia";
 import { formatPkr } from "@tripledger/engine";
+import { storeToRefs } from "pinia";
+import { ref } from "vue";
 import type { SplitPerson } from "@/components/SplitMatrix.vue";
 import { useWorkspaceStore } from "@/stores/workspace";
 import { useFeedback } from "./useFeedback";
@@ -145,9 +145,7 @@ export function usePeoplePoolsUi() {
   }
 
   function poolTotal(poolId: string) {
-    return (
-      settlement.value?.pools.find((p) => p.poolId === poolId)?.totalPaisa ?? 0
-    );
+    return settlement.value?.pools.find((p) => p.poolId === poolId)?.totalPaisa ?? 0;
   }
 
   async function onPoolMemberChange(

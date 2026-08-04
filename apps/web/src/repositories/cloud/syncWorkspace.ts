@@ -3,9 +3,9 @@ import { db } from "@/db/dexie";
 import { readCachedWorkspace, writeCachedWorkspace } from "@/sync/cache";
 import { flushOutbox, syncTrip } from "@/sync/engine";
 import { enqueueOutbox } from "@/sync/outbox";
+import { localWorkspaceRepo } from "../local/workspace";
 import type { WorkspaceRepo } from "../types";
 import { cloudWorkspaceRepo } from "./workspace";
-import { localWorkspaceRepo } from "../local/workspace";
 
 function online(): boolean {
   return typeof navigator === "undefined" ? true : navigator.onLine;
@@ -50,11 +50,7 @@ export const syncCloudWorkspaceRepo: WorkspaceRepo = {
   },
 
   async addParticipant(tripId, displayName, pools) {
-    const result = await localWorkspaceRepo.addParticipant(
-      tripId,
-      displayName,
-      pools,
-    );
+    const result = await localWorkspaceRepo.addParticipant(tripId, displayName, pools);
     await enqueueOutbox(tripId, "addParticipant", {
       displayName,
       pools,
@@ -193,10 +189,7 @@ export const syncCloudWorkspaceRepo: WorkspaceRepo = {
   },
 
   async updateSettlementSettings(tripId, patch) {
-    const updatedAt = await localWorkspaceRepo.updateSettlementSettings(
-      tripId,
-      patch,
-    );
+    const updatedAt = await localWorkspaceRepo.updateSettlementSettings(tripId, patch);
     await enqueueOutbox(tripId, "updateSettlementSettings", { patch });
     await tryFlush(tripId);
     return updatedAt;

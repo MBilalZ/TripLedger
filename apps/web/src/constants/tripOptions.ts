@@ -1,8 +1,4 @@
-import type {
-  SettlementRounding,
-  SplitMode,
-  TransferMode,
-} from "@tripledger/types";
+import type { SettlementRounding, SplitMode, TransferMode } from "@tripledger/types";
 
 export const SPLIT_MODES: { label: string; value: SplitMode }[] = [
   { label: "Equal", value: "equal" },

@@ -2,15 +2,11 @@
  * Recompute trip settlement with @tripledger/engine semantics.
  * Deploy: `supabase functions deploy recompute-settlement`
  *
- * Loads workspace via the caller's JWT, settles, upserts trip_settlement_snapshots.
- * Engine logic is inlined via a compact port that mirrors packages/engine settleTrip
- * by invoking the same algorithm through a dynamic import of the published workspace
- * build when available; otherwise falls back to asking the client path.
- *
- * For local monorepo deploys, bundle with:
- *   supabase functions serve recompute-settlement --env-file .env.supabase
+ * Loads workspace via the caller's JWT, settles via synced `_shared` engine
+ * (`pnpm sync:edge-engine`), upserts trip_settlement_snapshots.
  */
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
+import { reportError } from "../_shared/reportError.ts";
 
 type Json = Record<string, unknown>;
 
@@ -62,11 +58,7 @@ Deno.serve(async (req) => {
           .select("*")
           .eq("trip_id", tripId)
           .is("deleted_at", null),
-        supabase
-          .from("pools")
-          .select("*")
-          .eq("trip_id", tripId)
-          .is("deleted_at", null),
+        supabase.from("pools").select("*").eq("trip_id", tripId).is("deleted_at", null),
         supabase.from("pool_members").select("*").eq("trip_id", tripId),
         supabase.from("expenses").select("*").eq("trip_id", tripId),
         supabase.from("expense_splits").select("*").eq("trip_id", tripId),
@@ -114,6 +106,7 @@ Deno.serve(async (req) => {
 
     return json({ result, facts_hash: factsHash });
   } catch (e) {
+    reportError(e, { tag: "recompute-settlement" });
     const message = e instanceof Error ? e.message : String(e);
     return json({ error: message }, 500);
   }
@@ -146,9 +139,7 @@ function buildFacts(args: {
   expenseSplits: Record<string, unknown>[];
   adjustments: Record<string, unknown>[];
 }) {
-  const active = args.expenses.filter(
-    (e) => !e.superseded_by_id && !e.voided,
-  );
+  const active = args.expenses.filter((e) => !e.superseded_by_id && !e.voided);
   return {
     participants: args.participants.map((p) => ({
       id: p.id,

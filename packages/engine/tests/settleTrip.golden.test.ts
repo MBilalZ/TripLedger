@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { settleTrip, paisaToRupees } from "../src/index.js";
+import { paisaToRupees, settleTrip } from "../src/index.js";
 import { buildSampleTripFacts } from "./sampleTrip.js";
 
 describe("settleTrip golden sample", () => {
@@ -19,9 +19,7 @@ describe("settleTrip golden sample", () => {
     expect(partA.headCount).toBe(15);
     expect(partB.headCount).toBe(17);
 
-    const byName = Object.fromEntries(
-      result.participants.map((p) => [p.displayName, p]),
-    );
+    const byName = Object.fromEntries(result.participants.map((p) => [p.displayName, p]));
     expect(paisaToRupees(byName.Bilal!.paidPaisa)).toBe(58_000);
     expect(paisaToRupees(byName.Mamo!.paidPaisa)).toBe(11_000);
     expect(paisaToRupees(byName.Salman!.paidPaisa)).toBe(5_000);
@@ -29,9 +27,7 @@ describe("settleTrip golden sample", () => {
   });
 
   it("matches expected shares", () => {
-    const byName = Object.fromEntries(
-      result.participants.map((p) => [p.displayName, p]),
-    );
+    const byName = Object.fromEntries(result.participants.map((p) => [p.displayName, p]));
     expect(paisaToRupees(byName.Bilal!.sharePaisa)).toBeCloseTo(29_312.94, 2);
     expect(paisaToRupees(byName.Mamo!.sharePaisa)).toBeCloseTo(29_312.94, 2);
     expect(paisaToRupees(byName.Salman!.sharePaisa)).toBeCloseTo(14_656.47, 2);

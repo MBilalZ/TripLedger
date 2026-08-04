@@ -36,11 +36,7 @@ function toParties(
   return { debtors, creditors };
 }
 
-function transfer(
-  from: Party,
-  to: Party,
-  amount: number,
-): Transfer | null {
+function transfer(from: Party, to: Party, amount: number): Transfer | null {
   if (amount <= 0) return null;
   return {
     fromId: from.id,
@@ -90,10 +86,7 @@ export function settleToOne(
   const { debtors, creditors } = toParties(balances);
   if (debtors.length === 0 && creditors.length === 0) return [];
 
-  let hub =
-    (hubId &&
-      [...debtors, ...creditors].find((p) => p.id === hubId)) ||
-    null;
+  let hub = (hubId && [...debtors, ...creditors].find((p) => p.id === hubId)) || null;
   if (!hub) {
     hub = creditors[0] ?? debtors[0] ?? null;
   }
@@ -106,11 +99,7 @@ export function settleToOne(
 
   for (const d of debtors) {
     if (d.id === hub.id) continue;
-    const t = transfer(
-      d,
-      { id: hub.id, name: hub.name, amount: 0 },
-      d.amount,
-    );
+    const t = transfer(d, { id: hub.id, name: hub.name, amount: 0 }, d.amount);
     if (t) {
       t.toName = nameById.get(hub.id) ?? hub.name;
       transfers.push(t);
@@ -181,7 +170,6 @@ export function buildTransfers(
       return settleToOne(balances, hubId);
     case "pairwise":
       return pairwiseTransfers(balances);
-    case "minimize":
     default:
       return optimizeTransfers(balances);
   }

@@ -20,7 +20,6 @@ export function roundBalancesToRupees(
   const prelim = balances.map((b) => {
     const rupees = b.balancePaisa / PAISA_PER_RUPEE;
     const roundedRupees = Math.round(rupees);
-    const frac = Math.abs(rupees - roundedRupees);
     return {
       participantId: b.participantId,
       exactPaisa: b.balancePaisa,
@@ -31,8 +30,7 @@ export function roundBalancesToRupees(
     };
   });
 
-  let residual =
-    prelim.reduce((s, p) => s + p.roundedPaisa, 0); /* should be near 0 */
+  const residual = prelim.reduce((s, p) => s + p.roundedPaisa, 0); /* should be near 0 */
 
   if (residual === 0) {
     return prelim.map(({ participantId, exactPaisa, roundedPaisa }) => ({

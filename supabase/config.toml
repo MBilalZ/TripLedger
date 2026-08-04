@@ -1,0 +1,15 @@
+# Minimal Supabase CLI config for TripLedger.
+# Project linking: `supabase link --project-ref <ref>`
+
+[api]
+enabled = true
+
+[db]
+major_version = 15
+
+[functions.recompute-settlement]
+verify_jwt = true
+
+[functions.send-push]
+# Auth is enforced inside the function (service role bearer only).
+verify_jwt = false

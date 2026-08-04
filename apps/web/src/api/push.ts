@@ -1,5 +1,6 @@
+import { reportError } from "@/lib/reportError";
 import { apiMutate } from "./client";
-import { getSupabase, requireUser } from "./supabase";
+import { requireUser } from "./supabase";
 
 function urlBase64ToUint8Array(base64String: string): Uint8Array {
   const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
@@ -11,8 +12,7 @@ function urlBase64ToUint8Array(base64String: string): Uint8Array {
 }
 
 export function getVapidPublicKey(): string | null {
-  const key = (import.meta.env.VITE_VAPID_PUBLIC_KEY as string | undefined)
-    ?.trim();
+  const key = (import.meta.env.VITE_VAPID_PUBLIC_KEY as string | undefined)?.trim();
   return key || null;
 }
 
@@ -55,11 +55,7 @@ export async function upsertPushSubscription(
 export async function deletePushSubscription(endpoint: string): Promise<void> {
   const user = await requireUser();
   await apiMutate((sb) =>
-    sb
-      .from("push_subscriptions")
-      .delete()
-      .eq("user_id", user)
-      .eq("endpoint", endpoint),
+    sb.from("push_subscriptions").delete().eq("user_id", user).eq("endpoint", endpoint),
   );
 }
 
@@ -93,16 +89,15 @@ export async function unsubscribeFromPush(): Promise<void> {
   await sub.unsubscribe();
   try {
     await deletePushSubscription(endpoint);
-  } catch {
-    /* best-effort */
+  } catch (e) {
+    reportError(e, { tag: "push.unsubscribe_remote", endpoint });
   }
 }
 
+/**
+ * Push queue drain is cron/ops-only (service role). The browser must not call
+ * `send-push`. Kept as a no-op so older call sites remain harmless.
+ */
 export async function drainPushEvents(): Promise<void> {
-  try {
-    const sb = getSupabase();
-    await sb.functions.invoke("send-push", { body: { drain: true } });
-  } catch {
-    // Push drain is best-effort.
-  }
+  /* intentionally empty — see supabase/functions/README.md */
 }

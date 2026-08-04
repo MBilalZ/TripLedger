@@ -1,7 +1,7 @@
-import { computed } from "vue";
 import type { RealtimeChannel } from "@supabase/supabase-js";
 import { settleTrip } from "@tripledger/engine";
 import type { SettlementRounding, TransferMode } from "@tripledger/types";
+import { computed } from "vue";
 import { subscribeTripChanges, unsubscribeChannel } from "@/api/realtime";
 import {
   hashTripFacts,
@@ -9,6 +9,7 @@ import {
   upsertSettlementSnapshot,
 } from "@/api/settlement";
 import { mapToTripFacts } from "@/lib/mapToTripFacts";
+import { reportError } from "@/lib/reportError";
 import { getWorkspaceRepo } from "@/repositories";
 import { useAuthStore } from "@/stores/auth";
 import type { WorkspaceState } from "./state";
@@ -59,13 +60,13 @@ export function createCoreActions(state: WorkspaceState) {
       }
       const facts = currentFacts();
       const hash = await hashTripFacts(facts);
-      await upsertSettlementSnapshot(
-        state.tripId.value,
-        hash,
-        state.settlement.value,
-      );
-    } catch {
-      // Snapshot persistence is best-effort; local settlement remains usable.
+      await upsertSettlementSnapshot(state.tripId.value, hash, state.settlement.value);
+    } catch (e) {
+      // Local settlement remains usable; surface the failure for ops.
+      reportError(e, {
+        tag: "settlement.persist",
+        tripId: state.tripId.value,
+      });
     }
   }
 
@@ -129,10 +130,7 @@ export function createCoreActions(state: WorkspaceState) {
     if (state.myRole.value !== "owner" && useAuthStore().cloud) {
       throw new Error("Only the trip owner can rename the trip");
     }
-    const updates = await getWorkspaceRepo().updateTrip(
-      state.tripId.value,
-      patch,
-    );
+    const updates = await getWorkspaceRepo().updateTrip(state.tripId.value, patch);
     if (state.trip.value) state.trip.value = { ...state.trip.value, ...updates };
     recomputeSettlement();
     state.announce("Trip updated");
@@ -158,9 +156,7 @@ export function createCoreActions(state: WorkspaceState) {
   }
 
   const participantName = computed(() => {
-    const m = new Map(
-      state.participants.value.map((p) => [p.id, p.displayName]),
-    );
+    const m = new Map(state.participants.value.map((p) => [p.id, p.displayName]));
     return (id: string) => m.get(id) ?? id;
   });
 

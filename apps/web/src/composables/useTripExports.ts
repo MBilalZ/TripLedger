@@ -1,7 +1,7 @@
+import type { SettleTripResult } from "@tripledger/types";
+import type { MenuItem } from "primevue/menuitem";
 import { computed, type Ref } from "vue";
 import { useRouter } from "vue-router";
-import type { MenuItem } from "primevue/menuitem";
-import type { SettleTripResult } from "@tripledger/types";
 import type { TripRow } from "@/db/dexie";
 import { useTripsStore } from "@/stores/trips";
 import { useFeedback } from "./useFeedback";

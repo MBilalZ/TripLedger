@@ -1,8 +1,8 @@
-import { saveAs } from "file-saver";
 import { assertBackupPayload } from "@tripledger/validation";
+import { saveAs } from "file-saver";
 import {
-  db,
   type AdjustmentRow,
+  db,
   type ExpenseRow,
   type ExpenseSplitRow,
   type ParticipantRow,
@@ -89,7 +89,7 @@ export async function downloadTripJson(tripId: string): Promise<void> {
   const blob = new Blob([JSON.stringify(payload, null, 2)], {
     type: "application/json",
   });
-  const safe = payload.trip.name.replace(/[^\w\-]+/g, "_");
+  const safe = payload.trip.name.replace(/[^\w-]+/g, "_");
   saveAs(blob, `tripledger-${safe}.json`);
 }
 
@@ -144,7 +144,7 @@ export async function importTripJson(
       updatedAt: new Date().toISOString(),
       createdAt: new Date().toISOString(),
       settlementHubId: trip.settlementHubId
-        ? pMap.get(trip.settlementHubId) ?? null
+        ? (pMap.get(trip.settlementHubId) ?? null)
         : null,
     };
     participants = participants.map((p) => ({
@@ -171,7 +171,7 @@ export async function importTripJson(
       poolId: poolMap.get(e.poolId)!,
       paidById: pMap.get(e.paidById)!,
       supersededById: e.supersededById
-        ? expMap.get(e.supersededById) ?? remap(e.supersededById, "exp")
+        ? (expMap.get(e.supersededById) ?? remap(e.supersededById, "exp"))
         : null,
     }));
     expenseSplits = expenseSplits.map((s) => ({

@@ -1,18 +1,18 @@
+import type { User } from "@supabase/supabase-js";
 import { defineStore } from "pinia";
 import { computed, ref } from "vue";
-import type { User } from "@supabase/supabase-js";
+import { toApiError } from "@/api/errors";
 import {
+  signOut as apiSignOut,
   fetchUserProfile,
   getSession,
   isSupabaseConfigured,
   onAuthStateChange,
   signInWithPassword,
-  signOut as apiSignOut,
   signUpWithPassword,
-  updateProfileDisplayName,
   type UserProfile,
+  updateProfileDisplayName,
 } from "@/api/supabase";
-import { toApiError } from "@/api/errors";
 
 export const useAuthStore = defineStore("auth", () => {
   const configured = ref(isSupabaseConfigured());
@@ -25,11 +25,7 @@ export const useAuthStore = defineStore("auth", () => {
   /** Cloud data mode: Supabase configured and user signed in. */
   const cloud = computed(() => configured.value && isSignedIn.value);
   const displayLabel = computed(
-    () =>
-      profile.value?.displayName ||
-      profile.value?.email ||
-      user.value?.email ||
-      null,
+    () => profile.value?.displayName || profile.value?.email || user.value?.email || null,
   );
 
   let unsub: (() => void) | null = null;

@@ -1,11 +1,6 @@
-import * as tripsApi from "@/api/trips";
 import { requireUser } from "@/api/supabase";
-import {
-  db,
-  newId,
-  type ParticipantRow,
-  type TripRow,
-} from "@/db/dexie";
+import * as tripsApi from "@/api/trips";
+import { db, newId, type ParticipantRow, type TripRow } from "@/db/dexie";
 import {
   deleteCachedTrip,
   listCachedCloudTrips,
@@ -83,12 +78,7 @@ export const syncCloudTripListRepo: TripListRepo = {
 
     if (online()) {
       try {
-        await tripsApi.createTripWithIds(
-          tripId,
-          participantId,
-          trimmed,
-          options,
-        );
+        await tripsApi.createTripWithIds(tripId, participantId, trimmed, options);
         await dropOps(tripId, "createTrip");
         await writeCachedWorkspace(user, {
           trip,

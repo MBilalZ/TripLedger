@@ -1,10 +1,5 @@
 import { ref } from "vue";
-import {
-  createInvite,
-  listInvites,
-  revokeInvite,
-  type InviteRow,
-} from "@/api/invites";
+import { createInvite, type InviteRow, listInvites, revokeInvite } from "@/api/invites";
 import { isSupabaseConfigured } from "@/api/supabase";
 import { useAuthStore } from "@/stores/auth";
 import { useWorkspaceStore } from "@/stores/workspace";

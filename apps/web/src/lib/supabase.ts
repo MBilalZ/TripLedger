@@ -1,11 +1,11 @@
 /** @deprecated Import from `@/api/supabase` or `@/api` instead. */
 export {
-  isSupabaseConfigured,
-  getSupabase,
-  ensureAuthSession,
-  requireUser,
   currentUserId,
-  signUpWithPassword,
+  ensureAuthSession,
+  getSupabase,
+  isSupabaseConfigured,
+  requireUser,
   signInWithPassword,
   signOut,
+  signUpWithPassword,
 } from "@/api/supabase";

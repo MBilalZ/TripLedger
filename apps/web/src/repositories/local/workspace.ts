@@ -11,25 +11,19 @@ import type { WorkspaceRepo } from "../types";
 export const localWorkspaceRepo: WorkspaceRepo = {
   async load(tripId) {
     const trip = (await db.trips.get(tripId)) ?? null;
-    const [
-      participants,
-      pools,
-      poolMembers,
-      expenses,
-      expenseSplits,
-      adjustments,
-    ] = await Promise.all([
-      db.participants.where("tripId").equals(tripId).toArray(),
-      db.pools.where("tripId").equals(tripId).toArray(),
-      db.poolMembers.where("tripId").equals(tripId).toArray(),
-      db.expenses
-        .where("tripId")
-        .equals(tripId)
-        .filter((e) => !e.supersededById)
-        .sortBy("createdAt"),
-      db.expenseSplits.where("tripId").equals(tripId).toArray(),
-      db.adjustments.where("tripId").equals(tripId).toArray(),
-    ]);
+    const [participants, pools, poolMembers, expenses, expenseSplits, adjustments] =
+      await Promise.all([
+        db.participants.where("tripId").equals(tripId).toArray(),
+        db.pools.where("tripId").equals(tripId).toArray(),
+        db.poolMembers.where("tripId").equals(tripId).toArray(),
+        db.expenses
+          .where("tripId")
+          .equals(tripId)
+          .filter((e) => !e.supersededById)
+          .sortBy("createdAt"),
+        db.expenseSplits.where("tripId").equals(tripId).toArray(),
+        db.adjustments.where("tripId").equals(tripId).toArray(),
+      ]);
     return {
       trip,
       participants,
@@ -76,10 +70,7 @@ export const localWorkspaceRepo: WorkspaceRepo = {
       async () => {
         await db.participants.delete(participantId);
         await db.poolMembers.where("participantId").equals(participantId).delete();
-        await db.expenseSplits
-          .where("participantId")
-          .equals(participantId)
-          .delete();
+        await db.expenseSplits.where("participantId").equals(participantId).delete();
       },
     );
   },

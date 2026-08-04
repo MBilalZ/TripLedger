@@ -1,15 +1,16 @@
-import { createApp } from "vue";
+import { definePreset } from "@primevue/themes";
+import Aura from "@primevue/themes/aura";
 import { createPinia } from "pinia";
 import PrimeVue from "primevue/config";
-import Aura from "@primevue/themes/aura";
-import { definePreset } from "@primevue/themes";
-import ToastService from "primevue/toastservice";
 import ConfirmationService from "primevue/confirmationservice";
+import ToastService from "primevue/toastservice";
 import Tooltip from "primevue/tooltip";
+import { createApp } from "vue";
 import App from "./App.vue";
-import router from "./router";
 import { initTheme } from "./composables/useTheme";
+import { reportError } from "./lib/reportError";
 import { initPwaInstallCapture, registerPwaUpdates } from "./pwa";
+import router from "./router";
 import { startSyncEngine } from "./sync/engine";
 import "./style.css";
 
@@ -38,6 +39,9 @@ const TripLedgerPreset = definePreset(Aura, {
 initTheme();
 
 const app = createApp(App);
+app.config.errorHandler = (err, _instance, info) => {
+  reportError(err, { tag: "vue.errorHandler", info });
+};
 app.use(createPinia());
 app.use(router);
 app.use(PrimeVue, {

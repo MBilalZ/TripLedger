@@ -1,5 +1,5 @@
-import { computed } from "vue";
 import { defineStore } from "pinia";
+import { computed } from "vue";
 import { useAuthStore } from "@/stores/auth";
 import { createAdjustmentActions } from "./adjustments";
 import { createCoreActions } from "./core";
@@ -17,9 +17,7 @@ export const useWorkspaceStore = defineStore("workspace", () => {
   const expenses = createExpenseActions(state, core, pools);
   const adjustments = createAdjustmentActions(state, core);
 
-  const isOwner = computed(
-    () => !auth.cloud || state.myRole.value === "owner",
-  );
+  const isOwner = computed(() => !auth.cloud || state.myRole.value === "owner");
 
   return {
     tripId: state.tripId,
