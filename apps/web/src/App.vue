@@ -6,6 +6,8 @@ import ConfirmDialog from "primevue/confirmdialog";
 import Button from "primevue/button";
 import { isSupabaseConfigured } from "@/api/supabase";
 import PwaInstallBanner from "@/components/PwaInstallBanner.vue";
+import PushNotifyToggle from "@/components/PushNotifyToggle.vue";
+import SyncStatusChip from "@/components/SyncStatusChip.vue";
 import { useTheme } from "@/composables/useTheme";
 import { useAuthStore } from "@/stores/auth";
 import { useTripsStore } from "@/stores/trips";
@@ -42,6 +44,8 @@ async function onSignOut() {
           >
         </router-link>
         <div class="flex items-center gap-2">
+          <SyncStatusChip />
+          <PushNotifyToggle />
           <template v-if="isSupabaseConfigured()">
             <template v-if="auth.isSignedIn">
               <span class="tl-tagline max-w-[10rem] truncate sm:max-w-xs">{{

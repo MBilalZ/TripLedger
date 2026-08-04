@@ -1,6 +1,6 @@
 import { useAuthStore } from "@/stores/auth";
-import { cloudTripListRepo } from "./cloud/tripList";
-import { cloudWorkspaceRepo } from "./cloud/workspace";
+import { syncCloudTripListRepo } from "./cloud/syncTripList";
+import { syncCloudWorkspaceRepo } from "./cloud/syncWorkspace";
 import { localTripListRepo } from "./local/tripList";
 import { localWorkspaceRepo } from "./local/workspace";
 import type { TripListRepo, WorkspaceRepo } from "./types";
@@ -17,10 +17,10 @@ export type {
 
 export function getTripRepos(): TripListRepo {
   const auth = useAuthStore();
-  return auth.cloud ? cloudTripListRepo : localTripListRepo;
+  return auth.cloud ? syncCloudTripListRepo : localTripListRepo;
 }
 
 export function getWorkspaceRepo(): WorkspaceRepo {
   const auth = useAuthStore();
-  return auth.cloud ? cloudWorkspaceRepo : localWorkspaceRepo;
+  return auth.cloud ? syncCloudWorkspaceRepo : localWorkspaceRepo;
 }

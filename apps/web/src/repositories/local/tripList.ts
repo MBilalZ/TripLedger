@@ -3,7 +3,9 @@ import type { CreateTripOptions, TripListRepo } from "../types";
 
 export const localTripListRepo: TripListRepo = {
   async list() {
-    return db.trips.orderBy("updatedAt").reverse().toArray();
+    const rows = await db.trips.orderBy("updatedAt").reverse().toArray();
+    // Exclude cloud-mode cache entries from device-local mode.
+    return rows.filter((t) => !t.cloudUserId);
   },
 
   async create(name, options: CreateTripOptions = {}) {

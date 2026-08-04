@@ -104,7 +104,9 @@ export function createCoreActions(state: WorkspaceState) {
     realtimeChannel = null;
     if (!auth.cloud) return;
     realtimeChannel = subscribeTripChanges(state.tripId.value, () => {
-      scheduleQuietReload();
+      void import("@/sync/engine").then(({ syncTrip }) =>
+        syncTrip(state.tripId.value).then(() => scheduleQuietReload()),
+      );
     });
   }
 
