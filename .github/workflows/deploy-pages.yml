@@ -39,6 +39,7 @@ jobs:
           VITE_BASE: /TripLedger/
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+          VITE_VAPID_PUBLIC_KEY: ${{ secrets.VITE_VAPID_PUBLIC_KEY }}
         run: pnpm --filter @tripledger/web build
       - name: SPA fallback for GitHub Pages
         run: cp apps/web/dist/index.html apps/web/dist/404.html

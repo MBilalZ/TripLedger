@@ -11,7 +11,14 @@ export default defineConfig({
       registerType: "autoUpdate",
       // Registered explicitly in main.ts so updates can reload the page.
       injectRegister: false,
-      includeAssets: ["favicon.svg"],
+      includeAssets: [
+        "favicon.svg",
+        "apple-touch-icon.png",
+        "pwa-192x192.png",
+        "pwa-512x512.png",
+        "pwa-512x512-maskable.png",
+        "push-sw.js",
+      ],
       manifest: {
         name: "TripLedger",
         short_name: "TripLedger",
@@ -22,18 +29,51 @@ export default defineConfig({
         start_url: ".",
         icons: [
           {
-            src: "favicon.svg",
-            sizes: "any",
-            type: "image/svg+xml",
-            purpose: "any maskable",
+            src: "pwa-192x192.png",
+            sizes: "192x192",
+            type: "image/png",
+            purpose: "any",
+          },
+          {
+            src: "pwa-512x512.png",
+            sizes: "512x512",
+            type: "image/png",
+            purpose: "any",
+          },
+          {
+            src: "pwa-512x512-maskable.png",
+            sizes: "512x512",
+            type: "image/png",
+            purpose: "maskable",
           },
         ],
       },
       workbox: {
         cleanupOutdatedCaches: true,
-        globPatterns: ["**/*.{js,css,html,ico,svg,webmanifest,woff2}"],
+        globPatterns: ["**/*.{js,css,html,ico,svg,png,webmanifest,woff2}"],
         // Main bundle includes Excel/PDF libs; raise SW precache limit.
         maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
+        importScripts: ["push-sw.js"],
+        runtimeCaching: [
+          {
+            urlPattern: ({ request }) => request.destination === "document",
+            handler: "NetworkFirst",
+            options: {
+              cacheName: "tl-pages",
+              networkTimeoutSeconds: 3,
+            },
+          },
+          {
+            urlPattern: ({ request }) =>
+              request.destination === "script" ||
+              request.destination === "style" ||
+              request.destination === "worker",
+            handler: "StaleWhileRevalidate",
+            options: {
+              cacheName: "tl-assets",
+            },
+          },
+        ],
       },
       devOptions: {
         enabled: false,

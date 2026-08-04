@@ -260,3 +260,174 @@ html {
     display: none;
   }
 }
+
+.tl-sync-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.25rem;
+  min-width: 0;
+}
+
+.tl-sync-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  max-width: 11rem;
+  min-height: 2rem;
+  padding: 0.25rem 0.55rem;
+  border: 1px solid var(--tl-border);
+  border-radius: 999px;
+  background: var(--tl-elevated);
+  color: var(--tl-muted);
+  font-size: 0.7rem;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tl-sync-chip i {
+  font-size: 0.8rem;
+}
+
+.tl-sync-chip.is-offline,
+.tl-sync-chip.is-error {
+  color: var(--tl-danger);
+  border-color: var(--tl-danger-border);
+  background: var(--tl-danger-bg);
+}
+
+.tl-sync-chip.is-syncing,
+.tl-sync-chip.is-pending {
+  color: var(--tl-accent-dim);
+  border-color: var(--tl-accent);
+  background: var(--tl-accent-soft);
+}
+
+.tl-sync-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.1rem;
+  height: 1.1rem;
+  padding: 0 0.25rem;
+  border-radius: 999px;
+  background: var(--tl-accent-dim);
+  color: #f0fdfa;
+  font-size: 0.65rem;
+}
+
+.tl-sync-hint {
+  margin: 0;
+  max-width: 16rem;
+  font-size: 0.65rem;
+  line-height: 1.3;
+  color: var(--tl-muted);
+  text-align: right;
+}
+
+.tl-sync-hint__dismiss {
+  margin-left: 0.25rem;
+  border: none;
+  background: none;
+  color: var(--tl-accent-dim);
+  cursor: pointer;
+  font: inherit;
+  text-decoration: underline;
+}
+
+.tl-push-toggle {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.15rem;
+}
+
+.tl-push-ios-hint {
+  font-size: 0.65rem;
+  color: var(--tl-muted);
+  white-space: nowrap;
+}
+
+.tl-push-error {
+  font-size: 0.65rem;
+  color: var(--tl-danger);
+  max-width: 10rem;
+  text-align: right;
+}
+
+.tl-install-banner {
+  position: fixed;
+  left: 0.75rem;
+  right: 0.75rem;
+  bottom: calc(0.75rem + env(safe-area-inset-bottom, 0px));
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.75rem 0.85rem;
+  border: 1px solid var(--tl-border);
+  border-radius: 1rem;
+  background: var(--tl-panel);
+  box-shadow: var(--tl-shadow);
+}
+
+/* Sit above trip bottom nav on small screens */
+@media (max-width: 639px) {
+  .tl-install-banner {
+    bottom: calc(5.25rem + env(safe-area-inset-bottom, 0px));
+  }
+}
+
+.tl-install-banner__body {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  min-width: 0;
+}
+
+.tl-install-banner__copy {
+  min-width: 0;
+}
+
+.tl-install-banner__title {
+  margin: 0;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--tl-text);
+}
+
+.tl-install-banner__hint {
+  margin: 0.15rem 0 0;
+  font-size: 0.75rem;
+  color: var(--tl-muted);
+  line-height: 1.3;
+}
+
+.tl-install-banner__actions {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  flex-shrink: 0;
+}
+
+.tl-install-banner__dismiss {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border: none;
+  border-radius: 0.5rem;
+  background: transparent;
+  color: var(--tl-muted);
+  cursor: pointer;
+}
+
+.tl-install-banner__dismiss:hover {
+  color: var(--tl-text);
+  background: var(--tl-elevated);
+}
