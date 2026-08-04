@@ -14,6 +14,8 @@ export function checkInvariants(args: {
   participants: ParticipantMoney[];
   settlements: Transfer[];
   inputViolations?: ConsistencyViolation[];
+  /** When true, skip I1–I9 that assume successful allocation (fail-closed path). */
+  skipBalanceChecks?: boolean;
 }): ConsistencyResult {
   const violations: ConsistencyViolation[] = [
     ...(args.inputViolations ?? []),
@@ -22,6 +24,10 @@ export function checkInvariants(args: {
   const push = (id: ConsistencyViolation["id"], message: string) => {
     violations.push({ id, message });
   };
+
+  if (args.skipBalanceChecks) {
+    return { ok: false, violations };
+  }
 
   if (args.tripTotalPaisa !== args.poolTotalsSumPaisa) {
     push(
@@ -42,12 +48,16 @@ export function checkInvariants(args: {
     );
   }
 
+  // I4: paid − share + adj must sum to 0 (final balances before rounding)
   const balanceSum = args.participants.reduce(
-    (s, p) => s + (p.paidPaisa - p.sharePaisa),
+    (s, p) => s + (p.paidPaisa - p.sharePaisa + p.adjNetPaisa),
     0,
   );
   if (balanceSum !== 0) {
-    push("I4", `Sum of (paid - share) is ${balanceSum}, expected 0`);
+    push(
+      "I4",
+      `Sum of (paid - share + adj) is ${balanceSum}, expected 0`,
+    );
   }
 
   if (args.adjNetSumPaisa !== 0) {
@@ -67,12 +77,16 @@ export function checkInvariants(args: {
     push("I6", `Sum of settlement balances is ${roundedSum}, expected 0`);
   }
 
-  // I7/I8: each person's net from transfers must equal their settlement balance
+  // I7: each person's net from transfers must equal their settlement balance
   const netFromTransfers = new Map<string, number>();
   for (const p of args.participants) {
     netFromTransfers.set(p.participantId, 0);
   }
+  let transferOut = 0;
+  let transferIn = 0;
   for (const t of args.settlements) {
+    transferOut += t.amountPaisa;
+    transferIn += t.amountPaisa;
     netFromTransfers.set(
       t.fromId,
       (netFromTransfers.get(t.fromId) ?? 0) - t.amountPaisa,
@@ -93,10 +107,24 @@ export function checkInvariants(args: {
     }
   }
 
-  const transferOut = args.settlements.reduce((s, t) => s + t.amountPaisa, 0);
-  const transferIn = transferOut; // each transfer has one from and one to
-  if (transferOut !== transferIn) {
+  // I8: sum of amounts leaving debtors must equal sum entering creditors
+  // (each transfer contributes once to both; also verify no orphan endpoints)
+  const fromSum = args.settlements.reduce((s, t) => s + t.amountPaisa, 0);
+  const toSum = args.settlements.reduce((s, t) => s + t.amountPaisa, 0);
+  if (fromSum !== toSum || transferOut !== transferIn) {
     push("I8", "Transfer in/out mismatch");
+  }
+  const debtorPay = args.participants
+    .filter((p) => p.balanceRupeesPaisa < 0)
+    .reduce((s, p) => s + -p.balanceRupeesPaisa, 0);
+  const creditorRecv = args.participants
+    .filter((p) => p.balanceRupeesPaisa > 0)
+    .reduce((s, p) => s + p.balanceRupeesPaisa, 0);
+  if (debtorPay !== creditorRecv || (args.settlements.length > 0 && fromSum !== debtorPay)) {
+    push(
+      "I8",
+      `Transfer totals ${fromSum} do not match debtor/creditor sides (${debtorPay}/${creditorRecv})`,
+    );
   }
 
   for (const t of args.settlements) {

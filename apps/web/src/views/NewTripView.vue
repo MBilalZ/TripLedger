@@ -6,6 +6,8 @@ import Button from "primevue/button";
 import InputText from "primevue/inputtext";
 import Select from "primevue/select";
 import type { SettlementRounding, TransferMode } from "@tripledger/types";
+import { ROUNDING_MODES, TRANSFER_MODES } from "@/constants/tripOptions";
+import { toApiError } from "@/api/errors";
 import { useTripsStore } from "@/stores/trips";
 
 const store = useTripsStore();
@@ -16,17 +18,6 @@ const name = ref("");
 const transferMode = ref<TransferMode>("minimize");
 const settlementRounding = ref<SettlementRounding>("rupee");
 const saving = ref(false);
-
-const TRANSFER_MODES: { label: string; value: TransferMode }[] = [
-  { label: "Minimize transactions", value: "minimize" },
-  { label: "Settle to one person", value: "settle_to_one" },
-  { label: "Pairwise (proportional)", value: "pairwise" },
-];
-
-const ROUNDING_MODES: { label: string; value: SettlementRounding }[] = [
-  { label: "Whole rupees", value: "rupee" },
-  { label: "Exact paisa", value: "none" },
-];
 
 const canSave = computed(() => name.value.trim().length > 0 && !saving.value);
 
@@ -56,7 +47,7 @@ async function save() {
     toast.add({
       severity: "error",
       summary: "Could not create trip",
-      detail: e instanceof Error ? e.message : String(e),
+      detail: toApiError(e).message,
       life: 4000,
     });
   } finally {
@@ -91,11 +82,7 @@ async function save() {
         />
       </div>
 
-      <div>
-        <label class="tl-input-label">Currency</label>
-        <InputText model-value="PKR" class="w-24" disabled />
-        <p class="mt-1 text-xs text-tl-muted">Amounts are shown as Rs. (PKR).</p>
-      </div>
+      <p class="text-xs text-tl-muted">Amounts are in Pakistani rupees (Rs.).</p>
 
       <div>
         <label class="tl-input-label">Transfer mode</label>

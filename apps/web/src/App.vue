@@ -1,17 +1,31 @@
 <script setup lang="ts">
 import { onMounted } from "vue";
+import { useRouter } from "vue-router";
 import Toast from "primevue/toast";
 import ConfirmDialog from "primevue/confirmdialog";
+import Button from "primevue/button";
+import { isSupabaseConfigured } from "@/api/supabase";
 import { useTheme } from "@/composables/useTheme";
+import { useAuthStore } from "@/stores/auth";
 import { useTripsStore } from "@/stores/trips";
-import { isSupabaseConfigured } from "@/lib/supabase";
 
 const { isDark, toggle } = useTheme();
+const auth = useAuthStore();
 const trips = useTripsStore();
+const router = useRouter();
 
 onMounted(() => {
-  void trips.initAuth().then(() => trips.refresh());
+  void auth.initAuth().then(() => {
+    if (auth.cloud || !isSupabaseConfigured()) {
+      return trips.refresh();
+    }
+  });
 });
+
+async function onSignOut() {
+  await auth.signOut();
+  await router.push({ name: "auth" });
+}
 </script>
 
 <template>
@@ -27,9 +41,29 @@ onMounted(() => {
           >
         </router-link>
         <div class="flex items-center gap-2">
-          <span class="tl-tagline">{{
-            isSupabaseConfigured() ? "Shared · free tier" : "Local · this device"
-          }}</span>
+          <template v-if="isSupabaseConfigured()">
+            <template v-if="auth.isSignedIn">
+              <span class="tl-tagline max-w-[10rem] truncate sm:max-w-xs">{{
+                auth.displayLabel
+              }}</span>
+              <Button
+                label="Sign out"
+                size="small"
+                severity="secondary"
+                text
+                @click="onSignOut"
+              />
+            </template>
+            <Button
+              v-else
+              label="Sign in"
+              size="small"
+              severity="secondary"
+              text
+              @click="router.push({ name: 'auth' })"
+            />
+          </template>
+          <span v-else class="tl-tagline">Local · this device</span>
           <button
             type="button"
             class="tl-icon-btn"

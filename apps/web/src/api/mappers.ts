@@ -34,12 +34,41 @@ export function tripFromDb(r: DbTrip): TripRow {
   };
 }
 
+export function tripToDb(
+  trip: TripRow,
+  createdBy?: string,
+): Record<string, unknown> {
+  return {
+    id: trip.id,
+    name: trip.name,
+    currency: trip.currency,
+    created_at: trip.createdAt,
+    updated_at: trip.updatedAt,
+    transfer_mode: trip.transferMode,
+    settlement_rounding: trip.settlementRounding,
+    settlement_hub_id: trip.settlementHubId,
+    ...(createdBy !== undefined ? { created_by: createdBy } : {}),
+  };
+}
+
 export function participantFromDb(r: {
   id: string;
   trip_id: string;
   display_name: string;
 }): ParticipantRow {
   return { id: r.id, tripId: r.trip_id, displayName: r.display_name };
+}
+
+export function participantToDb(
+  row: ParticipantRow,
+  userId: string | null = null,
+): Record<string, unknown> {
+  return {
+    id: row.id,
+    trip_id: row.tripId,
+    display_name: row.displayName,
+    user_id: userId,
+  };
 }
 
 export function poolFromDb(r: {
@@ -53,6 +82,15 @@ export function poolFromDb(r: {
     tripId: r.trip_id,
     name: r.name,
     splitMode: (r.split_mode as SplitMode) || "shares",
+  };
+}
+
+export function poolToDb(row: PoolRow): Record<string, unknown> {
+  return {
+    id: row.id,
+    trip_id: row.tripId,
+    name: row.name,
+    split_mode: row.splitMode,
   };
 }
 
@@ -78,6 +116,19 @@ export function poolMemberFromDb(r: {
   };
 }
 
+export function poolMemberToDb(row: PoolMemberRow): Record<string, unknown> {
+  return {
+    id: row.id,
+    trip_id: row.tripId,
+    pool_id: row.poolId,
+    participant_id: row.participantId,
+    included: row.included,
+    shares: row.shares,
+    percent_bps: row.percentBps,
+    exact_paisa: row.exactPaisa,
+  };
+}
+
 export function expenseFromDb(r: {
   id: string;
   trip_id: string;
@@ -91,6 +142,7 @@ export function expenseFromDb(r: {
   superseded_by_id: string | null;
   created_at: string;
   split_mode: string | null;
+  voided?: boolean | null;
 }): ExpenseRow {
   return {
     id: r.id,
@@ -105,6 +157,25 @@ export function expenseFromDb(r: {
     supersededById: r.superseded_by_id,
     createdAt: r.created_at,
     splitMode: (r.split_mode as SplitMode | null) ?? null,
+    voided: !!r.voided,
+  };
+}
+
+export function expenseToDb(row: ExpenseRow): Record<string, unknown> {
+  return {
+    id: row.id,
+    trip_id: row.tripId,
+    pool_id: row.poolId,
+    description: row.description,
+    category: row.category,
+    amount_paisa: row.amountPaisa,
+    paid_by_id: row.paidById,
+    date: row.date,
+    notes: row.notes,
+    superseded_by_id: row.supersededById,
+    created_at: row.createdAt,
+    split_mode: row.splitMode,
+    voided: row.voided ?? false,
   };
 }
 
@@ -130,6 +201,19 @@ export function expenseSplitFromDb(r: {
   };
 }
 
+export function expenseSplitToDb(row: ExpenseSplitRow): Record<string, unknown> {
+  return {
+    id: row.id,
+    trip_id: row.tripId,
+    expense_id: row.expenseId,
+    participant_id: row.participantId,
+    included: row.included,
+    shares: row.shares,
+    percent_bps: row.percentBps,
+    exact_paisa: row.exactPaisa,
+  };
+}
+
 export function adjustmentFromDb(r: {
   id: string;
   trip_id: string;
@@ -149,5 +233,18 @@ export function adjustmentFromDb(r: {
     reason: r.reason,
     createdAt: r.created_at,
     groupId: r.adjustment_group_id,
+  };
+}
+
+export function adjustmentToDb(row: AdjustmentRow): Record<string, unknown> {
+  return {
+    id: row.id,
+    trip_id: row.tripId,
+    from_id: row.fromId,
+    to_id: row.toId,
+    amount_paisa: row.amountPaisa,
+    reason: row.reason,
+    created_at: row.createdAt,
+    adjustment_group_id: row.groupId ?? null,
   };
 }

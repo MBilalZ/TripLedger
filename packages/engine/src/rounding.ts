@@ -49,7 +49,10 @@ export function roundBalancesToRupees(
   const steps = Math.abs(residual) / PAISA_PER_RUPEE;
 
   const order = [...prelim].sort((a, b) => {
-    // Prefer adjusting larger absolute balances first for stability
+    // Prefer parties closest to a .5 rounding boundary, then larger |balance|
+    if (a.fracDistance !== b.fracDistance) {
+      return a.fracDistance - b.fracDistance;
+    }
     if (b.absExact !== a.absExact) return b.absExact - a.absExact;
     return a.participantId.localeCompare(b.participantId);
   });

@@ -32,6 +32,28 @@ export function allocateByWeights(
     return { slices: [], error: "Weight sum must be > 0" };
   }
 
+  for (const m of active) {
+    if (
+      !Number.isSafeInteger(m.weight) ||
+      m.weight > Number.MAX_SAFE_INTEGER / Math.max(totalPaisa, 1)
+    ) {
+      return {
+        slices: [],
+        error: "Split weights too large for safe integer allocation",
+      };
+    }
+  }
+  if (
+    totalPaisa > 0 &&
+    weightSum > 0 &&
+    totalPaisa > Number.MAX_SAFE_INTEGER / weightSum
+  ) {
+    return {
+      slices: [],
+      error: "Amount too large for safe integer allocation",
+    };
+  }
+
   const floors = active.map((m) => {
     const numerator = totalPaisa * m.weight;
     const floor = Math.floor(numerator / weightSum);
