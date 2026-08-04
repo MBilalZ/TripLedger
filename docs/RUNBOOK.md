@@ -45,7 +45,16 @@ supabase secrets set \
 
 ## Drain push queue (cron)
 
-`send-push` accepts **only** the service role key:
+`send-push` accepts **only** the service role key. Production uses
+[`.github/workflows/drain-push.yml`](../.github/workflows/drain-push.yml)
+(every 5 minutes + manual `workflow_dispatch`).
+
+Required GitHub secret (server-side only — never `VITE_*`):
+
+- `SUPABASE_SERVICE_ROLE_KEY`
+- `VITE_SUPABASE_URL` (function base URL)
+
+Manual invoke:
 
 ```bash
 curl -X POST "$SUPABASE_URL/functions/v1/send-push" \
@@ -53,8 +62,6 @@ curl -X POST "$SUPABASE_URL/functions/v1/send-push" \
   -H "Content-Type: application/json" \
   -d '{}'
 ```
-
-Schedule every 1–5 minutes (Supabase cron, GitHub Actions, or external). Never expose the service role key to the SPA.
 
 ## Rotate VAPID keys
 
