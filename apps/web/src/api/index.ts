@@ -4,7 +4,12 @@ export {
   isSupabaseConfigured,
   getSupabase,
   ensureAuthSession,
+  requireUser,
   currentUserId,
+  signUpWithPassword,
+  signInWithPassword,
+  signOut,
+  fetchUserProfile,
 } from "./supabase";
 export * as tripsApi from "./trips";
 export * as participantsApi from "./participants";

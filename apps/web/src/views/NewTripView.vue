@@ -7,6 +7,7 @@ import InputText from "primevue/inputtext";
 import Select from "primevue/select";
 import type { SettlementRounding, TransferMode } from "@tripledger/types";
 import { ROUNDING_MODES, TRANSFER_MODES } from "@/constants/tripOptions";
+import { toApiError } from "@/api/errors";
 import { useTripsStore } from "@/stores/trips";
 
 const store = useTripsStore();
@@ -46,7 +47,7 @@ async function save() {
     toast.add({
       severity: "error",
       summary: "Could not create trip",
-      detail: e instanceof Error ? e.message : String(e),
+      detail: toApiError(e).message,
       life: 4000,
     });
   } finally {

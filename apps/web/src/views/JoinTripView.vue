@@ -4,14 +4,17 @@ import { useRoute, useRouter } from "vue-router";
 import { useToast } from "primevue/usetoast";
 import Button from "primevue/button";
 import InputText from "primevue/inputtext";
+import { toApiError } from "@/api/errors";
 import { joinWithToken } from "@/api/invites";
-import { ensureAuthSession, isSupabaseConfigured } from "@/api/supabase";
+import { isSupabaseConfigured } from "@/api/supabase";
+import { useAuthStore } from "@/stores/auth";
 import { useTripsStore } from "@/stores/trips";
 
 const props = defineProps<{ token: string }>();
 const route = useRoute();
 const router = useRouter();
 const toast = useToast();
+const auth = useAuthStore();
 const trips = useTripsStore();
 
 const displayName = ref("");
@@ -20,17 +23,17 @@ const error = ref<string | null>(null);
 
 const token = () => props.token || String(route.params.token ?? "");
 
-onMounted(async () => {
+onMounted(() => {
   if (!isSupabaseConfigured()) {
     error.value =
       "Shared invites require Supabase. Configure VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY.";
     return;
   }
-  try {
-    await ensureAuthSession();
-  } catch (e) {
-    error.value = e instanceof Error ? e.message : String(e);
-  }
+  displayName.value =
+    auth.profile?.displayName ||
+    auth.displayLabel ||
+    auth.user?.email?.split("@")[0] ||
+    "";
 });
 
 async function join() {
@@ -46,6 +49,9 @@ async function join() {
   }
   joining.value = true;
   try {
+    if (name !== auth.profile?.displayName) {
+      await auth.setDisplayName(name);
+    }
     const result = await joinWithToken(token(), name);
     await trips.refresh();
     toast.add({
@@ -58,7 +64,7 @@ async function join() {
     toast.add({
       severity: "error",
       summary: "Could not join",
-      detail: e instanceof Error ? e.message : String(e),
+      detail: toApiError(e).message,
       life: 5000,
     });
   } finally {
@@ -74,8 +80,8 @@ async function join() {
     >
     <h1 id="join-title" class="text-2xl font-semibold text-tl">Join trip</h1>
     <p class="text-sm text-tl-muted">
-      Enter your name so everyone on the trip can recognize you. You’ll be able
-      to add and manage expenses with the group.
+      Confirm how others should see you on this trip. You’re signed in as
+      {{ auth.displayLabel || "your account" }}.
     </p>
     <div v-if="error" class="tl-alert" role="alert">{{ error }}</div>
     <div v-else>

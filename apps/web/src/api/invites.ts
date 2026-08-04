@@ -1,9 +1,9 @@
 import { ApiError } from "./errors";
 import { apiCall, apiMutate } from "./client";
-import { ensureAuthSession } from "./supabase";
+import { requireUser } from "./supabase";
 
 export async function createInvite(tripId: string): Promise<string> {
-  const uid = await ensureAuthSession();
+  const uid = await requireUser();
   const token = crypto.randomUUID().replace(/-/g, "");
   await apiMutate(
     (sb) =>

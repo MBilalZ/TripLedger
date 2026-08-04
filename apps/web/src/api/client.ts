@@ -1,5 +1,5 @@
 import type { PostgrestError } from "@supabase/supabase-js";
-import { ensureAuthSession, getSupabase, isSupabaseConfigured } from "./supabase";
+import { getSupabase, isSupabaseConfigured, requireUser } from "./supabase";
 import { ApiError, toApiError } from "./errors";
 
 export type ApiResult<T> = { data: T; error: PostgrestError | null };
@@ -42,7 +42,7 @@ async function runPipeline<T>(
   const requireAuth = opts.requireAuth ?? true;
   try {
     if (requireAuth && isSupabaseConfigured()) {
-      await ensureAuthSession();
+      await requireUser();
     }
     await runRequestHooks();
     return await fn();

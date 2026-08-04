@@ -271,7 +271,9 @@ create policy profiles_insert_own on public.profiles
   for insert with check (user_id = auth.uid());
 
 create policy trips_select on public.trips
-  for select using (public.is_trip_member(id));
+  for select using (
+    public.is_trip_member(id) or created_by = auth.uid()
+  );
 create policy trips_insert on public.trips
   for insert with check (created_by = auth.uid());
 create policy trips_update on public.trips

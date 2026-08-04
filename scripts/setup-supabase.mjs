@@ -9,23 +9,20 @@
  *
  * Optional:
  *   SUPABASE_SERVICE_ROLE_KEY  (validated only; not written to client env)
- *   SUPABASE_ACCESS_TOKEN      (Management API: anonymous auth + redirect URLs)
+ *   SUPABASE_ACCESS_TOKEN      (Management API: email auth + redirect URLs)
  *   SUPABASE_DB_HOST           (override; default db.<ref>.supabase.co)
  *   SKIP_GH_SECRETS=1
  *   SKIP_MIGRATE=1
  */
 import { spawnSync } from "node:child_process";
-import { readFileSync, writeFileSync, existsSync } from "node:fs";
+import { readdirSync, readFileSync, writeFileSync, existsSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import pg from "pg";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const root = join(__dirname, "..");
-const migrationPath = join(
-  root,
-  "supabase/migrations/20260304120000_init.sql",
-);
+const migrationsDir = join(root, "supabase/migrations");
 
 /** Load KEY=VALUE from a gitignored file into process.env (does not override). */
 function loadEnvFile(path) {
@@ -68,15 +65,24 @@ function log(step, msg) {
   console.log(`\n==> ${step}\n${msg}`);
 }
 
-async function applyMigration(ref, password) {
+function listMigrationFiles() {
+  if (!existsSync(migrationsDir)) {
+    throw new Error(`Migrations dir not found: ${migrationsDir}`);
+  }
+  return readdirSync(migrationsDir)
+    .filter((f) => f.endsWith(".sql"))
+    .sort();
+}
+
+async function applyMigrations(ref, password) {
   if (process.env.SKIP_MIGRATE === "1") {
     log("migrate", "Skipped (SKIP_MIGRATE=1)");
     return;
   }
-  if (!existsSync(migrationPath)) {
-    throw new Error(`Migration not found: ${migrationPath}`);
+  const files = listMigrationFiles();
+  if (!files.length) {
+    throw new Error(`No .sql migrations in ${migrationsDir}`);
   }
-  const sql = readFileSync(migrationPath, "utf8");
   const host =
     optionalEnv("SUPABASE_DB_HOST") || `db.${ref}.supabase.co`;
   const client = new pg.Client({
@@ -92,10 +98,21 @@ async function applyMigration(ref, password) {
   log("migrate", `Connecting to ${host} …`);
   await client.connect();
   try {
-    // Wrap in a transaction; ignore "already exists" style races by running as-is
-    // (migration uses IF NOT EXISTS / OR REPLACE).
-    await client.query(sql);
-    log("migrate", "Applied 20260304120000_init.sql");
+    for (const file of files) {
+      const sql = readFileSync(join(migrationsDir, file), "utf8");
+      try {
+        await client.query(sql);
+        log("migrate", `Applied ${file}`);
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e);
+        // Init migration is not fully idempotent (CREATE POLICY); allow re-runs.
+        if (/already exists/i.test(msg)) {
+          log("migrate", `Skipped ${file} (already applied)`);
+          continue;
+        }
+        throw e;
+      }
+    }
   } finally {
     await client.end();
   }
@@ -106,7 +123,9 @@ async function configureAuth(ref, accessToken) {
     log(
       "auth",
       "SUPABASE_ACCESS_TOKEN not set — skip Management API.\n" +
-        "Manually enable Authentication → Providers → Anonymous, and add Site URL / redirects.",
+        "Manually in Authentication → Providers: enable Email, disable Anonymous.\n" +
+        "Under Auth → Settings: disable “Confirm email” (autoconfirm) so signup needs no SMTP.\n" +
+        "Add Site URL / redirect allow list for localhost and GitHub Pages.",
     );
     return;
   }
@@ -130,7 +149,9 @@ async function configureAuth(ref, accessToken) {
       body: JSON.stringify({
         site_url: siteUrl,
         uri_allow_list: redirects,
-        external_anonymous_users_enabled: true,
+        external_anonymous_users_enabled: false,
+        external_email_enabled: true,
+        mailer_autoconfirm: true,
       }),
     },
   );
@@ -144,7 +165,7 @@ async function configureAuth(ref, accessToken) {
   }
   log(
     "auth",
-    "Enabled anonymous users; set Site URL + redirect allow list.",
+    "Email/password enabled; anonymous disabled; email autoconfirm on; Site URL + redirects set.",
   );
 }
 
@@ -210,7 +231,7 @@ async function main() {
     );
   }
 
-  await applyMigration(ref, dbPassword);
+  await applyMigrations(ref, dbPassword);
   await configureAuth(ref, accessToken);
   writeEnvLocal(url, anonKey);
   setGhSecrets(url, anonKey);
@@ -219,6 +240,7 @@ async function main() {
 Done.
 
 Local:  pnpm dev   (loads apps/web/.env.local)
+Auth:   email + password (no confirmation email). Sign up in the app.
 Prod:   push or redeploy the prod branch so GitHub Actions rebuilds with secrets.
 
   git checkout prod && git push origin prod

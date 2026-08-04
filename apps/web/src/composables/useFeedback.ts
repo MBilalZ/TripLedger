@@ -1,5 +1,6 @@
 import { useConfirm } from "primevue/useconfirm";
 import { useToast } from "primevue/usetoast";
+import { toApiError } from "@/api/errors";
 
 export function useFeedback() {
   const toast = useToast();
@@ -9,11 +10,16 @@ export function useFeedback() {
     toast.add({ severity: "success", summary, life });
   }
 
+  function errorDetail(detail?: unknown): string | undefined {
+    if (detail == null || detail === "") return undefined;
+    return toApiError(detail).message;
+  }
+
   function error(summary: string, detail?: unknown, life = 3000) {
     toast.add({
       severity: "error",
       summary,
-      detail: detail instanceof Error ? detail.message : detail ? String(detail) : undefined,
+      detail: errorDetail(detail),
       life,
     });
   }
