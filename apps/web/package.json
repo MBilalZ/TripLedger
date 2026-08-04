@@ -28,10 +28,10 @@
   },
   "devDependencies": {
     "@types/file-saver": "^2.0.7",
-    "@vitejs/plugin-vue": "^5.2.1",
+    "@vitejs/plugin-vue": "^5.2.4",
     "typescript": "~5.7.3",
-    "vite": "^5.4.11",
-    "vite-plugin-pwa": "^0.21.1",
+    "vite": "^6.4.3",
+    "vite-plugin-pwa": "^0.21.2",
     "vue-tsc": "^2.2.0"
   }
 }
