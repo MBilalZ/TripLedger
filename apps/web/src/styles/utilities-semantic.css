@@ -1,0 +1,39 @@
+/* Semantic color utilities */
+.text-tl {
+  color: var(--tl-text);
+}
+.text-tl-muted {
+  color: var(--tl-muted);
+}
+.text-tl-accent {
+  color: var(--tl-accent);
+}
+.text-tl-accent-dim {
+  color: var(--tl-accent-dim);
+}
+.text-tl-accent-bright {
+  color: var(--tl-accent-dim);
+}
+html.dark .text-tl-accent-bright {
+  color: #5eead4;
+}
+.ml-auto {
+  margin-left: auto;
+}
+.bg-tl {
+  background: var(--tl-bg);
+}
+.bg-tl-panel {
+  background: var(--tl-panel);
+}
+.bg-tl-elevated {
+  background: var(--tl-elevated);
+}
+.border-tl {
+  border-color: var(--tl-border);
+}
+.border-tl-hairline {
+  border-color: var(--tl-hairline);
+}
+
+/* Utility classes used in views (Tailwind-free) */

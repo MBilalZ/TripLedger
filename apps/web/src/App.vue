@@ -2,15 +2,17 @@
 import { onMounted } from "vue";
 import Toast from "primevue/toast";
 import ConfirmDialog from "primevue/confirmdialog";
+import { isSupabaseConfigured } from "@/api/supabase";
 import { useTheme } from "@/composables/useTheme";
+import { useAuthStore } from "@/stores/auth";
 import { useTripsStore } from "@/stores/trips";
-import { isSupabaseConfigured } from "@/lib/supabase";
 
 const { isDark, toggle } = useTheme();
+const auth = useAuthStore();
 const trips = useTripsStore();
 
 onMounted(() => {
-  void trips.initAuth().then(() => trips.refresh());
+  void auth.initAuth().then(() => trips.refresh());
 });
 </script>
 

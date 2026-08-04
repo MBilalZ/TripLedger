@@ -1,127 +1,50 @@
 import { defineStore } from "pinia";
-import { ref } from "vue";
-import type { SettlementRounding, TransferMode } from "@tripledger/types";
-import { db, newId, type TripRow } from "@/db/dexie";
+import { computed, ref } from "vue";
+import type { TripRow } from "@/db/dexie";
 import { seedSampleTrip } from "@/lib/seed";
 import {
-  cloudCreateTrip,
-  cloudDeleteTrip,
-  cloudListTrips,
-  cloudTouchTrip,
-} from "@/lib/cloud/tripsApi";
-import { ensureAuthSession, isSupabaseConfigured } from "@/lib/supabase";
+  getTripRepos,
+  type CreateTripOptions,
+} from "@/repositories";
+import { useAuthStore } from "./auth";
 
-export type CreateTripOptions = {
-  transferMode?: TransferMode;
-  settlementRounding?: SettlementRounding;
-};
+export type { CreateTripOptions };
 
 export const useTripsStore = defineStore("trips", () => {
+  const auth = useAuthStore();
   const trips = ref<TripRow[]>([]);
   const loading = ref(false);
-  const cloud = ref(isSupabaseConfigured());
-  const authReady = ref(!isSupabaseConfigured());
-  const authError = ref<string | null>(null);
 
-  async function initAuth() {
-    if (!isSupabaseConfigured()) {
-      cloud.value = false;
-      authReady.value = true;
-      return;
-    }
-    try {
-      await ensureAuthSession();
-      cloud.value = true;
-      authError.value = null;
-    } catch (e) {
-      authError.value =
-        e instanceof Error ? e.message : "Could not sign in anonymously";
-      cloud.value = false;
-    } finally {
-      authReady.value = true;
-    }
-  }
+  const cloud = computed(() => auth.cloud);
+  const authReady = computed(() => auth.authReady);
+  const authError = computed(() => auth.authError);
 
   async function refresh() {
     loading.value = true;
     try {
-      if (cloud.value) {
-        trips.value = await cloudListTrips();
-      } else {
-        trips.value = await db.trips.orderBy("updatedAt").reverse().toArray();
-      }
+      trips.value = await getTripRepos().list();
     } finally {
       loading.value = false;
     }
   }
 
   async function createTrip(name: string, options: CreateTripOptions = {}) {
-    const trimmed = name.trim();
-    if (!trimmed) throw new Error("Trip name is required");
-
-    if (cloud.value) {
-      const id = await cloudCreateTrip(trimmed, options);
-      await refresh();
-      return id;
-    }
-
-    const now = new Date().toISOString();
-    const trip: TripRow = {
-      id: newId("trip"),
-      name: trimmed,
-      currency: "PKR",
-      createdAt: now,
-      updatedAt: now,
-      transferMode: options.transferMode ?? "minimize",
-      settlementRounding: options.settlementRounding ?? "rupee",
-      settlementHubId: null,
-    };
-    await db.trips.add(trip);
+    const id = await getTripRepos().create(name, options);
     await refresh();
-    return trip.id;
+    return id;
   }
 
   async function deleteTrip(tripId: string) {
-    if (cloud.value) {
-      await cloudDeleteTrip(tripId);
-    } else {
-      await db.transaction(
-        "rw",
-        [
-          db.trips,
-          db.participants,
-          db.pools,
-          db.poolMembers,
-          db.expenses,
-          db.expenseSplits,
-          db.adjustments,
-          db.receipts,
-        ],
-        async () => {
-          await db.participants.where("tripId").equals(tripId).delete();
-          await db.pools.where("tripId").equals(tripId).delete();
-          await db.poolMembers.where("tripId").equals(tripId).delete();
-          await db.expenses.where("tripId").equals(tripId).delete();
-          await db.expenseSplits.where("tripId").equals(tripId).delete();
-          await db.adjustments.where("tripId").equals(tripId).delete();
-          await db.receipts.where("tripId").equals(tripId).delete();
-          await db.trips.delete(tripId);
-        },
-      );
-    }
+    await getTripRepos().delete(tripId);
     await refresh();
   }
 
   async function touch(tripId: string) {
-    if (cloud.value) {
-      await cloudTouchTrip(tripId);
-      return;
-    }
-    await db.trips.update(tripId, { updatedAt: new Date().toISOString() });
+    await getTripRepos().touch(tripId);
   }
 
   async function seedSample() {
-    if (cloud.value) {
+    if (auth.cloud) {
       throw new Error("Sample seed is only available in local (Dexie) mode");
     }
     const id = await seedSampleTrip();
@@ -135,7 +58,7 @@ export const useTripsStore = defineStore("trips", () => {
     cloud,
     authReady,
     authError,
-    initAuth,
+    initAuth: () => auth.initAuth(),
     refresh,
     createTrip,
     deleteTrip,
