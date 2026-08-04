@@ -11,7 +11,8 @@ import {
 
 export function usePwaInstall() {
   const visible = ref(false);
-  const mode = ref<"android" | "ios" | null>(null);
+  /** chromium = deferred beforeinstallprompt; ios = Add to Home Screen tips */
+  const mode = ref<"chromium" | "ios" | null>(null);
   let unsubscribe: (() => void) | null = null;
 
   function refresh() {
@@ -22,7 +23,7 @@ export function usePwaInstall() {
     }
 
     if (getDeferredInstallPrompt()) {
-      mode.value = "android";
+      mode.value = "chromium";
       visible.value = true;
       return;
     }

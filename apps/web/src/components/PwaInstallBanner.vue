@@ -26,7 +26,7 @@ const { showBanner, mode, dismiss, install } = usePwaInstall();
     </div>
     <div class="tl-install-banner__actions">
       <Button
-        v-if="mode === 'android'"
+        v-if="mode === 'chromium'"
         label="Install"
         size="small"
         @click="install"
