@@ -1,10 +1,11 @@
 /**
  * Drain push_events and deliver Web Push to trip members.
  *
- * Auth: Authorization Bearer must equal SUPABASE_SERVICE_ROLE_KEY
+ * Auth: Authorization Bearer must equal PUSH_DRAIN_SECRET
  * (cron / ops only). Unverified JWT "role" claims are rejected.
  *
  * Secrets (supabase secrets set):
+ *   PUSH_DRAIN_SECRET
  *   VAPID_PUBLIC_KEY
  *   VAPID_PRIVATE_KEY
  *   VAPID_SUBJECT  (e.g. mailto:you@example.com)
@@ -55,13 +56,17 @@ Deno.serve(async (req) => {
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
+    const drainSecret = Deno.env.get("PUSH_DRAIN_SECRET") ?? "";
     if (!supabaseUrl || !serviceKey) {
       return json({ error: "Missing Supabase service config" }, 500);
+    }
+    if (!drainSecret) {
+      return json({ error: "PUSH_DRAIN_SECRET not configured" }, 500);
     }
 
     const authHeader = req.headers.get("Authorization") ?? "";
     const token = authHeader.replace(/^Bearer\s+/i, "").trim();
-    if (!token || !timingSafeEqualString(token, serviceKey)) {
+    if (!token || !timingSafeEqualString(token, drainSecret)) {
       return json({ error: "Unauthorized" }, 401);
     }
 

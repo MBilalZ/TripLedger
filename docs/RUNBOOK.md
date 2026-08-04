@@ -45,20 +45,20 @@ supabase secrets set \
 
 ## Drain push queue (cron)
 
-`send-push` accepts **only** the service role key. Production uses
-[`.github/workflows/drain-push.yml`](../.github/workflows/drain-push.yml)
+`send-push` accepts **only** `PUSH_DRAIN_SECRET` as the Bearer token.
+Production uses [`.github/workflows/drain-push.yml`](../.github/workflows/drain-push.yml)
 (every 5 minutes + manual `workflow_dispatch`).
 
-Required GitHub secret (server-side only — never `VITE_*`):
+Required secrets:
 
-- `SUPABASE_SERVICE_ROLE_KEY`
-- `VITE_SUPABASE_URL` (function base URL)
+- Edge: `PUSH_DRAIN_SECRET` (`supabase secrets set`)
+- GitHub: `PUSH_DRAIN_SECRET`, `VITE_SUPABASE_URL`
 
 Manual invoke:
 
 ```bash
 curl -X POST "$SUPABASE_URL/functions/v1/send-push" \
-  -H "Authorization: Bearer $SUPABASE_SERVICE_ROLE_KEY" \
+  -H "Authorization: Bearer $PUSH_DRAIN_SECRET" \
   -H "Content-Type: application/json" \
   -d '{}'
 ```
@@ -87,6 +87,6 @@ curl -X POST "$SUPABASE_URL/functions/v1/send-push" \
 ## Incident: push not delivering
 
 1. Confirm VAPID Edge secrets and `VITE_VAPID_PUBLIC_KEY` match.
-2. Confirm cron is invoking `send-push` with the service role key (401 = wrong auth).
+2. Confirm cron is invoking `send-push` with `PUSH_DRAIN_SECRET` (401 = wrong auth).
 3. Inspect `push_events` / `push_subscriptions` tables.
 4. Check browser notification permission + (iOS) installed PWA.

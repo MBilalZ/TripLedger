@@ -53,7 +53,7 @@ Edge Functions use a **synced copy** of the engine under `supabase/functions/_sh
 | Function | Auth | Role |
 |---|---|---|
 | `recompute-settlement` | Caller user JWT | Settle trip with engine; upsert snapshot |
-| `send-push` | **Service role key only** (cron/ops) | Drain `push_events`, deliver Web Push |
+| `send-push` | **PUSH_DRAIN_SECRET** bearer (cron/ops) | Drain `push_events`, deliver Web Push |
 
 See [supabase/functions/README.md](../supabase/functions/README.md).
 
