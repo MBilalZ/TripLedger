@@ -17,6 +17,7 @@ export default defineConfig({
         "pwa-192x192.png",
         "pwa-512x512.png",
         "pwa-512x512-maskable.png",
+        "push-sw.js",
       ],
       manifest: {
         name: "TripLedger",
@@ -52,6 +53,27 @@ export default defineConfig({
         globPatterns: ["**/*.{js,css,html,ico,svg,png,webmanifest,woff2}"],
         // Main bundle includes Excel/PDF libs; raise SW precache limit.
         maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
+        importScripts: ["push-sw.js"],
+        runtimeCaching: [
+          {
+            urlPattern: ({ request }) => request.destination === "document",
+            handler: "NetworkFirst",
+            options: {
+              cacheName: "tl-pages",
+              networkTimeoutSeconds: 3,
+            },
+          },
+          {
+            urlPattern: ({ request }) =>
+              request.destination === "script" ||
+              request.destination === "style" ||
+              request.destination === "worker",
+            handler: "StaleWhileRevalidate",
+            options: {
+              cacheName: "tl-assets",
+            },
+          },
+        ],
       },
       devOptions: {
         enabled: false,

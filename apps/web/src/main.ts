@@ -10,10 +10,12 @@ import App from "./App.vue";
 import router from "./router";
 import { initTheme } from "./composables/useTheme";
 import { initPwaInstallCapture, registerPwaUpdates } from "./pwa";
+import { startSyncEngine } from "./sync/engine";
 import "./style.css";
 
 initPwaInstallCapture();
 registerPwaUpdates();
+startSyncEngine();
 
 const TripLedgerPreset = definePreset(Aura, {
   semantic: {

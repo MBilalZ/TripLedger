@@ -14,6 +14,46 @@ export interface TripRow {
   transferMode: TransferMode;
   settlementRounding: SettlementRounding;
   settlementHubId: string | null;
+  /** Set when this trip row is a cloud-mode cache entry for a signed-in user. */
+  cloudUserId?: string | null;
+}
+
+export type OutboxOpType =
+  | "addParticipant"
+  | "removeParticipant"
+  | "updateParticipant"
+  | "updateTrip"
+  | "addPool"
+  | "removePool"
+  | "updatePool"
+  | "upsertPoolMember"
+  | "addExpense"
+  | "reviseExpense"
+  | "voidExpense"
+  | "addAdjustment"
+  | "updateAdjustment"
+  | "removeAdjustments"
+  | "updateSettlementSettings"
+  | "createTrip"
+  | "deleteTrip"
+  | "touchTrip";
+
+export interface OutboxRow {
+  id: string;
+  tripId: string;
+  op: OutboxOpType;
+  payload: unknown;
+  createdAt: string;
+  retries: number;
+  lastError: string | null;
+}
+
+export interface SyncMetaRow {
+  tripId: string;
+  userId: string;
+  lastPulledAt: string | null;
+  serverUpdatedAt: string | null;
+  myRole: "owner" | "member" | null;
 }
 
 export interface ParticipantRow {
@@ -100,6 +140,8 @@ export class TripLedgerDB extends Dexie {
   expenseSplits!: Table<ExpenseSplitRow, string>;
   adjustments!: Table<AdjustmentRow, string>;
   receipts!: Table<ReceiptRow, string>;
+  syncMeta!: Table<SyncMetaRow, string>;
+  outbox!: Table<OutboxRow, string>;
 
   constructor() {
     super("tripledger");
@@ -155,6 +197,18 @@ export class TripLedgerDB extends Dexie {
             e.splitMode = e.splitMode ?? null;
           });
       });
+    this.version(3).stores({
+      trips: "id, updatedAt, cloudUserId",
+      participants: "id, tripId, displayName",
+      pools: "id, tripId, name",
+      poolMembers: "id, tripId, poolId, [poolId+participantId]",
+      expenses: "id, tripId, poolId, supersededById, createdAt",
+      expenseSplits: "id, tripId, expenseId, [expenseId+participantId]",
+      adjustments: "id, tripId, createdAt",
+      receipts: "id, tripId, expenseId",
+      syncMeta: "tripId, userId",
+      outbox: "id, tripId, createdAt",
+    });
   }
 }
 

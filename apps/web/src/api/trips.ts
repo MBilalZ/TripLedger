@@ -27,14 +27,25 @@ export async function createTrip(
   name: string,
   options: CreateTripOptions = {},
 ): Promise<string> {
+  const tripId = newId("trip");
+  const participantId = newId("p");
+  await createTripWithIds(tripId, participantId, name, options);
+  return tripId;
+}
+
+/** Offline-safe create using client-generated ids. */
+export async function createTripWithIds(
+  tripId: string,
+  participantId: string,
+  name: string,
+  options: CreateTripOptions = {},
+): Promise<string> {
   const uid = await requireUser();
   const profile = await fetchUserProfile();
   const ownerName =
     profile?.displayName?.trim() ||
     profile?.email?.split("@")[0] ||
     "You";
-  const tripId = newId("trip");
-  const participantId = newId("p");
   const trimmed = name.trim();
   if (!trimmed) throw new Error("Trip name is required");
 
