@@ -73,7 +73,7 @@ export interface WorkspaceRepo {
 
   updateTrip(
     tripId: string,
-    patch: { name?: string; currency?: string },
+    patch: { name?: string },
   ): Promise<Partial<TripRow>>;
 
   addPool(
@@ -109,7 +109,8 @@ export interface WorkspaceRepo {
     splits: ExpenseSplitRow[],
   ): Promise<void>;
 
-  voidExpense(expenseId: string, voidId: string): Promise<void>;
+  /** Second arg is tripId (cloud RPC) or legacy void sentinel (local). */
+  voidExpense(expenseId: string, tripIdOrVoidId: string): Promise<void>;
 
   addAdjustment(row: AdjustmentRow): Promise<void>;
 

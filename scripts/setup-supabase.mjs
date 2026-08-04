@@ -85,32 +85,65 @@ async function applyMigrations(ref, password) {
   }
   const host =
     optionalEnv("SUPABASE_DB_HOST") || `db.${ref}.supabase.co`;
+  const rejectUnauthorized = process.env.SUPABASE_DB_SSL_INSECURE !== "1";
   const client = new pg.Client({
     host,
     port: 5432,
     database: "postgres",
     user: "postgres",
     password,
-    ssl: { rejectUnauthorized: false },
+    ssl: { rejectUnauthorized },
     connectionTimeoutMillis: 30_000,
   });
 
-  log("migrate", `Connecting to ${host} …`);
+  log(
+    "migrate",
+    `Connecting to ${host} (TLS verify ${rejectUnauthorized ? "on" : "off"}) …`,
+  );
   await client.connect();
   try {
+    await client.query(`
+      create table if not exists public.schema_migrations (
+        filename text primary key,
+        applied_at timestamptz not null default now()
+      );
+    `);
     for (const file of files) {
+      const { rows } = await client.query(
+        `select 1 from public.schema_migrations where filename = $1`,
+        [file],
+      );
+      if (rows.length) {
+        log("migrate", `Already recorded ${file}`);
+        continue;
+      }
       const sql = readFileSync(join(migrationsDir, file), "utf8");
       try {
+        await client.query("begin");
         await client.query(sql);
+        await client.query(
+          `insert into public.schema_migrations (filename) values ($1)`,
+          [file],
+        );
+        await client.query("commit");
         log("migrate", `Applied ${file}`);
       } catch (e) {
+        await client.query("rollback");
         const msg = e instanceof Error ? e.message : String(e);
-        // Init migration is not fully idempotent (CREATE POLICY); allow re-runs.
+        // Legacy DBs applied init before schema_migrations existed.
         if (/already exists/i.test(msg)) {
-          log("migrate", `Skipped ${file} (already applied)`);
+          await client.query(
+            `insert into public.schema_migrations (filename) values ($1)
+             on conflict (filename) do nothing`,
+            [file],
+          );
+          log(
+            "migrate",
+            `Recorded ${file} as applied (objects already existed — verify policies manually)`,
+          );
           continue;
         }
-        throw e;
+        throw new Error(`Migration ${file} failed: ${msg}`);
       }
     }
   } finally {
@@ -241,6 +274,7 @@ Done.
 
 Local:  pnpm dev   (loads apps/web/.env.local)
 Auth:   email + password (no confirmation email). Sign up in the app.
+Edge:   supabase functions deploy recompute-settlement
 Prod:   push or redeploy the prod branch so GitHub Actions rebuilds with secrets.
 
   git checkout prod && git push origin prod

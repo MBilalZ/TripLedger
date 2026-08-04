@@ -3,7 +3,7 @@ import type {
   ConsistencyViolation,
   ParticipantMoney,
   Transfer,
-} from "@tripledger/types";
+} from "./types.ts";
 
 export function checkInvariants(args: {
   tripTotalPaisa: number;

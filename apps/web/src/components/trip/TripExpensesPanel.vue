@@ -8,6 +8,7 @@ import Select from "primevue/select";
 import Textarea from "primevue/textarea";
 import { formatPkr } from "@tripledger/engine";
 import SplitMatrix from "@/components/SplitMatrix.vue";
+import ExpenseReceipts from "@/components/trip/ExpenseReceipts.vue";
 import { EXPENSE_CATEGORIES, SPLIT_MODES } from "@/constants/tripOptions";
 import { useExpenseForm } from "@/composables/useExpenseForm";
 import type { MoreSection } from "@/composables/useTripTabs";
@@ -194,6 +195,11 @@ const {
             </div>
           </div>
         </div>
+        <ExpenseReceipts
+          class="mt-2"
+          :trip-id="store.tripId"
+          :expense-id="e.id"
+        />
       </div>
     </div>
   </div>

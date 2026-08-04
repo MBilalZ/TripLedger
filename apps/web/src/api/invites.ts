@@ -2,16 +2,26 @@ import { ApiError } from "./errors";
 import { apiCall, apiMutate } from "./client";
 import { requireUser } from "./supabase";
 
+const INVITE_TTL_MS = 7 * 24 * 60 * 60 * 1000;
+
+export type InviteRow = {
+  token: string;
+  created_at: string;
+  expires_at: string | null;
+  revoked_at: string | null;
+};
+
 export async function createInvite(tripId: string): Promise<string> {
   const uid = await requireUser();
   const token = crypto.randomUUID().replace(/-/g, "");
+  const expiresAt = new Date(Date.now() + INVITE_TTL_MS).toISOString();
   await apiMutate(
     (sb) =>
       sb.from("trip_invites").insert({
         token,
         trip_id: tripId,
         created_by: uid,
-        expires_at: null,
+        expires_at: expiresAt,
         revoked_at: null,
       }),
     { requireAuth: false },
@@ -28,7 +38,7 @@ export async function revokeInvite(token: string): Promise<void> {
   );
 }
 
-export async function listInvites(tripId: string) {
+export async function listInvites(tripId: string): Promise<InviteRow[]> {
   return apiCall(async (sb) => {
     const res = await sb
       .from("trip_invites")
@@ -36,8 +46,8 @@ export async function listInvites(tripId: string) {
       .eq("trip_id", tripId)
       .is("revoked_at", null)
       .order("created_at", { ascending: false });
-    if (res.error) return res;
-    return { data: res.data ?? [], error: null };
+    if (res.error) return { data: [] as InviteRow[], error: res.error };
+    return { data: (res.data ?? []) as InviteRow[], error: null };
   });
 }
 

@@ -4,6 +4,7 @@ import * as participantsApi from "@/api/participants";
 import * as poolsApi from "@/api/pools";
 import * as tripsApi from "@/api/trips";
 import { loadWorkspace } from "@/api/workspace";
+import { apiMutate } from "@/api/client";
 import { newId, type PoolMemberRow, type TripRow } from "@/db/dexie";
 import {
   adjustmentToDb,
@@ -22,6 +23,7 @@ export const cloudWorkspaceRepo: WorkspaceRepo = {
   async addParticipant(tripId, displayName, pools) {
     const name = displayName.trim();
     if (!name) throw new Error("Name is required");
+    if (name.length > 80) throw new Error("Name must be at most 80 characters");
     const participant = {
       id: newId("p"),
       tripId,
@@ -37,22 +39,29 @@ export const cloudWorkspaceRepo: WorkspaceRepo = {
       percentBps: 0,
       exactPaisa: 0,
     }));
-    await participantsApi.insertParticipant(participantToDb(participant));
-    for (const m of members) {
-      await poolsApi.insertPoolMember(poolMemberToDb(m));
-    }
+    await apiMutate((sb) =>
+      sb.rpc("add_participant_with_pool_members", {
+        p_participant: participantToDb(participant),
+        p_members: members.map(poolMemberToDb),
+      }),
+    );
     return { participant, members };
   },
 
   async removeParticipant(participantId) {
     await participantsApi.deletePoolMembersByParticipant(participantId);
     await participantsApi.deleteExpenseSplitsByParticipant(participantId);
-    await participantsApi.deleteParticipant(participantId);
+    // Drop linked membership first (owner RLS); sole-owner leave is blocked in DB.
+    await participantsApi.deleteTripMembersByParticipant(participantId);
+    await participantsApi.updateParticipant(participantId, {
+      deleted_at: new Date().toISOString(),
+    });
   },
 
   async updateParticipant(id, displayName) {
     const name = displayName.trim();
     if (!name) throw new Error("Name is required");
+    if (name.length > 80) throw new Error("Name must be at most 80 characters");
     await participantsApi.updateParticipant(id, { display_name: name });
   },
 
@@ -63,12 +72,11 @@ export const cloudWorkspaceRepo: WorkspaceRepo = {
     if (patch.name !== undefined) {
       const name = patch.name.trim();
       if (!name) throw new Error("Trip name is required");
+      if (name.length > 120) throw new Error("Trip name is too long");
       updates.name = name;
     }
-    if (patch.currency !== undefined) updates.currency = "PKR";
     await tripsApi.updateTrip(tripId, {
-      name: updates.name,
-      currency: updates.currency,
+      ...(updates.name !== undefined ? { name: updates.name } : {}),
       updated_at: updates.updatedAt,
     });
     return updates;
@@ -104,8 +112,9 @@ export const cloudWorkspaceRepo: WorkspaceRepo = {
   },
 
   async removePool(poolId) {
-    await poolsApi.deletePoolMembersByPool(poolId);
-    await poolsApi.deletePool(poolId);
+    await poolsApi.updatePool(poolId, {
+      deleted_at: new Date().toISOString(),
+    });
   },
 
   async updatePool(id, patch) {
@@ -161,26 +170,22 @@ export const cloudWorkspaceRepo: WorkspaceRepo = {
   },
 
   async addExpense(_tripId, row, splits) {
-    await expensesApi.insertExpense(expenseToDb(row));
-    for (const s of splits) {
-      await expensesApi.insertExpenseSplit(expenseSplitToDb(s));
-    }
+    await expensesApi.createExpenseWithSplits(
+      expenseToDb(row),
+      splits.map(expenseSplitToDb),
+    );
   },
 
   async reviseExpense(oldExpenseId, row, splits) {
-    await expensesApi.insertExpense(expenseToDb(row));
-    await expensesApi.updateExpense(oldExpenseId, {
-      superseded_by_id: row.id,
-    });
-    await expensesApi.deleteExpenseSplitsByExpense(oldExpenseId);
-    for (const s of splits) {
-      await expensesApi.insertExpenseSplit(expenseSplitToDb(s));
-    }
+    await expensesApi.reviseExpenseWithSplits(
+      oldExpenseId,
+      expenseToDb(row),
+      splits.map(expenseSplitToDb),
+    );
   },
 
-  async voidExpense(expenseId, voidId) {
-    await expensesApi.updateExpense(expenseId, { superseded_by_id: voidId });
-    await expensesApi.deleteExpenseSplitsByExpense(expenseId);
+  async voidExpense(expenseId, tripId) {
+    await expensesApi.voidExpenseRpc(expenseId, tripId);
   },
 
   async addAdjustment(row) {
@@ -197,7 +202,10 @@ export const cloudWorkspaceRepo: WorkspaceRepo = {
   },
 
   async removeAdjustments(ids) {
-    for (const id of ids) await adjustmentsApi.deleteAdjustment(id);
+    const now = new Date().toISOString();
+    for (const id of ids) {
+      await adjustmentsApi.updateAdjustment(id, { deleted_at: now });
+    }
   },
 
   async updateSettlementSettings(tripId, patch) {

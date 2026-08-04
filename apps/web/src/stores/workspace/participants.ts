@@ -40,6 +40,9 @@ export function createParticipantActions(
   }
 
   async function removeParticipant(id: string) {
+    if (state.myRole.value === "member") {
+      throw new Error("Only the trip owner can remove people");
+    }
     const blockers = participantDeleteBlockers(id);
     if (blockers.length) {
       throw new Error(

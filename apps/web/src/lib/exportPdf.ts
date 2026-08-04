@@ -15,14 +15,31 @@ export async function exportTripPdf(tripId: string): Promise<void> {
   const bold = await pdf.embedFont(StandardFonts.HelveticaBold);
   let y = 800;
 
+  /** WinAnsi-safe text for StandardFonts (drops unsupported glyphs). */
+  const sanitize = (text: string) =>
+    text
+      .normalize("NFKD")
+      .replace(/[^\x20-\x7E]/g, "?")
+      .slice(0, 200);
+
   const line = (text: string, size = 11, useBold = false) => {
-    page.drawText(text, {
-      x: 48,
-      y,
-      size,
-      font: useBold ? bold : font,
-      color: rgb(0.1, 0.12, 0.16),
-    });
+    try {
+      page.drawText(sanitize(text), {
+        x: 48,
+        y,
+        size,
+        font: useBold ? bold : font,
+        color: rgb(0.1, 0.12, 0.16),
+      });
+    } catch {
+      page.drawText("?", {
+        x: 48,
+        y,
+        size,
+        font,
+        color: rgb(0.1, 0.12, 0.16),
+      });
+    }
     y -= size + 6;
   };
 

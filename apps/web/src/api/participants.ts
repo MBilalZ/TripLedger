@@ -32,3 +32,11 @@ export async function deleteExpenseSplitsByParticipant(
     sb.from("expense_splits").delete().eq("participant_id", participantId),
   );
 }
+
+export async function deleteTripMembersByParticipant(
+  participantId: string,
+): Promise<void> {
+  await apiMutate((sb) =>
+    sb.from("trip_members").delete().eq("participant_id", participantId),
+  );
+}

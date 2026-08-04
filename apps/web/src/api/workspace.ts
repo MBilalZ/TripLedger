@@ -18,6 +18,7 @@ import {
   type DbTrip,
 } from "./mappers";
 import { apiCall } from "./client";
+import { requireUser } from "./supabase";
 
 export type WorkspaceSnapshot = {
   trip: TripRow | null;
@@ -27,10 +28,12 @@ export type WorkspaceSnapshot = {
   expenses: ExpenseRow[];
   expenseSplits: ExpenseSplitRow[];
   adjustments: AdjustmentRow[];
+  myRole: "owner" | "member" | null;
 };
 
 export async function loadWorkspace(tripId: string): Promise<WorkspaceSnapshot> {
   return apiCall(async (sb) => {
+    const uid = await requireUser().catch(() => null);
     const [
       tripRes,
       partsRes,
@@ -39,14 +42,31 @@ export async function loadWorkspace(tripId: string): Promise<WorkspaceSnapshot> 
       expRes,
       splitsRes,
       adjRes,
+      roleRes,
     ] = await Promise.all([
       sb.from("trips").select("*").eq("id", tripId).maybeSingle(),
-      sb.from("participants").select("*").eq("trip_id", tripId),
-      sb.from("pools").select("*").eq("trip_id", tripId),
+      sb
+        .from("participants")
+        .select("*")
+        .eq("trip_id", tripId)
+        .is("deleted_at", null),
+      sb.from("pools").select("*").eq("trip_id", tripId).is("deleted_at", null),
       sb.from("pool_members").select("*").eq("trip_id", tripId),
       sb.from("expenses").select("*").eq("trip_id", tripId),
       sb.from("expense_splits").select("*").eq("trip_id", tripId),
-      sb.from("adjustments").select("*").eq("trip_id", tripId),
+      sb
+        .from("adjustments")
+        .select("*")
+        .eq("trip_id", tripId)
+        .is("deleted_at", null),
+      uid
+        ? sb
+            .from("trip_members")
+            .select("role")
+            .eq("trip_id", tripId)
+            .eq("user_id", uid)
+            .maybeSingle()
+        : Promise.resolve({ data: null, error: null }),
     ]);
 
     for (const res of [
@@ -63,8 +83,12 @@ export async function loadWorkspace(tripId: string): Promise<WorkspaceSnapshot> 
 
     const expenses = (expRes.data ?? [])
       .map(expenseFromDb)
-      .filter((e) => !e.supersededById)
+      .filter((e) => !e.supersededById && !e.voided)
       .sort((a, b) => a.createdAt.localeCompare(b.createdAt));
+
+    const role = roleRes.data?.role;
+    const myRole =
+      role === "owner" || role === "member" ? role : null;
 
     return {
       data: {
@@ -75,6 +99,7 @@ export async function loadWorkspace(tripId: string): Promise<WorkspaceSnapshot> 
         expenses,
         expenseSplits: (splitsRes.data ?? []).map(expenseSplitFromDb),
         adjustments: (adjRes.data ?? []).map(adjustmentFromDb),
+        myRole,
       },
       error: null,
     };
