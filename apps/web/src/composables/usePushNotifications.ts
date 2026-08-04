@@ -1,13 +1,12 @@
 import { computed, onMounted, ref } from "vue";
 import {
-  drainPushEvents,
   getVapidPublicKey,
   pushSupported,
   subscribeToPush,
   unsubscribeFromPush,
 } from "@/api/push";
-import { useAuthStore } from "@/stores/auth";
 import { isIosDevice, isPwaStandalone } from "@/pwa";
+import { useAuthStore } from "@/stores/auth";
 
 export function usePushNotifications() {
   const auth = useAuthStore();
@@ -25,11 +24,7 @@ export function usePushNotifications() {
   );
 
   const iosNeedsInstall = computed(
-    () =>
-      auth.cloud &&
-      !!getVapidPublicKey() &&
-      isIosDevice() &&
-      !isPwaStandalone(),
+    () => auth.cloud && !!getVapidPublicKey() && isIosDevice() && !isPwaStandalone(),
   );
 
   async function refresh() {
@@ -52,7 +47,6 @@ export function usePushNotifications() {
     try {
       await subscribeToPush();
       enabled.value = true;
-      void drainPushEvents();
     } catch (e) {
       error.value = e instanceof Error ? e.message : "Could not enable push";
       enabled.value = false;

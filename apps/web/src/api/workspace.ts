@@ -7,17 +7,17 @@ import type {
   PoolRow,
   TripRow,
 } from "@/db/dexie";
+import { apiCall } from "./client";
 import {
   adjustmentFromDb,
+  type DbTrip,
   expenseFromDb,
   expenseSplitFromDb,
   participantFromDb,
   poolFromDb,
   poolMemberFromDb,
   tripFromDb,
-  type DbTrip,
 } from "./mappers";
-import { apiCall } from "./client";
 import { requireUser } from "./supabase";
 
 export type WorkspaceSnapshot = {
@@ -34,40 +34,24 @@ export type WorkspaceSnapshot = {
 export async function loadWorkspace(tripId: string): Promise<WorkspaceSnapshot> {
   return apiCall(async (sb) => {
     const uid = await requireUser().catch(() => null);
-    const [
-      tripRes,
-      partsRes,
-      poolsRes,
-      membersRes,
-      expRes,
-      splitsRes,
-      adjRes,
-      roleRes,
-    ] = await Promise.all([
-      sb.from("trips").select("*").eq("id", tripId).maybeSingle(),
-      sb
-        .from("participants")
-        .select("*")
-        .eq("trip_id", tripId)
-        .is("deleted_at", null),
-      sb.from("pools").select("*").eq("trip_id", tripId).is("deleted_at", null),
-      sb.from("pool_members").select("*").eq("trip_id", tripId),
-      sb.from("expenses").select("*").eq("trip_id", tripId),
-      sb.from("expense_splits").select("*").eq("trip_id", tripId),
-      sb
-        .from("adjustments")
-        .select("*")
-        .eq("trip_id", tripId)
-        .is("deleted_at", null),
-      uid
-        ? sb
-            .from("trip_members")
-            .select("role")
-            .eq("trip_id", tripId)
-            .eq("user_id", uid)
-            .maybeSingle()
-        : Promise.resolve({ data: null, error: null }),
-    ]);
+    const [tripRes, partsRes, poolsRes, membersRes, expRes, splitsRes, adjRes, roleRes] =
+      await Promise.all([
+        sb.from("trips").select("*").eq("id", tripId).maybeSingle(),
+        sb.from("participants").select("*").eq("trip_id", tripId).is("deleted_at", null),
+        sb.from("pools").select("*").eq("trip_id", tripId).is("deleted_at", null),
+        sb.from("pool_members").select("*").eq("trip_id", tripId),
+        sb.from("expenses").select("*").eq("trip_id", tripId),
+        sb.from("expense_splits").select("*").eq("trip_id", tripId),
+        sb.from("adjustments").select("*").eq("trip_id", tripId).is("deleted_at", null),
+        uid
+          ? sb
+              .from("trip_members")
+              .select("role")
+              .eq("trip_id", tripId)
+              .eq("user_id", uid)
+              .maybeSingle()
+          : Promise.resolve({ data: null, error: null }),
+      ]);
 
     for (const res of [
       tripRes,
@@ -78,7 +62,8 @@ export async function loadWorkspace(tripId: string): Promise<WorkspaceSnapshot> 
       splitsRes,
       adjRes,
     ]) {
-      if (res.error) return { data: null as unknown as WorkspaceSnapshot, error: res.error };
+      if (res.error)
+        return { data: null as unknown as WorkspaceSnapshot, error: res.error };
     }
 
     const expenses = (expRes.data ?? [])
@@ -87,8 +72,7 @@ export async function loadWorkspace(tripId: string): Promise<WorkspaceSnapshot> 
       .sort((a, b) => a.createdAt.localeCompare(b.createdAt));
 
     const role = roleRes.data?.role;
-    const myRole =
-      role === "owner" || role === "member" ? role : null;
+    const myRole = role === "owner" || role === "member" ? role : null;
 
     return {
       data: {

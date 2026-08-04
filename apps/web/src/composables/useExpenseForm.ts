@@ -1,7 +1,7 @@
-import { computed, reactive, ref, watch } from "vue";
-import { storeToRefs } from "pinia";
 import { paisaToRupees } from "@tripledger/engine";
 import type { SplitMode } from "@tripledger/types";
+import { storeToRefs } from "pinia";
+import { computed, reactive, ref, watch } from "vue";
 import type { SplitPerson } from "@/components/SplitMatrix.vue";
 import { useWorkspaceStore } from "@/stores/workspace";
 import { useFeedback } from "./useFeedback";
@@ -141,10 +141,7 @@ export function useExpenseForm() {
     });
   }
 
-  function onCustomSplitChange(
-    pid: string,
-    patch: Partial<SplitPerson>,
-  ) {
+  function onCustomSplitChange(pid: string, patch: Partial<SplitPerson>) {
     const row = customSplits.value.find((x) => x.participantId === pid);
     if (row) Object.assign(row, patch);
   }

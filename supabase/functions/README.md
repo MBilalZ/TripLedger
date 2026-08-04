@@ -2,7 +2,7 @@
 
 ## `recompute-settlement`
 
-Loads a trip workspace with the caller’s JWT, runs `@tripledger/engine` (`_shared/`), and upserts `trip_settlement_snapshots`.
+Loads a trip workspace with the caller’s JWT, runs the settlement engine from `_shared/` (kept in sync with `@tripledger/engine` via `pnpm sync:edge-engine`), and upserts `trip_settlement_snapshots`.
 
 ```bash
 supabase functions deploy recompute-settlement
@@ -13,6 +13,8 @@ The web app prefers this function when available and falls back to local `settle
 ## `send-push`
 
 Drains `push_events` (filled by DB triggers on expenses, trip members, adjustments, settlement snapshots) and delivers Web Push to member subscriptions.
+
+**Auth:** `Authorization: Bearer <SUPABASE_SERVICE_ROLE_KEY>` only (cron/ops). User JWTs and forged `role` claims are rejected. The web app does **not** invoke this function.
 
 ### VAPID keys
 
@@ -41,4 +43,15 @@ supabase functions deploy send-push
 
 Apply migration `20260805000000_push_notifications.sql` (via `pnpm setup:supabase` or your usual migrate path).
 
-The web client invokes `send-push` after successful sync to drain the queue. You can also schedule periodic invokes (Supabase cron / external) with a user JWT or by calling the function URL with the anon key + a signed-in Authorization header.
+### Cron / ops drain
+
+Invoke periodically with the **service role** key (never ship this key to the browser):
+
+```bash
+curl -X POST "$SUPABASE_URL/functions/v1/send-push" \
+  -H "Authorization: Bearer $SUPABASE_SERVICE_ROLE_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{}'
+```
+
+Schedule via Supabase cron, GitHub Actions, or an external scheduler. See [docs/RUNBOOK.md](../../docs/RUNBOOK.md).

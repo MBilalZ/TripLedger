@@ -43,18 +43,13 @@ export function createPoolActions(state: WorkspaceState, core: CoreActions) {
     }
     await getWorkspaceRepo().removePool(id);
     state.pools.value = state.pools.value.filter((p) => p.id !== id);
-    state.poolMembers.value = state.poolMembers.value.filter(
-      (m) => m.poolId !== id,
-    );
+    state.poolMembers.value = state.poolMembers.value.filter((m) => m.poolId !== id);
     await core.touch();
     core.recomputeSettlement();
     state.announce("Pool deleted");
   }
 
-  async function updatePool(
-    id: string,
-    patch: { name?: string; splitMode?: SplitMode },
-  ) {
+  async function updatePool(id: string, patch: { name?: string; splitMode?: SplitMode }) {
     const updates = await getWorkspaceRepo().updatePool(id, patch);
     state.pools.value = state.pools.value.map((p) =>
       p.id === id ? { ...p, ...updates } : p,

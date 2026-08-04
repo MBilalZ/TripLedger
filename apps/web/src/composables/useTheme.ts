@@ -50,9 +50,7 @@ function ensureInit() {
 export function useTheme() {
   ensureInit();
 
-  const isDark = computed(() =>
-    isDarkResolved(preference.value, systemDark.value),
-  );
+  const isDark = computed(() => isDarkResolved(preference.value, systemDark.value));
 
   watch([preference, systemDark], () => {
     applyDom(isDark.value);

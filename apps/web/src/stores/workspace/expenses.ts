@@ -1,6 +1,6 @@
 import { parseRupeesToPaisa } from "@tripledger/validation";
-import { newId, type ExpenseRow, type ExpenseSplitRow } from "@/db/dexie";
-import { getWorkspaceRepo, type ExpenseInput } from "@/repositories";
+import { type ExpenseRow, type ExpenseSplitRow, newId } from "@/db/dexie";
+import { type ExpenseInput, getWorkspaceRepo } from "@/repositories";
 import type { CoreActions } from "./core";
 import type { PoolActions } from "./pools";
 import type { WorkspaceState } from "./state";
@@ -46,10 +46,7 @@ export function createExpenseActions(
     };
   }
 
-  function buildSplits(
-    expenseId: string,
-    input: ExpenseInput,
-  ): ExpenseSplitRow[] {
+  function buildSplits(expenseId: string, input: ExpenseInput): ExpenseSplitRow[] {
     if (!input.splitMode || !input.splits) return [];
     return input.splits.map((s) => ({
       id: newId("es"),

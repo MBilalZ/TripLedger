@@ -1,11 +1,6 @@
 import * as adjustmentsApi from "@/api/adjustments";
-import * as expensesApi from "@/api/expenses";
-import * as participantsApi from "@/api/participants";
-import * as poolsApi from "@/api/pools";
-import * as tripsApi from "@/api/trips";
-import { loadWorkspace } from "@/api/workspace";
 import { apiMutate } from "@/api/client";
-import { newId, type PoolMemberRow, type TripRow } from "@/db/dexie";
+import * as expensesApi from "@/api/expenses";
 import {
   adjustmentToDb,
   expenseSplitToDb,
@@ -14,6 +9,11 @@ import {
   poolMemberToDb,
   poolToDb,
 } from "@/api/mappers";
+import * as participantsApi from "@/api/participants";
+import * as poolsApi from "@/api/pools";
+import * as tripsApi from "@/api/trips";
+import { loadWorkspace } from "@/api/workspace";
+import { newId, type PoolMemberRow, type TripRow } from "@/db/dexie";
 import type { WorkspaceRepo } from "../types";
 
 export const cloudWorkspaceRepo: WorkspaceRepo = {
@@ -49,13 +49,7 @@ export const cloudWorkspaceRepo: WorkspaceRepo = {
   },
 
   async removeParticipant(participantId) {
-    await participantsApi.deletePoolMembersByParticipant(participantId);
-    await participantsApi.deleteExpenseSplitsByParticipant(participantId);
-    // Drop linked membership first (owner RLS); sole-owner leave is blocked in DB.
-    await participantsApi.deleteTripMembersByParticipant(participantId);
-    await participantsApi.updateParticipant(participantId, {
-      deleted_at: new Date().toISOString(),
-    });
+    await participantsApi.removeParticipantRpc(participantId);
   },
 
   async updateParticipant(id, displayName) {
@@ -127,9 +121,7 @@ export const cloudWorkspaceRepo: WorkspaceRepo = {
     if (patch.splitMode !== undefined) updates.splitMode = patch.splitMode;
     await poolsApi.updatePool(id, {
       ...(updates.name !== undefined ? { name: updates.name } : {}),
-      ...(updates.splitMode !== undefined
-        ? { split_mode: updates.splitMode }
-        : {}),
+      ...(updates.splitMode !== undefined ? { split_mode: updates.splitMode } : {}),
     });
     return updates;
   },
@@ -144,12 +136,8 @@ export const cloudWorkspaceRepo: WorkspaceRepo = {
         await poolsApi.updatePoolMember(existing.id, {
           ...(clean.included !== undefined ? { included: clean.included } : {}),
           ...(clean.shares !== undefined ? { shares: clean.shares } : {}),
-          ...(clean.percentBps !== undefined
-            ? { percent_bps: clean.percentBps }
-            : {}),
-          ...(clean.exactPaisa !== undefined
-            ? { exact_paisa: clean.exactPaisa }
-            : {}),
+          ...(clean.percentBps !== undefined ? { percent_bps: clean.percentBps } : {}),
+          ...(clean.exactPaisa !== undefined ? { exact_paisa: clean.exactPaisa } : {}),
         });
       }
       return { ...existing, ...clean };
@@ -211,9 +199,7 @@ export const cloudWorkspaceRepo: WorkspaceRepo = {
   async updateSettlementSettings(tripId, patch) {
     const updatedAt = new Date().toISOString();
     await tripsApi.updateTrip(tripId, {
-      ...(patch.transferMode !== undefined
-        ? { transfer_mode: patch.transferMode }
-        : {}),
+      ...(patch.transferMode !== undefined ? { transfer_mode: patch.transferMode } : {}),
       ...(patch.settlementRounding !== undefined
         ? { settlement_rounding: patch.settlementRounding }
         : {}),

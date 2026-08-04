@@ -93,10 +93,7 @@ export async function signUpWithPassword(
   return data.user;
 }
 
-export async function signInWithPassword(
-  email: string,
-  password: string,
-): Promise<User> {
+export async function signInWithPassword(email: string, password: string): Promise<User> {
   const sb = getSupabase();
   const { data, error } = await sb.auth.signInWithPassword({
     email: email.trim().toLowerCase(),
@@ -126,25 +123,19 @@ export async function upsertProfileDisplayName(
   if (error) throw toApiError(error);
 }
 
-export async function updateProfileDisplayName(
-  displayName: string,
-): Promise<void> {
+export async function updateProfileDisplayName(displayName: string): Promise<void> {
   const uid = await requireUser();
   await upsertProfileDisplayName(uid, displayName);
 }
 
-export async function fetchUserProfile(
-  user?: User | null,
-): Promise<UserProfile | null> {
+export async function fetchUserProfile(user?: User | null): Promise<UserProfile | null> {
   if (!isSupabaseConfigured()) return null;
   const sb = getSupabase();
-  const sessionUser =
-    user ?? (await sb.auth.getSession()).data.session?.user ?? null;
+  const sessionUser = user ?? (await sb.auth.getSession()).data.session?.user ?? null;
   if (!sessionUser) return null;
 
   let displayName: string | null =
-    (sessionUser.user_metadata?.display_name as string | undefined)?.trim() ||
-    null;
+    (sessionUser.user_metadata?.display_name as string | undefined)?.trim() || null;
 
   const { data } = await sb
     .from("profiles")

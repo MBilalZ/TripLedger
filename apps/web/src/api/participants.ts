@@ -1,8 +1,6 @@
 import { apiMutate } from "./client";
 
-export async function insertParticipant(
-  row: Record<string, unknown>,
-): Promise<void> {
+export async function insertParticipant(row: Record<string, unknown>): Promise<void> {
   await apiMutate((sb) => sb.from("participants").insert(row));
 }
 
@@ -38,5 +36,11 @@ export async function deleteTripMembersByParticipant(
 ): Promise<void> {
   await apiMutate((sb) =>
     sb.from("trip_members").delete().eq("participant_id", participantId),
+  );
+}
+
+export async function removeParticipantRpc(participantId: string): Promise<void> {
+  await apiMutate((sb) =>
+    sb.rpc("remove_participant", { p_participant_id: participantId }),
   );
 }

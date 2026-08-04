@@ -1,8 +1,6 @@
-import type {
-  SettlementRounding,
-  SplitMode,
-  TransferMode,
-} from "@tripledger/types";
+import type { SettlementRounding, SplitMode, TransferMode } from "@tripledger/types";
+import type { CreateTripOptions } from "@/api/trips";
+import type { WorkspaceSnapshot } from "@/api/workspace";
 import type {
   AdjustmentRow,
   ExpenseRow,
@@ -12,8 +10,6 @@ import type {
   PoolRow,
   TripRow,
 } from "@/db/dexie";
-import type { CreateTripOptions } from "@/api/trips";
-import type { WorkspaceSnapshot } from "@/api/workspace";
 
 export type { CreateTripOptions, WorkspaceSnapshot };
 
@@ -66,15 +62,9 @@ export interface WorkspaceRepo {
 
   removeParticipant(participantId: string): Promise<void>;
 
-  updateParticipant(
-    id: string,
-    displayName: string,
-  ): Promise<void>;
+  updateParticipant(id: string, displayName: string): Promise<void>;
 
-  updateTrip(
-    tripId: string,
-    patch: { name?: string },
-  ): Promise<Partial<TripRow>>;
+  updateTrip(tripId: string, patch: { name?: string }): Promise<Partial<TripRow>>;
 
   addPool(
     tripId: string,
@@ -97,11 +87,7 @@ export interface WorkspaceRepo {
     patch: PoolMemberPatch,
   ): Promise<PoolMemberRow>;
 
-  addExpense(
-    tripId: string,
-    row: ExpenseRow,
-    splits: ExpenseSplitRow[],
-  ): Promise<void>;
+  addExpense(tripId: string, row: ExpenseRow, splits: ExpenseSplitRow[]): Promise<void>;
 
   reviseExpense(
     oldExpenseId: string,

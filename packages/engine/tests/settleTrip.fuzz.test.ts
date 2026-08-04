@@ -1,7 +1,7 @@
-import fc from "fast-check";
-import { describe, expect, it } from "vitest";
 import type { TripFacts } from "@tripledger/types";
 import { DEFAULT_TRIP_SETTINGS } from "@tripledger/types";
+import fc from "fast-check";
+import { describe, expect, it } from "vitest";
 import { settleTrip } from "../src/index.js";
 
 describe("settleTrip property tests", () => {
@@ -41,7 +41,7 @@ describe("settleTrip property tests", () => {
               id: `e${i}`,
               poolId: pool.id,
               description: `Expense ${i}`,
-              amountPaisa: 100 * (1 + (i * 17) % 500),
+              amountPaisa: 100 * (1 + ((i * 17) % 500)),
               paidById: payer.id,
               splitMode: null as null,
             };
@@ -71,10 +71,7 @@ describe("settleTrip property tests", () => {
 
           const result = settleTrip(facts);
           expect(result.consistency.ok).toBe(true);
-          const sumFinal = result.participants.reduce(
-            (s, p) => s + p.balancePaisa,
-            0,
-          );
+          const sumFinal = result.participants.reduce((s, p) => s + p.balancePaisa, 0);
           expect(sumFinal).toBe(0);
           const sumRounded = result.participants.reduce(
             (s, p) => s + p.balanceRupeesPaisa,
@@ -96,7 +93,7 @@ describe("settleTrip property tests", () => {
         }));
         const base = Math.floor(10_000 / nPeople);
         let rem = 10_000 - base * nPeople;
-        const poolMembers = participants.map((p, i) => {
+        const poolMembers = participants.map((p, _i) => {
           const extra = rem > 0 ? 1 : 0;
           rem -= extra;
           return {
@@ -164,8 +161,6 @@ describe("settleTrip property tests", () => {
     const result = settleTrip(facts);
     expect(result.consistency.ok).toBe(false);
     expect(result.settlements).toHaveLength(0);
-    expect(
-      result.consistency.violations.some((v) => v.id === "INPUT"),
-    ).toBe(true);
+    expect(result.consistency.violations.some((v) => v.id === "INPUT")).toBe(true);
   });
 });

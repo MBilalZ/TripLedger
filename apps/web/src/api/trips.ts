@@ -1,7 +1,7 @@
 import type { SettlementRounding, TransferMode } from "@tripledger/types";
 import { newId, type TripRow } from "@/db/dexie";
-import { tripFromDb, type DbTrip } from "./mappers";
 import { apiCall, apiMutate } from "./client";
+import { type DbTrip, tripFromDb } from "./mappers";
 import { fetchUserProfile, requireUser } from "./supabase";
 
 export type CreateTripOptions = {
@@ -43,9 +43,7 @@ export async function createTripWithIds(
   const uid = await requireUser();
   const profile = await fetchUserProfile();
   const ownerName =
-    profile?.displayName?.trim() ||
-    profile?.email?.split("@")[0] ||
-    "You";
+    profile?.displayName?.trim() || profile?.email?.split("@")[0] || "You";
   const trimmed = name.trim();
   if (!trimmed) throw new Error("Trip name is required");
 
@@ -71,10 +69,7 @@ export async function deleteTrip(tripId: string): Promise<void> {
 export async function touchTrip(tripId: string): Promise<void> {
   await apiMutate(
     (sb) =>
-      sb
-        .from("trips")
-        .update({ updated_at: new Date().toISOString() })
-        .eq("id", tripId),
+      sb.from("trips").update({ updated_at: new Date().toISOString() }).eq("id", tripId),
     { requireAuth: false },
   );
 }
@@ -109,10 +104,6 @@ export async function fetchMyTripRole(
 export async function leaveTrip(tripId: string): Promise<void> {
   const uid = await requireUser();
   await apiMutate((sb) =>
-    sb
-      .from("trip_members")
-      .delete()
-      .eq("trip_id", tripId)
-      .eq("user_id", uid),
+    sb.from("trip_members").delete().eq("trip_id", tripId).eq("user_id", uid),
   );
 }

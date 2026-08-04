@@ -1,6 +1,9 @@
 /**
  * Drain push_events and deliver Web Push to trip members.
  *
+ * Auth: Authorization Bearer must equal SUPABASE_SERVICE_ROLE_KEY
+ * (cron / ops only). Unverified JWT "role" claims are rejected.
+ *
  * Secrets (supabase secrets set):
  *   VAPID_PUBLIC_KEY
  *   VAPID_PRIVATE_KEY
@@ -10,6 +13,7 @@
  */
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 import webpush from "npm:web-push@3.6.7";
+import { reportError } from "../_shared/reportError.ts";
 
 type PushEvent = {
   id: number;
@@ -42,8 +46,7 @@ Deno.serve(async (req) => {
   try {
     const vapidPublic = Deno.env.get("VAPID_PUBLIC_KEY") ?? "";
     const vapidPrivate = Deno.env.get("VAPID_PRIVATE_KEY") ?? "";
-    const vapidSubject =
-      Deno.env.get("VAPID_SUBJECT") ?? "mailto:tripledger@localhost";
+    const vapidSubject = Deno.env.get("VAPID_SUBJECT") ?? "mailto:tripledger@localhost";
     if (!vapidPublic || !vapidPrivate) {
       return json({ error: "VAPID keys not configured" }, 500);
     }
@@ -56,32 +59,17 @@ Deno.serve(async (req) => {
       return json({ error: "Missing Supabase service config" }, 500);
     }
 
-    // Allow service-role bearer (cron/ops) or a signed-in user JWT (app drain).
     const authHeader = req.headers.get("Authorization") ?? "";
     const token = authHeader.replace(/^Bearer\s+/i, "").trim();
-    if (!token) return json({ error: "Unauthorized" }, 401);
-
-    const role = jwtRole(token);
-    if (role !== "service_role") {
-      const userClient = createClient(
-        supabaseUrl,
-        Deno.env.get("SUPABASE_ANON_KEY") ?? "",
-        { global: { headers: { Authorization: `Bearer ${token}` } } },
-      );
-      const { data: userData, error: userErr } = await userClient.auth.getUser(
-        token,
-      );
-      if (userErr || !userData.user) {
-        return json({ error: "Unauthorized" }, 401);
-      }
+    if (!token || !timingSafeEqualString(token, serviceKey)) {
+      return json({ error: "Unauthorized" }, 401);
     }
 
     const supabase = createClient(supabaseUrl, serviceKey);
 
-    const { data: events, error: claimErr } = await supabase.rpc(
-      "claim_push_events",
-      { p_limit: 50 },
-    );
+    const { data: events, error: claimErr } = await supabase.rpc("claim_push_events", {
+      p_limit: 50,
+    });
     if (claimErr) return json({ error: claimErr.message }, 500);
 
     const claimed = (events ?? []) as PushEvent[];
@@ -145,22 +133,21 @@ Deno.serve(async (req) => {
 
     return json({ claimed: claimed.length, sent, failed });
   } catch (e) {
+    reportError(e, { tag: "send-push" });
     const message = e instanceof Error ? e.message : "send-push failed";
     return json({ error: message }, 500);
   }
 });
 
-function jwtRole(token: string): string | null {
-  try {
-    const part = token.split(".")[1];
-    if (!part) return null;
-    const normalized = part.replace(/-/g, "+").replace(/_/g, "/");
-    const padded = normalized + "=".repeat((4 - (normalized.length % 4)) % 4);
-    const payload = JSON.parse(atob(padded)) as { role?: string };
-    return payload.role ?? null;
-  } catch {
-    return null;
-  }
+/** Constant-time-ish compare (length difference is observable). */
+function timingSafeEqualString(a: string, b: string): boolean {
+  const encoder = new TextEncoder();
+  const aa = encoder.encode(a);
+  const bb = encoder.encode(b);
+  if (aa.length !== bb.length) return false;
+  let diff = 0;
+  for (let i = 0; i < aa.length; i++) diff |= aa[i]! ^ bb[i]!;
+  return diff === 0;
 }
 
 function json(body: unknown, status = 200) {

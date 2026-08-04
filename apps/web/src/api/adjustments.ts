@@ -1,8 +1,6 @@
 import { apiMutate } from "./client";
 
-export async function insertAdjustment(
-  row: Record<string, unknown>,
-): Promise<void> {
+export async function insertAdjustment(row: Record<string, unknown>): Promise<void> {
   await apiMutate((sb) => sb.from("adjustments").insert(row));
 }
 

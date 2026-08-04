@@ -1,8 +1,8 @@
+import { paisaToRupees, settleTrip } from "@tripledger/engine";
 import ExcelJS from "exceljs";
 import { saveAs } from "file-saver";
-import { paisaToRupees, settleTrip } from "@tripledger/engine";
-import { loadTripFacts } from "@/lib/tripFacts";
 import { db } from "@/db/dexie";
+import { loadTripFacts } from "@/lib/tripFacts";
 
 export async function exportTripExcel(tripId: string): Promise<void> {
   const trip = await db.trips.get(tripId);
@@ -21,12 +21,7 @@ export async function exportTripExcel(tripId: string): Promise<void> {
   summary.addRow([]);
   summary.addRow(["Pool", "Mode", "Total Rs", "Heads/Weight"]);
   for (const p of result.pools) {
-    summary.addRow([
-      p.name,
-      p.splitMode,
-      paisaToRupees(p.totalPaisa),
-      p.headCount,
-    ]);
+    summary.addRow([p.name, p.splitMode, paisaToRupees(p.totalPaisa), p.headCount]);
   }
 
   const people = wb.addWorksheet("Participants");
@@ -43,7 +38,15 @@ export async function exportTripExcel(tripId: string): Promise<void> {
   }
 
   const expenses = wb.addWorksheet("Expenses");
-  expenses.addRow(["Date", "Description", "Category", "Pool", "Payer", "Amount Rs", "Notes"]);
+  expenses.addRow([
+    "Date",
+    "Description",
+    "Category",
+    "Pool",
+    "Payer",
+    "Amount Rs",
+    "Notes",
+  ]);
   const poolName = new Map(facts.pools.map((p) => [p.id, p.name]));
   const payerName = new Map(facts.participants.map((p) => [p.id, p.displayName]));
   for (const e of facts.expenses) {
@@ -65,7 +68,7 @@ export async function exportTripExcel(tripId: string): Promise<void> {
   }
 
   const buf = await wb.xlsx.writeBuffer();
-  const safe = trip.name.replace(/[^\w\-]+/g, "_");
+  const safe = trip.name.replace(/[^\w-]+/g, "_");
   saveAs(
     new Blob([buf], {
       type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",

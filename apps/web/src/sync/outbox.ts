@@ -39,10 +39,7 @@ export async function removeOutbox(id: string): Promise<void> {
   await refreshPendingCount();
 }
 
-export async function markOutboxError(
-  id: string,
-  message: string,
-): Promise<void> {
+export async function markOutboxError(id: string, message: string): Promise<void> {
   const row = await db.outbox.get(id);
   if (!row) return;
   await db.outbox.update(id, {

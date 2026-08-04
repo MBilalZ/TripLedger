@@ -30,8 +30,16 @@ jobs:
           install: false
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
+      - name: Lint
+        run: pnpm lint
+      - name: Edge engine sync check
+        run: pnpm check:edge-engine
+      - name: RLS policy static checks
+        run: pnpm check:rls
       - name: Test engine
         run: pnpm test:engine
+      - name: Test web unit
+        run: pnpm test:web
       - name: Typecheck web
         run: pnpm --filter @tripledger/web typecheck
       - name: Build web
@@ -40,6 +48,7 @@ jobs:
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
           VITE_VAPID_PUBLIC_KEY: ${{ secrets.VITE_VAPID_PUBLIC_KEY }}
+          VITE_SENTRY_DSN: ${{ secrets.VITE_SENTRY_DSN }}
         run: pnpm --filter @tripledger/web build
       - name: SPA fallback for GitHub Pages
         run: cp apps/web/dist/index.html apps/web/dist/404.html

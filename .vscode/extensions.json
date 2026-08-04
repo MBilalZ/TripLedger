@@ -1,7 +1,4 @@
 {
   "recommendations": ["Vue.volar"],
-  "unwantedRecommendations": [
-    "johnsoncodehk.volar",
-    "Vue.vscode-typescript-vue-plugin"
-  ]
+  "unwantedRecommendations": ["johnsoncodehk.volar", "Vue.vscode-typescript-vue-plugin"]
 }

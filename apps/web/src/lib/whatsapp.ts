@@ -1,10 +1,7 @@
-import type { SettleTripResult, SettlementRounding } from "@tripledger/types";
 import { formatPkr, paisaToRupees } from "@tripledger/engine";
+import type { SettlementRounding, SettleTripResult } from "@tripledger/types";
 
-function formatTransferAmount(
-  amountPaisa: number,
-  rounding: SettlementRounding,
-): string {
+function formatTransferAmount(amountPaisa: number, rounding: SettlementRounding): string {
   const rupees = paisaToRupees(amountPaisa);
   return rounding === "none"
     ? rupees.toLocaleString("en-PK", {
@@ -28,8 +25,7 @@ export function buildWhatsAppSummary(
   ];
 
   for (const p of result.participants) {
-    const adj =
-      p.adjNetPaisa !== 0 ? ` · Adj ${formatPkr(p.adjNetPaisa)}` : "";
+    const adj = p.adjNetPaisa !== 0 ? ` · Adj ${formatPkr(p.adjNetPaisa)}` : "";
     lines.push(
       `${p.displayName}: Paid ${formatPkr(p.paidPaisa, 0)} · Share ${formatPkr(p.sharePaisa)}${adj}`,
     );

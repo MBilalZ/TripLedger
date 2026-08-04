@@ -1,9 +1,7 @@
 import { computed, ref } from "vue";
 import type { SyncStatusKind } from "./types";
 
-const online = ref(
-  typeof navigator !== "undefined" ? navigator.onLine : true,
-);
+const online = ref(typeof navigator !== "undefined" ? navigator.onLine : true);
 const syncing = ref(false);
 const pendingCount = ref(0);
 const lastError = ref<string | null>(null);

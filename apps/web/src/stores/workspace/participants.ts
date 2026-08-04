@@ -2,10 +2,7 @@ import { getWorkspaceRepo } from "@/repositories";
 import type { CoreActions } from "./core";
 import type { WorkspaceState } from "./state";
 
-export function createParticipantActions(
-  state: WorkspaceState,
-  core: CoreActions,
-) {
+export function createParticipantActions(state: WorkspaceState, core: CoreActions) {
   async function addParticipant(displayName: string) {
     const name = displayName.trim();
     if (!name) return;

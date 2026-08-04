@@ -1,35 +1,26 @@
+import { requireUser } from "@/api/supabase";
+import * as tripsApi from "@/api/trips";
+import { loadWorkspace } from "@/api/workspace";
 import {
-  newId,
   type AdjustmentRow,
   type ExpenseRow,
   type ExpenseSplitRow,
+  newId,
   type OutboxRow,
   type PoolMemberRow,
   type TripRow,
 } from "@/db/dexie";
+import { reportError } from "@/lib/reportError";
 import { cloudTripListRepo } from "@/repositories/cloud/tripList";
 import { cloudWorkspaceRepo } from "@/repositories/cloud/workspace";
-import { requireUser } from "@/api/supabase";
-import { loadWorkspace } from "@/api/workspace";
-import * as tripsApi from "@/api/trips";
 import {
   deleteCachedTrip,
   listCachedCloudTrips,
   readCachedWorkspace,
   writeCachedWorkspace,
 } from "./cache";
-import {
-  listOutbox,
-  markOutboxError,
-  refreshPendingCount,
-  removeOutbox,
-} from "./outbox";
-import {
-  noteKeepBothMerge,
-  setOnline,
-  setSyncError,
-  setSyncing,
-} from "./status";
+import { listOutbox, markOutboxError, refreshPendingCount, removeOutbox } from "./outbox";
+import { noteKeepBothMerge, setOnline, setSyncError, setSyncing } from "./status";
 
 let flushPromise: Promise<void> | null = null;
 let started = false;
@@ -67,8 +58,7 @@ async function applyOutboxRow(row: OutboxRow): Promise<void> {
       await cloudWorkspaceRepo.addParticipant(
         row.tripId,
         String(p.displayName),
-        (p.pools as Parameters<typeof cloudWorkspaceRepo.addParticipant>[2]) ??
-          [],
+        (p.pools as Parameters<typeof cloudWorkspaceRepo.addParticipant>[2]) ?? [],
       );
       // Prefer payload with pre-built participant so ids match — re-call with known ids via API path below if needed.
       break;
@@ -76,23 +66,16 @@ async function applyOutboxRow(row: OutboxRow): Promise<void> {
       await cloudWorkspaceRepo.removeParticipant(String(p.participantId));
       break;
     case "updateParticipant":
-      await cloudWorkspaceRepo.updateParticipant(
-        String(p.id),
-        String(p.displayName),
-      );
+      await cloudWorkspaceRepo.updateParticipant(String(p.id), String(p.displayName));
       break;
     case "updateTrip":
-      await cloudWorkspaceRepo.updateTrip(
-        row.tripId,
-        p.patch as { name?: string },
-      );
+      await cloudWorkspaceRepo.updateTrip(row.tripId, p.patch as { name?: string });
       break;
     case "addPool":
       await cloudWorkspaceRepo.addPool(
         row.tripId,
         String(p.name),
-        (p.participants as Parameters<typeof cloudWorkspaceRepo.addPool>[2]) ??
-          [],
+        (p.participants as Parameters<typeof cloudWorkspaceRepo.addPool>[2]) ?? [],
       );
       break;
     case "removePool":
@@ -149,9 +132,7 @@ async function applyOutboxRow(row: OutboxRow): Promise<void> {
     case "updateSettlementSettings":
       await cloudWorkspaceRepo.updateSettlementSettings(
         row.tripId,
-        p.patch as Parameters<
-          typeof cloudWorkspaceRepo.updateSettlementSettings
-        >[1],
+        p.patch as Parameters<typeof cloudWorkspaceRepo.updateSettlementSettings>[1],
       );
       break;
     default:
@@ -230,7 +211,10 @@ export async function pullTrip(tripId: string): Promise<void> {
   if (before?.expenses.length && snapshot.expenses.length) {
     const beforeIds = new Set(before.expenses.map((e) => e.id));
     const added = snapshot.expenses.some((e) => !beforeIds.has(e.id));
-    if (added && before.expenses.some((e) => !snapshot.expenses.find((s) => s.id === e.id) === false)) {
+    if (
+      added &&
+      before.expenses.some((e) => !snapshot.expenses.find((s) => s.id === e.id) === false)
+    ) {
       // Remote brought additional rows while we also had local — keep-both already in DB merge via replace.
     }
     // After writeCachedWorkspace we replace with server. Pending outbox creates still flush afterward (keep both).
@@ -263,25 +247,24 @@ export async function flushOutbox(tripId?: string): Promise<void> {
           if (row.tripId && row.op !== "deleteTrip") {
             try {
               await pullTrip(row.tripId);
-            } catch {
-              // Pull is best-effort after push.
+            } catch (pullErr) {
+              reportError(pullErr, {
+                tag: "sync.pull_after_push",
+                tripId: row.tripId,
+                op: row.op,
+              });
             }
           }
         } catch (e) {
           const message = e instanceof Error ? e.message : "Sync failed";
           await markOutboxError(row.id, message);
           setSyncError(message);
+          reportError(e, { tag: "sync.outbox", tripId: row.tripId, op: row.op });
           // Keep-both: do not drop the op; stop this pass so order is preserved.
           break;
         }
       }
       await refreshPendingCount();
-      try {
-        const { drainPushEvents } = await import("@/api/push");
-        void drainPushEvents();
-      } catch {
-        /* optional */
-      }
     } finally {
       setSyncing(false);
       flushPromise = null;

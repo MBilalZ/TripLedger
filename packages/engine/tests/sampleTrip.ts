@@ -2,12 +2,7 @@ import type { TripFacts } from "@tripledger/types";
 import { DEFAULT_TRIP_SETTINGS } from "@tripledger/types";
 import { rupeesToPaisa } from "../src/money.js";
 
-function member(
-  poolId: string,
-  participantId: string,
-  shares: number,
-  included = true,
-) {
+function member(poolId: string, participantId: string, shares: number, included = true) {
   return {
     poolId,
     participantId,

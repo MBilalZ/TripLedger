@@ -15,7 +15,7 @@
  *   SKIP_MIGRATE=1
  */
 import { spawnSync } from "node:child_process";
-import { readdirSync, readFileSync, writeFileSync, existsSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import pg from "pg";
@@ -83,8 +83,7 @@ async function applyMigrations(ref, password) {
   if (!files.length) {
     throw new Error(`No .sql migrations in ${migrationsDir}`);
   }
-  const host =
-    optionalEnv("SUPABASE_DB_HOST") || `db.${ref}.supabase.co`;
+  const host = optionalEnv("SUPABASE_DB_HOST") || `db.${ref}.supabase.co`;
   const rejectUnauthorized = process.env.SUPABASE_DB_SSL_INSECURE !== "1";
   const client = new pg.Client({
     host,
@@ -130,20 +129,15 @@ async function applyMigrations(ref, password) {
       } catch (e) {
         await client.query("rollback");
         const msg = e instanceof Error ? e.message : String(e);
-        // Legacy DBs applied init before schema_migrations existed.
-        if (/already exists/i.test(msg)) {
-          await client.query(
-            `insert into public.schema_migrations (filename) values ($1)
-             on conflict (filename) do nothing`,
-            [file],
-          );
-          log(
-            "migrate",
-            `Recorded ${file} as applied (objects already existed — verify policies manually)`,
-          );
-          continue;
-        }
-        throw new Error(`Migration ${file} failed: ${msg}`);
+        // Do not mark failed migrations as applied — that hides env drift.
+        // If a legacy DB was applied before schema_migrations existed, record
+        // the matching filename manually after verifying objects/policies.
+        throw new Error(
+          `Migration ${file} failed: ${msg}\n` +
+            (/already exists/i.test(msg)
+              ? "Hint: objects already exist. Verify the schema, then insert the filename into public.schema_migrations only if the migration is fully applied."
+              : ""),
+        );
       }
     }
   } finally {
@@ -171,23 +165,20 @@ async function configureAuth(ref, accessToken) {
     "https://MBilalZ.github.io/TripLedger/**",
   ].join(",");
 
-  const res = await fetch(
-    `https://api.supabase.com/v1/projects/${ref}/config/auth`,
-    {
-      method: "PATCH",
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        site_url: siteUrl,
-        uri_allow_list: redirects,
-        external_anonymous_users_enabled: false,
-        external_email_enabled: true,
-        mailer_autoconfirm: true,
-      }),
+  const res = await fetch(`https://api.supabase.com/v1/projects/${ref}/config/auth`, {
+    method: "PATCH",
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      "Content-Type": "application/json",
     },
-  );
+    body: JSON.stringify({
+      site_url: siteUrl,
+      uri_allow_list: redirects,
+      external_anonymous_users_enabled: false,
+      external_email_enabled: true,
+      mailer_autoconfirm: true,
+    }),
+  });
 
   if (!res.ok) {
     const body = await res.text();
@@ -245,9 +236,7 @@ function setGhSecrets(url, anonKey) {
       cwd: root,
     });
     if (r.status !== 0) {
-      throw new Error(
-        `gh secret set ${name} failed:\n${r.stderr || r.stdout}`,
-      );
+      throw new Error(`gh secret set ${name} failed:\n${r.stderr || r.stdout}`);
     }
   }
   log(
@@ -285,11 +274,13 @@ Done.
 
 Local:  pnpm dev   (loads apps/web/.env.local)
 Auth:   email + password (no confirmation email). Sign up in the app.
-Edge:   supabase functions deploy recompute-settlement
+Edge:   pnpm sync:edge-engine
+        supabase functions deploy recompute-settlement
         supabase functions deploy send-push
 Push:   npx web-push generate-vapid-keys
         supabase secrets set VAPID_PUBLIC_KEY=... VAPID_PRIVATE_KEY=... VAPID_SUBJECT=mailto:you@example.com
         set VITE_VAPID_PUBLIC_KEY (local + gh secret)
+        schedule cron drain with service-role bearer (see docs/RUNBOOK.md)
 Prod:   push or redeploy the prod branch so GitHub Actions rebuilds with secrets.
 
   git checkout prod && git push origin prod

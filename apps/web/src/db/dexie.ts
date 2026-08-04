@@ -1,9 +1,5 @@
+import type { SettlementRounding, SplitMode, TransferMode } from "@tripledger/types";
 import Dexie, { type Table } from "dexie";
-import type {
-  SettlementRounding,
-  SplitMode,
-  TransferMode,
-} from "@tripledger/types";
 
 export interface TripRow {
   id: string;

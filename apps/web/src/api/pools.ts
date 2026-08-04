@@ -15,9 +15,7 @@ export async function deletePool(id: string): Promise<void> {
   await apiMutate((sb) => sb.from("pools").delete().eq("id", id));
 }
 
-export async function insertPoolMember(
-  row: Record<string, unknown>,
-): Promise<void> {
+export async function insertPoolMember(row: Record<string, unknown>): Promise<void> {
   await apiMutate((sb) => sb.from("pool_members").insert(row));
 }
 

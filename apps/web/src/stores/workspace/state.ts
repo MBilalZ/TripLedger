@@ -1,5 +1,5 @@
-import { ref } from "vue";
 import type { SettleTripResult } from "@tripledger/types";
+import { ref } from "vue";
 import type {
   AdjustmentRow,
   ExpenseRow,

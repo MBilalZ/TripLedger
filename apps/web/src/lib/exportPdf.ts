@@ -1,8 +1,8 @@
-import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
-import { saveAs } from "file-saver";
 import { paisaToRupees, settleTrip } from "@tripledger/engine";
-import { loadTripFacts } from "@/lib/tripFacts";
+import { saveAs } from "file-saver";
+import { PDFDocument, rgb, StandardFonts } from "pdf-lib";
 import { db } from "@/db/dexie";
+import { loadTripFacts } from "@/lib/tripFacts";
 
 export async function exportTripPdf(tripId: string): Promise<void> {
   const trip = await db.trips.get(tripId);
@@ -45,7 +45,9 @@ export async function exportTripPdf(tripId: string): Promise<void> {
 
   line("TripLedger Settlement", 18, true);
   line(trip.name, 14, true);
-  line(`Trip Total: Rs. ${paisaToRupees(result.summary.tripTotalPaisa).toLocaleString("en-PK")}`);
+  line(
+    `Trip Total: Rs. ${paisaToRupees(result.summary.tripTotalPaisa).toLocaleString("en-PK")}`,
+  );
   line(`Balanced: ${result.consistency.ok ? "YES" : "NO"}`, 11, true);
   y -= 8;
   line("Who Pays Whom", 13, true);
@@ -69,9 +71,6 @@ export async function exportTripPdf(tripId: string): Promise<void> {
   }
 
   const bytes = await pdf.save();
-  const safe = trip.name.replace(/[^\w\-]+/g, "_");
-  saveAs(
-    new Blob([bytes], { type: "application/pdf" }),
-    `tripledger-${safe}.pdf`,
-  );
+  const safe = trip.name.replace(/[^\w-]+/g, "_");
+  saveAs(new Blob([bytes], { type: "application/pdf" }), `tripledger-${safe}.pdf`);
 }

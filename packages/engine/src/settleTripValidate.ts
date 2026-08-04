@@ -34,9 +34,7 @@ export function resolveExpenseSplit(
     return { mode: expense.splitMode, lines };
   }
 
-  const lines = facts.poolMembers
-    .filter((m) => m.poolId === pool.id)
-    .map(asSplitLine);
+  const lines = facts.poolMembers.filter((m) => m.poolId === pool.id).map(asSplitLine);
   return { mode: pool.splitMode, lines };
 }
 
@@ -101,12 +99,7 @@ export function validateInput(facts: TripFacts): ConsistencyViolation[] {
     }
     const members = facts.poolMembers.filter((m) => m.poolId === pool.id);
     violations.push(
-      ...validateSplitLines(
-        `Pool ${pool.name}`,
-        pool.splitMode,
-        members,
-        participantIds,
-      ),
+      ...validateSplitLines(`Pool ${pool.name}`, pool.splitMode, members, participantIds),
     );
   }
 
@@ -201,9 +194,7 @@ export function validateInput(facts: TripFacts): ConsistencyViolation[] {
       (e) => e.poolId === pool.id && !e.supersededById && !e.splitMode,
     );
     if (poolExpenses.length === 0) continue;
-    const members = facts.poolMembers.filter(
-      (m) => m.poolId === pool.id && m.included,
-    );
+    const members = facts.poolMembers.filter((m) => m.poolId === pool.id && m.included);
     if (members.length === 0) {
       violations.push({
         id: "INPUT",

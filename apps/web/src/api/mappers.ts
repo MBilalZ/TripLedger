@@ -1,3 +1,4 @@
+import type { SettlementRounding, SplitMode, TransferMode } from "@tripledger/types";
 import type {
   AdjustmentRow,
   ExpenseRow,
@@ -7,7 +8,6 @@ import type {
   PoolRow,
   TripRow,
 } from "@/db/dexie";
-import type { SettlementRounding, SplitMode, TransferMode } from "@tripledger/types";
 
 export type DbTrip = {
   id: string;
@@ -34,10 +34,7 @@ export function tripFromDb(r: DbTrip): TripRow {
   };
 }
 
-export function tripToDb(
-  trip: TripRow,
-  createdBy?: string,
-): Record<string, unknown> {
+export function tripToDb(trip: TripRow, createdBy?: string): Record<string, unknown> {
   return {
     id: trip.id,
     name: trip.name,

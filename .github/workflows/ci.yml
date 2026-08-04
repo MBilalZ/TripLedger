@@ -23,11 +23,25 @@ jobs:
           install: false
       - name: Install
         run: pnpm install --frozen-lockfile
+      - name: Lint
+        run: pnpm lint
+      - name: Edge engine sync check
+        run: pnpm check:edge-engine
+      - name: RLS policy static checks
+        run: pnpm check:rls
       - name: Test engine
         run: pnpm test:engine
       - name: Test validation
         run: pnpm --filter @tripledger/validation test
+      - name: Test web unit
+        run: pnpm test:web
       - name: Typecheck web
         run: pnpm --filter @tripledger/web typecheck
+      - name: Build web
+        run: pnpm --filter @tripledger/web build
+      - name: Install Playwright Chromium
+        run: pnpm --filter @tripledger/web exec playwright install chromium --with-deps
+      - name: E2E smoke
+        run: pnpm test:e2e
       - name: Audit (high+)
         run: pnpm audit --audit-level=high

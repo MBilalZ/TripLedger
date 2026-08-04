@@ -2,10 +2,7 @@ import { defineStore } from "pinia";
 import { computed, ref } from "vue";
 import type { TripRow } from "@/db/dexie";
 import { seedSampleTrip } from "@/lib/seed";
-import {
-  getTripRepos,
-  type CreateTripOptions,
-} from "@/repositories";
+import { type CreateTripOptions, getTripRepos } from "@/repositories";
 import { useAuthStore } from "./auth";
 
 export type { CreateTripOptions };

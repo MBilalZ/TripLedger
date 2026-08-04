@@ -1,6 +1,6 @@
 import type { PostgrestError } from "@supabase/supabase-js";
-import { getSupabase, isSupabaseConfigured, requireUser } from "./supabase";
 import { ApiError, toApiError } from "./errors";
+import { getSupabase, isSupabaseConfigured, requireUser } from "./supabase";
 
 export type ApiResult<T> = { data: T; error: PostgrestError | null };
 

@@ -29,9 +29,7 @@ self.addEventListener("notificationclick", (event) => {
   event.notification.close();
   const tripId = event.notification.data?.tripId;
   const scope = self.registration.scope;
-  const target = tripId
-    ? new URL(`trips/${tripId}`, scope).href
-    : scope;
+  const target = tripId ? new URL(`trips/${tripId}`, scope).href : scope;
 
   event.waitUntil(
     clients.matchAll({ type: "window", includeUncontrolled: true }).then((list) => {
