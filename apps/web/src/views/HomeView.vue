@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import { onMounted, ref } from "vue";
+import { computed, onMounted, ref } from "vue";
 import { useRouter } from "vue-router";
 import { useToast } from "primevue/usetoast";
+import { useConfirm } from "primevue/useconfirm";
 import Button from "primevue/button";
-import InputText from "primevue/inputtext";
 import Menu from "primevue/menu";
 import type { MenuItem } from "primevue/menuitem";
 import { useTripsStore } from "@/stores/trips";
@@ -12,17 +12,12 @@ import { downloadFullBackup, importBackupFile } from "@/lib/backup";
 const store = useTripsStore();
 const router = useRouter();
 const toast = useToast();
-const newName = ref("");
+const confirm = useConfirm();
 const fileInput = ref<HTMLInputElement | null>(null);
 const toolsMenu = ref<InstanceType<typeof Menu> | null>(null);
+const isDev = import.meta.env.DEV;
 
 onMounted(() => store.refresh());
-
-async function create() {
-  const id = await store.createTrip(newName.value);
-  newName.value = "";
-  router.push(`/trips/${id}`);
-}
 
 async function seed() {
   const id = await store.seedSample();
@@ -61,12 +56,16 @@ async function onImport(ev: Event) {
   }
 }
 
-const toolItems: MenuItem[] = [
-  {
-    label: "Load sample trip",
-    icon: "pi pi-sparkles",
-    command: () => seed(),
-  },
+const toolItems = computed<MenuItem[]>(() => [
+  ...(isDev
+    ? [
+        {
+          label: "Load sample trip",
+          icon: "pi pi-sparkles",
+          command: () => seed(),
+        } satisfies MenuItem,
+      ]
+    : []),
   {
     label: "Backup all",
     icon: "pi pi-download",
@@ -77,10 +76,29 @@ const toolItems: MenuItem[] = [
     icon: "pi pi-upload",
     command: () => fileInput.value?.click(),
   },
-];
+]);
 
 function toggleTools(event: Event) {
   toolsMenu.value?.toggle(event);
+}
+
+function confirmDeleteTrip(tripId: string, tripName: string, event: Event) {
+  event.preventDefault();
+  event.stopPropagation();
+  confirm.require({
+    message: `Delete “${tripName}” from this device? This cannot be undone.`,
+    header: "Delete trip",
+    icon: "pi pi-exclamation-triangle",
+    acceptClass: "p-button-danger",
+    accept: async () => {
+      await store.deleteTrip(tripId);
+      toast.add({
+        severity: "success",
+        summary: "Trip deleted",
+        life: 2000,
+      });
+    },
+  });
 }
 </script>
 
@@ -94,13 +112,12 @@ function toggleTools(event: Event) {
         Everything stays on this device. Export JSON to share or back up.
       </p>
       <div class="flex flex-col gap-3 sm:flex-row">
-        <InputText
-          v-model="newName"
-          placeholder="New trip name"
-          class="w-full"
-          @keyup.enter="create"
+        <Button
+          label="New trip"
+          icon="pi pi-plus"
+          class="w-full sm:w-auto"
+          @click="router.push('/trips/new')"
         />
-        <Button label="Create" icon="pi pi-plus" @click="create" />
       </div>
       <div class="mt-3 flex items-center gap-2">
         <Button
@@ -131,25 +148,41 @@ function toggleTools(event: Event) {
 
     <section class="grid gap-3">
       <div v-if="!store.trips.length" class="tl-card text-center text-tl-muted">
-        No trips yet. Create one or load the sample.
+        No trips yet. Create one{{ isDev ? " or load the sample" : "" }}.
       </div>
-      <router-link
+      <div
         v-for="t in store.trips"
         :key="t.id"
-        :to="`/trips/${t.id}`"
-        class="tl-card tl-pressable tl-trip-link block no-underline"
+        class="tl-card tl-pressable tl-trip-link flex items-center justify-between gap-3"
       >
-        <div class="flex items-center justify-between gap-3">
-          <div class="min-w-0">
-            <div class="font-medium text-tl">{{ t.name }}</div>
-            <div class="text-xs text-tl-muted">
-              Updated {{ new Date(t.updatedAt).toLocaleString() }} ·
-              {{ t.currency }}
-            </div>
+        <router-link
+          :to="`/trips/${t.id}`"
+          class="min-w-0 flex-1 no-underline"
+        >
+          <div class="font-medium text-tl">{{ t.name }}</div>
+          <div class="text-xs text-tl-muted">
+            Updated {{ new Date(t.updatedAt).toLocaleString() }} ·
+            {{ t.currency }}
           </div>
-          <i class="pi pi-chevron-right text-tl-muted" />
-        </div>
-      </router-link>
+        </router-link>
+        <Button
+          icon="pi pi-trash"
+          severity="danger"
+          text
+          rounded
+          aria-label="Delete trip"
+          v-tooltip="'Delete trip'"
+          @click="confirmDeleteTrip(t.id, t.name, $event)"
+        />
+        <router-link
+          :to="`/trips/${t.id}`"
+          class="text-tl-muted no-underline"
+          aria-hidden="true"
+          tabindex="-1"
+        >
+          <i class="pi pi-chevron-right" />
+        </router-link>
+      </div>
     </section>
   </div>
 </template>

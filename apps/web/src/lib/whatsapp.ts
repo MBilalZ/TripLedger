@@ -1,9 +1,23 @@
-import type { SettleTripResult } from "@tripledger/types";
+import type { SettleTripResult, SettlementRounding } from "@tripledger/types";
 import { formatPkr, paisaToRupees } from "@tripledger/engine";
+
+function formatTransferAmount(
+  amountPaisa: number,
+  rounding: SettlementRounding,
+): string {
+  const rupees = paisaToRupees(amountPaisa);
+  return rounding === "none"
+    ? rupees.toLocaleString("en-PK", {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      })
+    : Math.round(rupees).toLocaleString("en-PK");
+}
 
 export function buildWhatsAppSummary(
   tripName: string,
   result: SettleTripResult,
+  settlementRounding: SettlementRounding = "rupee",
 ): string {
   const lines: string[] = [
     `*TripLedger — ${tripName}*`,
@@ -25,7 +39,7 @@ export function buildWhatsAppSummary(
   } else {
     for (const t of result.settlements) {
       lines.push(
-        `${t.fromName} → ${t.toName}: Rs. ${Math.round(paisaToRupees(t.amountPaisa)).toLocaleString("en-PK")}`,
+        `${t.fromName} → ${t.toName}: Rs. ${formatTransferAmount(t.amountPaisa, settlementRounding)}`,
       );
     }
   }
@@ -36,7 +50,11 @@ export function buildWhatsAppSummary(
 export async function copyWhatsAppSummary(
   tripName: string,
   result: SettleTripResult,
+  settlementRounding: SettlementRounding = "rupee",
 ): Promise<void> {
-  const text = buildWhatsAppSummary(tripName, result);
+  const text = buildWhatsAppSummary(tripName, result, settlementRounding);
+  if (!navigator.clipboard?.writeText) {
+    throw new Error("Clipboard is not available in this browser");
+  }
   await navigator.clipboard.writeText(text);
 }

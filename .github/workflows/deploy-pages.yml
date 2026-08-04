@@ -32,6 +32,12 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Test engine
+        run: pnpm test:engine
+
+      - name: Typecheck web
+        run: pnpm --filter @tripledger/web typecheck
+
       - name: Build web
         env:
           VITE_BASE: /TripLedger/

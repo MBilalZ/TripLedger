@@ -82,14 +82,14 @@ export function useTripWorkspace(tripId: () => string) {
       tripId: tripId(),
       displayName: name,
     });
-    // Add to existing pools as excluded by default
+    // Include in existing pools so splits work without extra setup
     for (const pool of pools.value) {
       await db.poolMembers.add({
         id: newId("pm"),
         tripId: tripId(),
         poolId: pool.id,
         participantId: pid,
-        included: false,
+        included: true,
         shares: 1,
         percentBps: 0,
         exactPaisa: 0,
@@ -99,7 +99,35 @@ export function useTripWorkspace(tripId: () => string) {
     await reload();
   }
 
+  function participantDeleteBlockers(id: string): string[] {
+    const blockers: string[] = [];
+    const asPayer = expenses.value.filter((e) => e.paidById === id).length;
+    if (asPayer > 0) {
+      blockers.push(
+        `payer on ${asPayer} expense${asPayer === 1 ? "" : "s"}`,
+      );
+    }
+    const onAdj = adjustments.value.filter(
+      (a) => a.fromId === id || a.toId === id,
+    ).length;
+    if (onAdj > 0) {
+      blockers.push(
+        `on ${onAdj} adjustment${onAdj === 1 ? "" : "s"}`,
+      );
+    }
+    if (trip.value?.settlementHubId === id) {
+      blockers.push("settlement hub — pick another hub in Settle first");
+    }
+    return blockers;
+  }
+
   async function removeParticipant(id: string) {
+    const blockers = participantDeleteBlockers(id);
+    if (blockers.length) {
+      throw new Error(
+        `Cannot delete this person (${blockers.join("; ")}). Remove or reassign those first.`,
+      );
+    }
     await db.transaction(
       "rw",
       [db.participants, db.poolMembers, db.expenseSplits],
@@ -123,8 +151,8 @@ export function useTripWorkspace(tripId: () => string) {
       updates.name = name;
     }
     if (patch.currency !== undefined) {
-      const currency = patch.currency.trim().toUpperCase() || "PKR";
-      updates.currency = currency;
+      // Product is PKR-first; keep a display label but do not treat as FX.
+      updates.currency = "PKR";
     }
     await db.trips.update(tripId(), updates);
     await reload();
@@ -201,7 +229,21 @@ export function useTripWorkspace(tripId: () => string) {
     await reload();
   }
 
+  function poolDeleteBlockers(id: string): string[] {
+    const count = expenses.value.filter((e) => e.poolId === id).length;
+    if (count > 0) {
+      return [
+        `used by ${count} expense${count === 1 ? "" : "s"} — void or move those first`,
+      ];
+    }
+    return [];
+  }
+
   async function removePool(id: string) {
+    const blockers = poolDeleteBlockers(id);
+    if (blockers.length) {
+      throw new Error(`Cannot delete this pool (${blockers.join("; ")}).`);
+    }
     await db.transaction("rw", [db.pools, db.poolMembers], async () => {
       await db.pools.delete(id);
       await db.poolMembers.where("poolId").equals(id).delete();
@@ -244,7 +286,20 @@ export function useTripWorkspace(tripId: () => string) {
     await reload();
   }
 
+  function assertExpenseInput(input: ExpenseInput) {
+    if (!input.description.trim()) throw new Error("Description is required");
+    if (!input.poolId) throw new Error("Select a pool");
+    if (!input.paidById) throw new Error("Select who paid");
+    if (!pools.value.some((p) => p.id === input.poolId)) {
+      throw new Error("Select a valid pool");
+    }
+    if (!participants.value.some((p) => p.id === input.paidById)) {
+      throw new Error("Select a valid payer");
+    }
+  }
+
   async function addExpense(input: ExpenseInput) {
+    assertExpenseInput(input);
     const amountPaisa = Math.round(input.amountRupees * 100);
     if (amountPaisa <= 0) throw new Error("Amount must be > 0");
     const expenseId = newId("exp");
@@ -282,6 +337,7 @@ export function useTripWorkspace(tripId: () => string) {
   async function reviseExpense(expenseId: string, input: ExpenseInput) {
     const old = await db.expenses.get(expenseId);
     if (!old || old.supersededById) throw new Error("Expense not found");
+    assertExpenseInput(input);
     const amountPaisa = Math.round(input.amountRupees * 100);
     if (amountPaisa <= 0) throw new Error("Amount must be > 0");
     const newExpenseId = newId("exp");

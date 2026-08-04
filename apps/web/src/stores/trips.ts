@@ -1,7 +1,13 @@
 import { defineStore } from "pinia";
 import { ref } from "vue";
+import type { SettlementRounding, TransferMode } from "@tripledger/types";
 import { db, newId, type TripRow } from "@/db/dexie";
 import { seedSampleTrip } from "@/lib/seed";
+
+export type CreateTripOptions = {
+  transferMode?: TransferMode;
+  settlementRounding?: SettlementRounding;
+};
 
 export const useTripsStore = defineStore("trips", () => {
   const trips = ref<TripRow[]>([]);
@@ -16,16 +22,18 @@ export const useTripsStore = defineStore("trips", () => {
     }
   }
 
-  async function createTrip(name: string) {
+  async function createTrip(name: string, options: CreateTripOptions = {}) {
+    const trimmed = name.trim();
+    if (!trimmed) throw new Error("Trip name is required");
     const now = new Date().toISOString();
     const trip: TripRow = {
       id: newId("trip"),
-      name: name.trim() || "Untitled Trip",
+      name: trimmed,
       currency: "PKR",
       createdAt: now,
       updatedAt: now,
-      transferMode: "minimize",
-      settlementRounding: "rupee",
+      transferMode: options.transferMode ?? "minimize",
+      settlementRounding: options.settlementRounding ?? "rupee",
       settlementHubId: null,
     };
     await db.trips.add(trip);

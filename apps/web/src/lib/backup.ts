@@ -1,4 +1,5 @@
 import { saveAs } from "file-saver";
+import { assertBackupPayload } from "@tripledger/validation";
 import {
   db,
   type AdjustmentRow,
@@ -113,9 +114,7 @@ export async function importTripJson(
   data: TripExportPayload & { version?: number },
   mode: "replace" | "as-new" = "as-new",
 ): Promise<string> {
-  if (![1, 2].includes(data.version ?? 0) || !data.trip?.id) {
-    throw new Error("Invalid TripLedger export file");
-  }
+  assertBackupPayload(JSON.stringify(data));
 
   let trip = normalizeTrip(data.trip);
   let participants = data.participants;
@@ -241,7 +240,9 @@ export async function importTripJson(
 }
 
 export async function importBackupFile(text: string): Promise<string[]> {
-  const parsed = JSON.parse(text) as FullBackupPayload | TripExportPayload;
+  const parsed = assertBackupPayload(text) as unknown as
+    | FullBackupPayload
+    | TripExportPayload;
   if ("trips" in parsed && Array.isArray(parsed.trips)) {
     const ids: string[] = [];
     for (const t of parsed.trips) {
