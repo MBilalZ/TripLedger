@@ -9,6 +9,8 @@ export default defineConfig({
     vue(),
     VitePWA({
       registerType: "autoUpdate",
+      // Registered explicitly in main.ts so updates can reload the page.
+      injectRegister: false,
       includeAssets: ["favicon.svg"],
       manifest: {
         name: "TripLedger",
@@ -28,6 +30,7 @@ export default defineConfig({
         ],
       },
       workbox: {
+        cleanupOutdatedCaches: true,
         globPatterns: ["**/*.{js,css,html,ico,svg,webmanifest,woff2}"],
         // Main bundle includes Excel/PDF libs; raise SW precache limit.
         maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
