@@ -260,3 +260,77 @@ html {
     display: none;
   }
 }
+
+.tl-install-banner {
+  position: fixed;
+  left: 0.75rem;
+  right: 0.75rem;
+  bottom: calc(0.75rem + env(safe-area-inset-bottom, 0px));
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.75rem 0.85rem;
+  border: 1px solid var(--tl-border);
+  border-radius: 1rem;
+  background: var(--tl-panel);
+  box-shadow: var(--tl-shadow);
+}
+
+/* Sit above trip bottom nav on small screens */
+@media (max-width: 639px) {
+  .tl-install-banner {
+    bottom: calc(5.25rem + env(safe-area-inset-bottom, 0px));
+  }
+}
+
+.tl-install-banner__body {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  min-width: 0;
+}
+
+.tl-install-banner__copy {
+  min-width: 0;
+}
+
+.tl-install-banner__title {
+  margin: 0;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--tl-text);
+}
+
+.tl-install-banner__hint {
+  margin: 0.15rem 0 0;
+  font-size: 0.75rem;
+  color: var(--tl-muted);
+  line-height: 1.3;
+}
+
+.tl-install-banner__actions {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  flex-shrink: 0;
+}
+
+.tl-install-banner__dismiss {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border: none;
+  border-radius: 0.5rem;
+  background: transparent;
+  color: var(--tl-muted);
+  cursor: pointer;
+}
+
+.tl-install-banner__dismiss:hover {
+  color: var(--tl-text);
+  background: var(--tl-elevated);
+}
