@@ -4,8 +4,8 @@ import { useRoute, useRouter } from "vue-router";
 import { useToast } from "primevue/usetoast";
 import Button from "primevue/button";
 import InputText from "primevue/inputtext";
-import { cloudJoinWithToken } from "@/lib/cloud/tripsApi";
-import { ensureAuthSession, isSupabaseConfigured } from "@/lib/supabase";
+import { joinWithToken } from "@/api/invites";
+import { ensureAuthSession, isSupabaseConfigured } from "@/api/supabase";
 import { useTripsStore } from "@/stores/trips";
 
 const props = defineProps<{ token: string }>();
@@ -46,7 +46,7 @@ async function join() {
   }
   joining.value = true;
   try {
-    const result = await cloudJoinWithToken(token(), name);
+    const result = await joinWithToken(token(), name);
     await trips.refresh();
     toast.add({
       severity: "success",

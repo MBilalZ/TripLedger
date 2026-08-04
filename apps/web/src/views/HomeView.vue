@@ -8,7 +8,7 @@ import Menu from "primevue/menu";
 import type { MenuItem } from "primevue/menuitem";
 import { useTripsStore } from "@/stores/trips";
 import { downloadFullBackup, importBackupFile } from "@/lib/backup";
-import { isSupabaseConfigured } from "@/lib/supabase";
+import { isSupabaseConfigured } from "@/api/supabase";
 
 const store = useTripsStore();
 const router = useRouter();

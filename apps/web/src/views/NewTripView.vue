@@ -6,6 +6,7 @@ import Button from "primevue/button";
 import InputText from "primevue/inputtext";
 import Select from "primevue/select";
 import type { SettlementRounding, TransferMode } from "@tripledger/types";
+import { ROUNDING_MODES, TRANSFER_MODES } from "@/constants/tripOptions";
 import { useTripsStore } from "@/stores/trips";
 
 const store = useTripsStore();
@@ -16,17 +17,6 @@ const name = ref("");
 const transferMode = ref<TransferMode>("minimize");
 const settlementRounding = ref<SettlementRounding>("rupee");
 const saving = ref(false);
-
-const TRANSFER_MODES: { label: string; value: TransferMode }[] = [
-  { label: "Minimize transactions", value: "minimize" },
-  { label: "Settle to one person", value: "settle_to_one" },
-  { label: "Pairwise (proportional)", value: "pairwise" },
-];
-
-const ROUNDING_MODES: { label: string; value: SettlementRounding }[] = [
-  { label: "Whole rupees", value: "rupee" },
-  { label: "Exact paisa", value: "none" },
-];
 
 const canSave = computed(() => name.value.trim().length > 0 && !saving.value);
 

@@ -1,7 +1,7 @@
+import { fileURLToPath, URL } from "node:url";
 import { defineConfig } from "vite";
 import vue from "@vitejs/plugin-vue";
 import { VitePWA } from "vite-plugin-pwa";
-import { fileURLToPath, URL } from "node:url";
 
 export default defineConfig({
   base: process.env.VITE_BASE ?? "/",
@@ -40,6 +40,36 @@ export default defineConfig({
   resolve: {
     alias: {
       "@": fileURLToPath(new URL("./src", import.meta.url)),
+    },
+  },
+  build: {
+    // exceljs is lazy-loaded on export only (~900 kB); other chunks stay under 500 kB.
+    chunkSizeWarningLimit: 1000,
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (!id.includes("node_modules")) return;
+          if (id.includes("exceljs")) return "exceljs";
+          if (id.includes("pdf-lib")) return "pdf-lib";
+          if (id.includes("@supabase")) return "supabase";
+          if (
+            id.includes("primevue") ||
+            id.includes("@primevue") ||
+            id.includes("primeicons")
+          ) {
+            return "primevue";
+          }
+          if (
+            id.includes("/vue/") ||
+            id.includes("\\vue\\") ||
+            id.includes("pinia") ||
+            id.includes("vue-router") ||
+            id.includes("@vue/")
+          ) {
+            return "vue-vendor";
+          }
+        },
+      },
     },
   },
   server: {
