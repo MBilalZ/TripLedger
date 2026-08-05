@@ -58,9 +58,13 @@ export function useAdjustmentForm() {
   }
 
   watch([receivedByIds, paidById, participants], () => {
-    // Drop paid-by from recipients if selected
+    // Drop paid-by from recipients if selected (only assign when changed to avoid a loop)
     if (paidById.value) {
-      receivedByIds.value = receivedByIds.value.filter((id) => id !== paidById.value);
+      const next = receivedByIds.value.filter((id) => id !== paidById.value);
+      if (next.length !== receivedByIds.value.length) {
+        receivedByIds.value = next;
+        return; // next watch run syncs splits after the update
+      }
     }
     syncRecipientSplits();
   });
