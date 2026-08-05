@@ -3,8 +3,9 @@
  *
  * Deploy: supabase functions deploy auth-sign-in
  *
- * Accepts JSON { email, password }. Uses service role to look up the user,
- * then verifies the password via GoTrue. Returns session tokens on success.
+ * Accepts JSON { email, password }. Uses service role + auth_email_exists RPC
+ * to look up the user, then verifies the password via GoTrue.
+ * Returns session tokens on success.
  *
  * Note: distinguishing USER_NOT_FOUND enables email enumeration by design;
  * rate limiting mitigates abuse.
@@ -81,37 +82,16 @@ Deno.serve(async (req) => {
       auth: { persistSession: false, autoRefreshToken: false },
     });
 
-    const lookup = await fetch(
-      `${supabaseUrl}/auth/v1/admin/users?email=${encodeURIComponent(email)}`,
-      {
-        headers: {
-          Authorization: `Bearer ${serviceKey}`,
-          apikey: serviceKey,
-        },
-      },
-    );
+    const { data: exists, error: lookupError } = await admin.rpc("auth_email_exists", {
+      p_email: email,
+    });
 
-    if (!lookup.ok) {
-      const text = await lookup.text();
-      await reportError(new Error(text), { tag: "auth-sign-in.lookup" });
+    if (lookupError) {
+      await reportError(lookupError, { tag: "auth-sign-in.lookup" });
       return json({ code: "LOOKUP_FAILED", message: "Sign in failed." }, 500);
     }
 
-    const lookupBody = (await lookup.json()) as {
-      users?: Array<{ id: string; email?: string }>;
-      id?: string;
-    };
-    const users = Array.isArray(lookupBody.users)
-      ? lookupBody.users
-      : lookupBody.id
-        ? [lookupBody as { id: string; email?: string }]
-        : [];
-
-    const exists = users.some(
-      (u) => (u.email ?? "").toLowerCase() === email || Boolean(u.id),
-    );
-
-    if (!exists || users.length === 0) {
+    if (!exists) {
       return json(
         {
           code: "USER_NOT_FOUND",
@@ -140,9 +120,6 @@ Deno.serve(async (req) => {
         401,
       );
     }
-
-    // Touch admin client so service role is used in this isolate (lint/keep alive).
-    void admin;
 
     return json({
       access_token: data.session.access_token,
