@@ -13,7 +13,7 @@ import {
   pendingDeleteTripIds,
   removeOutbox,
 } from "@/sync/outbox";
-import type { CreateTripOptions, TripListRepo } from "../types";
+import type { CreateTripOptions, LeaveTripResult, TripListRepo } from "../types";
 import { cloudTripListRepo } from "./tripList";
 
 function online(): boolean {
@@ -32,15 +32,23 @@ async function filterPendingDeletes(trips: TripRow[]): Promise<TripRow[]> {
   return trips.filter((t) => !deleted.has(t.id));
 }
 
-async function resolveRole(tripId: string): Promise<"owner" | "member"> {
-  const meta = await db.syncMeta.get(tripId);
-  if (meta?.myRole === "owner" || meta?.myRole === "member") return meta.myRole;
+async function enqueueAndRun(
+  tripId: string,
+  mode: "leave" | "delete",
+  run: () => Promise<void>,
+): Promise<void> {
+  await enqueueOutbox(tripId, "deleteTrip", { mode });
+  await deleteCachedTrip(tripId);
+  // deleteCachedTrip clears outbox for trip — re-queue for server.
+  await enqueueOutbox(tripId, "deleteTrip", { mode });
   if (online()) {
-    const role = await tripsApi.fetchMyTripRole(tripId);
-    if (role === "owner" || role === "member") return role;
+    try {
+      await run();
+      await dropOps(tripId, "deleteTrip");
+    } catch {
+      /* queued */
+    }
   }
-  // Default to owner delete path so we never silently "leave" as a no-op.
-  return "owner";
 }
 
 export const syncCloudTripListRepo: TripListRepo = {
@@ -121,21 +129,19 @@ export const syncCloudTripListRepo: TripListRepo = {
   },
 
   async delete(tripId) {
-    const role = await resolveRole(tripId);
-    const mode = role === "member" ? "leave" : "delete";
-    await enqueueOutbox(tripId, "deleteTrip", { mode });
-    await deleteCachedTrip(tripId);
-    // deleteCachedTrip clears outbox for trip — re-queue for server.
-    await enqueueOutbox(tripId, "deleteTrip", { mode });
-    if (online()) {
-      try {
-        if (mode === "leave") await tripsApi.leaveTrip(tripId);
-        else await tripsApi.deleteTrip(tripId);
-        await dropOps(tripId, "deleteTrip");
-      } catch {
-        /* queued */
-      }
-    }
+    await enqueueAndRun(tripId, "delete", () => tripsApi.deleteTrip(tripId));
+  },
+
+  async leave(tripId): Promise<LeaveTripResult> {
+    let result: LeaveTripResult = { action: "left" };
+    await enqueueAndRun(tripId, "leave", async () => {
+      const r = await tripsApi.leaveTrip(tripId);
+      result = {
+        action: r.action,
+        promotedUserId: r.promotedUserId,
+      };
+    });
+    return result;
   },
 
   async touch(tripId) {

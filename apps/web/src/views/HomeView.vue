@@ -93,30 +93,52 @@ function toggleTools(event: Event) {
   toolsMenu.value?.toggle(event);
 }
 
+function leaveConfirmCopy(tripName: string, role: "owner" | "member" | null) {
+  if (role === "owner") {
+    return `Leave “${tripName}”? If you’re the last member the group is deleted for everyone. Otherwise another member becomes the owner.`;
+  }
+  return `Leave “${tripName}”? You will lose access until invited again.`;
+}
+
 function confirmRemoveTrip(tripId: string, tripName: string, event: Event) {
   event.preventDefault();
   event.stopPropagation();
+  const isCloudLeave = store.cloud;
   const role = store.roleFor(tripId);
-  const isLeave = store.cloud && role === "member";
   confirm.require({
-    message: isLeave
-      ? `Leave “${tripName}”? You will lose access until invited again.`
-      : `Delete “${tripName}”${store.cloud ? " for everyone" : " from this device"}? This cannot be undone.`,
-    header: isLeave ? "Leave group" : "Delete group",
+    message: isCloudLeave
+      ? leaveConfirmCopy(tripName, role)
+      : `Delete “${tripName}” from this device? This cannot be undone.`,
+    header: isCloudLeave ? "Leave group" : "Delete group",
     icon: "pi pi-exclamation-triangle",
     acceptClass: "p-button-danger",
     accept: async () => {
       try {
-        await store.deleteTrip(tripId);
-        toast.add({
-          severity: "success",
-          summary: isLeave ? "Left group" : "Group deleted",
-          life: 2000,
-        });
+        if (isCloudLeave) {
+          const result = await store.leaveTrip(tripId);
+          toast.add({
+            severity: "success",
+            summary: result.action === "deleted" ? "Group deleted" : "Left group",
+            detail:
+              result.action === "deleted"
+                ? "You were the last member, so the group was removed."
+                : result.promotedUserId
+                  ? "Another member is now the owner."
+                  : undefined,
+            life: 3000,
+          });
+        } else {
+          await store.deleteTrip(tripId);
+          toast.add({
+            severity: "success",
+            summary: "Group deleted",
+            life: 2000,
+          });
+        }
       } catch (e) {
         toast.add({
           severity: "error",
-          summary: isLeave ? "Could not leave" : "Could not delete",
+          summary: isCloudLeave ? "Could not leave" : "Could not delete",
           detail: toApiError(e).message,
           life: 4000,
         });
@@ -216,21 +238,13 @@ function confirmRemoveTrip(tripId: string, tripName: string, event: Event) {
           <i class="pi pi-chevron-right shrink-0 text-tl-muted" aria-hidden="true" />
         </router-link>
         <Button
-          :icon="store.cloud && store.roleFor(t.id) === 'member' ? 'pi pi-sign-out' : 'pi pi-trash'"
+          :icon="store.cloud ? 'pi pi-sign-out' : 'pi pi-trash'"
           severity="danger"
           text
           rounded
           class="shrink-0"
-          :aria-label="
-            store.cloud && store.roleFor(t.id) === 'member'
-              ? 'Leave group'
-              : 'Delete group'
-          "
-          v-tooltip="
-            store.cloud && store.roleFor(t.id) === 'member'
-              ? 'Leave group'
-              : 'Delete group'
-          "
+          :aria-label="store.cloud ? 'Leave group' : 'Delete group'"
+          v-tooltip="store.cloud ? 'Leave group' : 'Delete group'"
           @click="confirmRemoveTrip(t.id, t.name, $event)"
         />
       </div>

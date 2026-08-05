@@ -1,7 +1,7 @@
 import type { SettlementRounding, TransferMode } from "@tripledger/types";
 import { newId, type TripRow } from "@/db/dexie";
 import { apiCall, apiMutate } from "./client";
-import { ApiError, toApiError } from "./errors";
+import { toApiError } from "./errors";
 import { type DbTrip, tripFromDb } from "./mappers";
 import { fetchUserProfile, getSupabase, requireUser } from "./supabase";
 
@@ -112,27 +112,35 @@ export async function fetchMyTripRole(
   });
 }
 
-/** Leave membership; throws if no row removed while membership still exists. */
-export async function leaveTrip(tripId: string): Promise<void> {
+export type LeaveTripAction = {
+  action: "left" | "deleted";
+  promotedUserId?: string;
+};
+
+/** Leave via RPC (promote another owner, or delete trip if last member). */
+export async function leaveTrip(tripId: string): Promise<LeaveTripAction> {
   const uid = await requireUser();
   const sb = getSupabase();
-  const del = await sb
-    .from("trip_members")
-    .delete()
-    .eq("trip_id", tripId)
-    .eq("user_id", uid)
-    .select("trip_id");
-  if (del.error) throw toApiError(del.error);
-  if ((del.data?.length ?? 0) > 0) return;
-
-  const still = await sb
-    .from("trip_members")
-    .select("trip_id")
-    .eq("trip_id", tripId)
-    .eq("user_id", uid)
-    .maybeSingle();
-  if (still.error) throw toApiError(still.error);
-  if (still.data) {
-    throw new ApiError("Could not leave group", { code: "LEAVE_DENIED" });
+  const { data, error } = await sb.rpc("leave_trip", { p_trip_id: tripId });
+  if (error) {
+    const still = await sb
+      .from("trip_members")
+      .select("trip_id")
+      .eq("trip_id", tripId)
+      .eq("user_id", uid)
+      .maybeSingle();
+    if (still.error) throw toApiError(still.error);
+    if (!still.data) {
+      const trip = await sb.from("trips").select("id").eq("id", tripId).maybeSingle();
+      if (trip.error) throw toApiError(trip.error);
+      return { action: trip.data ? "left" : "deleted" };
+    }
+    throw toApiError(error);
   }
+  const row = (data ?? {}) as { action?: string; promoted_user_id?: string };
+  const action = row.action === "deleted" ? "deleted" : "left";
+  return {
+    action,
+    promotedUserId: row.promoted_user_id,
+  };
 }

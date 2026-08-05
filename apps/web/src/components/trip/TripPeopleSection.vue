@@ -5,17 +5,18 @@ import Button from "primevue/button";
 import InputText from "primevue/inputtext";
 import { useInviteLink } from "@/composables/useInviteLink";
 import { usePeoplePoolsUi } from "@/composables/usePeoplePoolsUi";
-import { leaveTrip } from "@/api/trips";
 import { useAuthStore } from "@/stores/auth";
+import { useTripsStore } from "@/stores/trips";
 import { useWorkspaceStore } from "@/stores/workspace";
 import { useRouter } from "vue-router";
 import { useFeedback } from "@/composables/useFeedback";
 
 const auth = useAuthStore();
 const store = useWorkspaceStore();
+const trips = useTripsStore();
 const router = useRouter();
 const { error: showError, success, confirmDanger } = useFeedback();
-const { participants, isOwner } = storeToRefs(store);
+const { participants, isOwner, myRole } = storeToRefs(store);
 const {
   inviting,
   invites,
@@ -45,13 +46,25 @@ function formatExpiry(iso: string | null) {
 }
 
 function confirmLeave() {
+  const ownerLeave =
+    myRole.value === "owner"
+      ? "Leave this group? If you’re the last member the group is deleted for everyone. Otherwise another member becomes the owner."
+      : "Leave this group? You will lose access until invited again.";
   confirmDanger({
-    message: "Leave this group? You will lose access until invited again.",
+    message: ownerLeave,
     header: "Leave group",
     onAccept: async () => {
       try {
-        await leaveTrip(store.tripId);
-        success("Left group");
+        const result = await trips.leaveTrip(store.tripId);
+        if (result.action === "deleted") {
+          success("Group deleted");
+        } else {
+          success(
+            result.promotedUserId
+              ? "Left — another member is now the owner"
+              : "Left group",
+          );
+        }
         await router.push("/");
       } catch (e) {
         showError("Could not leave", e, 5000);
@@ -169,7 +182,7 @@ function confirmLeave() {
       </li>
     </ul>
     <Button
-      v-if="auth.cloud && !isOwner"
+      v-if="auth.cloud"
       label="Leave group"
       icon="pi pi-sign-out"
       severity="secondary"

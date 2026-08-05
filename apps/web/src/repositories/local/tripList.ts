@@ -52,6 +52,11 @@ export const localTripListRepo: TripListRepo = {
     );
   },
 
+  async leave(tripId) {
+    await this.delete(tripId);
+    return { action: "deleted" as const };
+  },
+
   async touch(tripId) {
     await db.trips.update(tripId, { updatedAt: new Date().toISOString() });
   },

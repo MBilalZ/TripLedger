@@ -2,10 +2,14 @@ import { defineStore } from "pinia";
 import { computed, ref } from "vue";
 import { db, type TripRow } from "@/db/dexie";
 import { seedSampleTrip } from "@/lib/seed";
-import { type CreateTripOptions, getTripRepos } from "@/repositories";
+import {
+  type CreateTripOptions,
+  getTripRepos,
+  type LeaveTripResult,
+} from "@/repositories";
 import { useAuthStore } from "./auth";
 
-export type { CreateTripOptions };
+export type { CreateTripOptions, LeaveTripResult };
 
 export const useTripsStore = defineStore("trips", () => {
   const auth = useAuthStore();
@@ -54,6 +58,12 @@ export const useTripsStore = defineStore("trips", () => {
     await refresh();
   }
 
+  async function leaveTrip(tripId: string): Promise<LeaveTripResult> {
+    const result = await getTripRepos().leave(tripId);
+    await refresh();
+    return result;
+  }
+
   async function touch(tripId: string) {
     await getTripRepos().touch(tripId);
   }
@@ -82,6 +92,7 @@ export const useTripsStore = defineStore("trips", () => {
     refresh,
     createTrip,
     deleteTrip,
+    leaveTrip,
     touch,
     seedSample,
     roleFor,
