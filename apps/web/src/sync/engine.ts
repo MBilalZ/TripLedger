@@ -1,11 +1,6 @@
 import { reportError } from "@/lib/reportError";
 import { listOutbox, markOutboxError, refreshPendingCount, removeOutbox } from "./outbox";
-import {
-  beginSyncing,
-  endSyncing,
-  setOnline,
-  setSyncError,
-} from "./status";
+import { beginSyncing, endSyncing, setOnline, setSyncError } from "./status";
 
 let flushPromise: Promise<void> | null = null;
 let flushDirty = false;

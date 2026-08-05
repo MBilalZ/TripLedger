@@ -170,13 +170,9 @@ export async function reapplyPendingOutboxToCache(tripId: string): Promise<void>
 
   if (!pools.length && !members.length && !participants.length) return;
 
-  await db.transaction(
-    "rw",
-    [db.pools, db.poolMembers, db.participants],
-    async () => {
-      if (participants.length) await db.participants.bulkPut(participants);
-      if (pools.length) await db.pools.bulkPut(pools);
-      if (members.length) await db.poolMembers.bulkPut(members);
-    },
-  );
+  await db.transaction("rw", [db.pools, db.poolMembers, db.participants], async () => {
+    if (participants.length) await db.participants.bulkPut(participants);
+    if (pools.length) await db.pools.bulkPut(pools);
+    if (members.length) await db.poolMembers.bulkPut(members);
+  });
 }

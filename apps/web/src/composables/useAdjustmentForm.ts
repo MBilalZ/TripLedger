@@ -1,7 +1,7 @@
 import { paisaToRupees } from "@tripledger/engine";
 import type { SplitMode } from "@tripledger/types";
 import { storeToRefs } from "pinia";
-import { computed, reactive, ref, watch } from "vue";
+import { computed, ref, watch } from "vue";
 import type { SplitPerson } from "@/components/SplitMatrix.vue";
 import { useWorkspaceStore } from "@/stores/workspace";
 import { useFeedback } from "./useFeedback";

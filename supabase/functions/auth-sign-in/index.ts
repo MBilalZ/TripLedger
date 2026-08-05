@@ -16,8 +16,7 @@ type Json = Record<string, unknown>;
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
 /** Simple in-memory rate limit: email → timestamps */
@@ -63,8 +62,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    const ip =
-      req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
+    const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
     if (rateLimited(`${email}|${ip}`)) {
       return json(
         { code: "RATE_LIMIT", message: "Too many attempts. Please wait and try again." },
