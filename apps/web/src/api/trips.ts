@@ -1,8 +1,9 @@
 import type { SettlementRounding, TransferMode } from "@tripledger/types";
 import { newId, type TripRow } from "@/db/dexie";
 import { apiCall, apiMutate } from "./client";
+import { ApiError, toApiError } from "./errors";
 import { type DbTrip, tripFromDb } from "./mappers";
-import { fetchUserProfile, requireUser } from "./supabase";
+import { fetchUserProfile, getSupabase, requireUser } from "./supabase";
 
 export type CreateTripOptions = {
   transferMode?: TransferMode;
@@ -62,8 +63,21 @@ export async function createTripWithIds(
   return tripId;
 }
 
+/** Owner delete; throws if RLS/no-op leaves the trip still visible. Idempotent if already gone. */
 export async function deleteTrip(tripId: string): Promise<void> {
-  await apiMutate((sb) => sb.from("trips").delete().eq("id", tripId));
+  await requireUser();
+  const sb = getSupabase();
+  const del = await sb.from("trips").delete().eq("id", tripId).select("id");
+  if (del.error) throw toApiError(del.error);
+  if ((del.data?.length ?? 0) > 0) return;
+
+  const still = await sb.from("trips").select("id").eq("id", tripId).maybeSingle();
+  if (still.error) throw toApiError(still.error);
+  if (still.data) {
+    throw new ApiError("Could not delete group (only the owner can delete)", {
+      code: "DELETE_DENIED",
+    });
+  }
 }
 
 export async function touchTrip(tripId: string): Promise<void> {
@@ -101,9 +115,27 @@ export async function fetchMyTripRole(
   });
 }
 
+/** Leave membership; throws if no row removed while membership still exists. */
 export async function leaveTrip(tripId: string): Promise<void> {
   const uid = await requireUser();
-  await apiMutate((sb) =>
-    sb.from("trip_members").delete().eq("trip_id", tripId).eq("user_id", uid),
-  );
+  const sb = getSupabase();
+  const del = await sb
+    .from("trip_members")
+    .delete()
+    .eq("trip_id", tripId)
+    .eq("user_id", uid)
+    .select("trip_id");
+  if (del.error) throw toApiError(del.error);
+  if ((del.data?.length ?? 0) > 0) return;
+
+  const still = await sb
+    .from("trip_members")
+    .select("trip_id")
+    .eq("trip_id", tripId)
+    .eq("user_id", uid)
+    .maybeSingle();
+  if (still.error) throw toApiError(still.error);
+  if (still.data) {
+    throw new ApiError("Could not leave group", { code: "LEAVE_DENIED" });
+  }
 }

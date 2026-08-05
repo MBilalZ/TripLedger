@@ -1,5 +1,11 @@
 import { reportError } from "@/lib/reportError";
-import { listOutbox, markOutboxError, refreshPendingCount, removeOutbox } from "./outbox";
+import {
+  headOutboxError,
+  listOutbox,
+  markOutboxError,
+  refreshPendingCount,
+  removeOutbox,
+} from "./outbox";
 import { beginSyncing, endSyncing, setOnline, setSyncError } from "./status";
 
 let flushPromise: Promise<void> | null = null;
@@ -13,6 +19,16 @@ function isOnline(): boolean {
 /** Single dynamic import boundary for all cloud API / repo work. */
 async function cloudOps() {
   return import("./cloudOps");
+}
+
+async function clearErrorIfOutboxClean(): Promise<void> {
+  const pending = await refreshPendingCount();
+  if (pending === 0) {
+    setSyncError(null);
+    return;
+  }
+  const err = await headOutboxError();
+  if (err) setSyncError(err);
 }
 
 export async function pullTrip(tripId: string): Promise<void> {
@@ -32,6 +48,10 @@ export async function flushOutbox(tripId?: string): Promise<void> {
   if (flushPromise) {
     flushDirty = true;
     await flushPromise;
+    // Concurrent enqueue may have set dirty after the active loop finished.
+    if (flushDirty) {
+      return flushOutbox(tripId);
+    }
     return;
   }
 
@@ -76,6 +96,7 @@ export async function flushOutbox(tripId?: string): Promise<void> {
   })();
 
   await flushPromise;
+  await clearErrorIfOutboxClean();
 }
 
 export async function syncTrip(tripId: string): Promise<void> {
@@ -84,7 +105,7 @@ export async function syncTrip(tripId: string): Promise<void> {
     beginSyncing();
     try {
       await pullTrip(tripId);
-      setSyncError(null);
+      await clearErrorIfOutboxClean();
     } catch (e) {
       const message = e instanceof Error ? e.message : "Pull failed";
       setSyncError(message);
@@ -107,7 +128,7 @@ export async function syncAllCloudTrips(): Promise<void> {
     await flushOutbox();
     const ops = await cloudOps();
     await ops.syncAllCloudTripsWork();
-    setSyncError(null);
+    await clearErrorIfOutboxClean();
   } catch (e) {
     setSyncError(e instanceof Error ? e.message : "Sync failed");
   } finally {

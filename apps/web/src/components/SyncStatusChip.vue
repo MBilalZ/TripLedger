@@ -4,7 +4,7 @@ import { flushOutbox, syncAllCloudTrips } from "@/sync/engine";
 import { useAuthStore } from "@/stores/auth";
 
 const auth = useAuthStore();
-const { kind, label, pendingCount, syncing } = useSyncStatus();
+const { kind, label, detail, pendingCount, syncing } = useSyncStatus();
 
 async function onRetry() {
   if (syncing.value) return;
@@ -19,8 +19,8 @@ async function onRetry() {
       type="button"
       class="tl-sync-chip"
       :class="`is-${kind}`"
-      :title="label"
-      :aria-label="label"
+      :title="detail"
+      :aria-label="detail"
       :disabled="syncing"
       @click="onRetry"
     >

@@ -7,7 +7,12 @@ import {
   writeCachedWorkspace,
 } from "@/sync/cache";
 import { flushOutbox, syncAllCloudTrips } from "@/sync/engine";
-import { enqueueOutbox, listOutbox, removeOutbox } from "@/sync/outbox";
+import {
+  enqueueOutbox,
+  listOutbox,
+  pendingDeleteTripIds,
+  removeOutbox,
+} from "@/sync/outbox";
 import type { CreateTripOptions, TripListRepo } from "../types";
 import { cloudTripListRepo } from "./tripList";
 
@@ -21,18 +26,35 @@ async function dropOps(tripId: string, op: string) {
   }
 }
 
+async function filterPendingDeletes(trips: TripRow[]): Promise<TripRow[]> {
+  const deleted = await pendingDeleteTripIds();
+  if (!deleted.size) return trips;
+  return trips.filter((t) => !deleted.has(t.id));
+}
+
+async function resolveRole(tripId: string): Promise<"owner" | "member"> {
+  const meta = await db.syncMeta.get(tripId);
+  if (meta?.myRole === "owner" || meta?.myRole === "member") return meta.myRole;
+  if (online()) {
+    const role = await tripsApi.fetchMyTripRole(tripId);
+    if (role === "owner" || role === "member") return role;
+  }
+  // Default to owner delete path so we never silently "leave" as a no-op.
+  return "owner";
+}
+
 export const syncCloudTripListRepo: TripListRepo = {
   async list() {
     const user = await requireUser();
     if (online()) {
       try {
         await syncAllCloudTrips();
-        return tripsApi.listTrips();
+        return filterPendingDeletes(await tripsApi.listTrips());
       } catch {
-        return listCachedCloudTrips(user);
+        return filterPendingDeletes(await listCachedCloudTrips(user));
       }
     }
-    return listCachedCloudTrips(user);
+    return filterPendingDeletes(await listCachedCloudTrips(user));
   },
 
   async create(name, options: CreateTripOptions = {}) {
@@ -99,13 +121,16 @@ export const syncCloudTripListRepo: TripListRepo = {
   },
 
   async delete(tripId) {
-    await enqueueOutbox(tripId, "deleteTrip", {});
+    const role = await resolveRole(tripId);
+    const mode = role === "member" ? "leave" : "delete";
+    await enqueueOutbox(tripId, "deleteTrip", { mode });
     await deleteCachedTrip(tripId);
-    // deleteCachedTrip clears outbox for trip — re-queue delete for server.
-    await enqueueOutbox(tripId, "deleteTrip", {});
+    // deleteCachedTrip clears outbox for trip — re-queue for server.
+    await enqueueOutbox(tripId, "deleteTrip", { mode });
     if (online()) {
       try {
-        await cloudTripListRepo.delete(tripId);
+        if (mode === "leave") await tripsApi.leaveTrip(tripId);
+        else await tripsApi.deleteTrip(tripId);
         await dropOps(tripId, "deleteTrip");
       } catch {
         /* queued */

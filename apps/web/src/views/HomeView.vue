@@ -93,21 +93,34 @@ function toggleTools(event: Event) {
   toolsMenu.value?.toggle(event);
 }
 
-function confirmDeleteTrip(tripId: string, tripName: string, event: Event) {
+function confirmRemoveTrip(tripId: string, tripName: string, event: Event) {
   event.preventDefault();
   event.stopPropagation();
+  const role = store.roleFor(tripId);
+  const isLeave = store.cloud && role === "member";
   confirm.require({
-    message: `Delete “${tripName}”${store.cloud ? " for everyone" : " from this device"}? This cannot be undone.`,
-    header: "Delete group",
+    message: isLeave
+      ? `Leave “${tripName}”? You will lose access until invited again.`
+      : `Delete “${tripName}”${store.cloud ? " for everyone" : " from this device"}? This cannot be undone.`,
+    header: isLeave ? "Leave group" : "Delete group",
     icon: "pi pi-exclamation-triangle",
     acceptClass: "p-button-danger",
     accept: async () => {
-      await store.deleteTrip(tripId);
-      toast.add({
-        severity: "success",
-        summary: "Group deleted",
-        life: 2000,
-      });
+      try {
+        await store.deleteTrip(tripId);
+        toast.add({
+          severity: "success",
+          summary: isLeave ? "Left group" : "Group deleted",
+          life: 2000,
+        });
+      } catch (e) {
+        toast.add({
+          severity: "error",
+          summary: isLeave ? "Could not leave" : "Could not delete",
+          detail: toApiError(e).message,
+          life: 4000,
+        });
+      }
     },
   });
 }
@@ -203,14 +216,22 @@ function confirmDeleteTrip(tripId: string, tripName: string, event: Event) {
           <i class="pi pi-chevron-right shrink-0 text-tl-muted" aria-hidden="true" />
         </router-link>
         <Button
-          icon="pi pi-trash"
+          :icon="store.cloud && store.roleFor(t.id) === 'member' ? 'pi pi-sign-out' : 'pi pi-trash'"
           severity="danger"
           text
           rounded
           class="shrink-0"
-          aria-label="Delete group"
-          v-tooltip="'Delete group'"
-          @click="confirmDeleteTrip(t.id, t.name, $event)"
+          :aria-label="
+            store.cloud && store.roleFor(t.id) === 'member'
+              ? 'Leave group'
+              : 'Delete group'
+          "
+          v-tooltip="
+            store.cloud && store.roleFor(t.id) === 'member'
+              ? 'Leave group'
+              : 'Delete group'
+          "
+          @click="confirmRemoveTrip(t.id, t.name, $event)"
         />
       </div>
     </section>

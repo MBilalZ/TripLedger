@@ -68,11 +68,14 @@ export function useSyncStatus() {
       case "pending":
         return `${pendingCount.value} pending`;
       case "error":
-        return lastError.value ?? "Sync error";
+        // Keep chip short; full message is on title/tooltip.
+        return pendingCount.value > 0 ? "Sync failed" : (lastError.value ?? "Sync error");
       default:
         return "Synced";
     }
   });
+
+  const detail = computed(() => lastError.value ?? label.value);
 
   return {
     online,
@@ -82,6 +85,7 @@ export function useSyncStatus() {
     keepBothHint,
     kind,
     label,
+    detail,
     dismissKeepBothHint,
   };
 }

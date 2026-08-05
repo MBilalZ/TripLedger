@@ -17,7 +17,6 @@ import {
   type PoolMemberRow,
   type TripRow,
 } from "@/db/dexie";
-import { cloudTripListRepo } from "@/repositories/cloud/tripList";
 import { cloudWorkspaceRepo } from "@/repositories/cloud/workspace";
 import {
   deleteCachedTrip,
@@ -26,7 +25,7 @@ import {
   reapplyPendingOutboxToCache,
   writeCachedWorkspace,
 } from "./cache";
-import { listOutbox } from "./outbox";
+import { listOutbox, pendingDeleteTripIds } from "./outbox";
 import { noteKeepBothMerge } from "./status";
 
 async function applyOutboxRow(row: OutboxRow): Promise<void> {
@@ -47,12 +46,15 @@ async function applyOutboxRow(row: OutboxRow): Promise<void> {
       }
       break;
     }
-    case "deleteTrip":
-      await cloudTripListRepo.delete(row.tripId);
+    case "deleteTrip": {
+      const mode = p.mode === "leave" ? "leave" : "delete";
+      if (mode === "leave") await tripsApi.leaveTrip(row.tripId);
+      else await tripsApi.deleteTrip(row.tripId);
       await deleteCachedTrip(row.tripId);
       break;
+    }
     case "touchTrip":
-      await cloudTripListRepo.touch(row.tripId);
+      await tripsApi.touchTrip(row.tripId);
       break;
     case "addParticipant":
       await cloudWorkspaceRepo.addParticipant(
@@ -214,12 +216,15 @@ export async function syncAllCloudTripsWork(): Promise<void> {
   const user = session.user;
   const remote = await tripsApi.listTrips();
   const remoteIds = new Set(remote.map((t) => t.id));
+  const pendingDeletes = await pendingDeleteTripIds();
   for (const trip of remote) {
+    if (pendingDeletes.has(trip.id)) continue;
     await writeCachedWorkspace(user.id, await loadWorkspace(trip.id));
     await reapplyPendingOutboxToCache(trip.id);
   }
   const cached = await listCachedCloudTrips(user.id);
   for (const trip of cached) {
+    if (pendingDeletes.has(trip.id)) continue;
     if (!remoteIds.has(trip.id)) {
       const pending = await listOutbox(trip.id);
       if (!pending.length) await deleteCachedTrip(trip.id);
