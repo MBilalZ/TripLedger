@@ -245,6 +245,10 @@ table.w-full {
   font-weight: 600;
 }
 
+.w-auto {
+  width: auto;
+}
+
 @media (min-width: 640px) {
   .sm\:flex-row {
     flex-direction: row;
@@ -260,6 +264,9 @@ table.w-full {
   }
   .sm\:w-64 {
     width: 16rem;
+  }
+  .sm\:w-auto {
+    width: auto;
   }
 }
 

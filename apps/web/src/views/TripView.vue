@@ -40,7 +40,7 @@ const balanced = computed(() => settlement.value?.consistency.ok ?? false);
 
 <template>
   <div v-if="loading" class="text-tl-muted" role="status">Loading…</div>
-  <div v-else-if="!trip" class="tl-card">Trip not found.</div>
+  <div v-else-if="!trip" class="tl-card">Group not found.</div>
   <div v-else class="tl-has-bottom-nav space-y-4">
     <div class="sr-only" aria-live="polite" aria-atomic="true">
       {{ statusMessage }}

@@ -4,10 +4,10 @@ import { flushOutbox, syncAllCloudTrips } from "@/sync/engine";
 import { useAuthStore } from "@/stores/auth";
 
 const auth = useAuthStore();
-const { kind, label, keepBothHint, dismissKeepBothHint, pendingCount } =
-  useSyncStatus();
+const { kind, label, pendingCount, syncing } = useSyncStatus();
 
 async function onRetry() {
+  if (syncing.value) return;
   await flushOutbox();
   await syncAllCloudTrips();
 }
@@ -20,6 +20,8 @@ async function onRetry() {
       class="tl-sync-chip"
       :class="`is-${kind}`"
       :title="label"
+      :aria-label="label"
+      :disabled="syncing"
       @click="onRetry"
     >
       <i
@@ -30,17 +32,10 @@ async function onRetry() {
           'pi pi-exclamation-circle': kind === 'error',
         }"
       />
-      <span>{{ label }}</span>
+      <span class="tl-sync-chip__label">{{ label }}</span>
       <span v-if="pendingCount > 0 && kind !== 'pending'" class="tl-sync-count">{{
         pendingCount
       }}</span>
     </button>
-    <p v-if="keepBothHint" class="tl-sync-hint">
-      Some changes from another device were kept — remove anything you don’t
-      need.
-      <button type="button" class="tl-sync-hint__dismiss" @click="dismissKeepBothHint">
-        Dismiss
-      </button>
-    </p>
   </div>
 </template>

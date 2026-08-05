@@ -1,27 +1,54 @@
 @import "primeicons/primeicons.css";
 
-
-/* Light (default) */
+/* Light (default) — 60% neutrals / 30% text / 10% teal accent */
 :root {
-  --tl-bg: #f4f7f6;
+  --tl-bg: #f5f7f8;
   --tl-panel: #ffffff;
-  --tl-elevated: #f0f4f3;
-  --tl-border: #d7e0dd;
-  --tl-hairline: #e5ecea;
-  --tl-accent: #0d9488;
-  --tl-accent-dim: #0f766e;
+  --tl-elevated: #eef2f3;
+  --tl-border: #d8e0e3;
+  --tl-hairline: #e8eef0;
+  --tl-accent: #0f766e;
+  --tl-accent-dim: #115e59;
   --tl-accent-soft: #ccfbf1;
+  --tl-accent-contrast: #f0fdfa;
   --tl-text: #0f172a;
   --tl-muted: #64748b;
   --tl-danger: #dc2626;
   --tl-ok: #16a34a;
   --tl-danger-bg: #fef2f2;
   --tl-danger-border: #fecaca;
-  --tl-header-bg: rgb(255 255 255 / 0.85);
-  --tl-nav-bg: rgb(255 255 255 / 0.92);
-  --tl-wash-1: #99f6e455;
-  --tl-wash-2: #bae6fd44;
-  --tl-shadow: 0 1px 2px rgb(15 23 42 / 0.04), 0 4px 12px rgb(15 23 42 / 0.04);
+  --tl-header-bg: rgb(255 255 255 / 0.88);
+  --tl-nav-bg: rgb(255 255 255 / 0.94);
+  --tl-wash-1: rgb(15 118 110 / 0.08);
+  --tl-wash-2: rgb(14 165 233 / 0.06);
+  --tl-shadow: 0 1px 2px rgb(15 23 42 / 0.04), 0 8px 24px rgb(15 23 42 / 0.06);
+
+  --tl-space-1: 0.25rem; /* 4 */
+  --tl-space-2: 0.5rem; /* 8 */
+  --tl-space-3: 0.75rem; /* 12 */
+  --tl-space-4: 1rem; /* 16 */
+  --tl-space-5: 1.5rem; /* 24 */
+  --tl-space-6: 2rem; /* 32 */
+  --tl-space-7: 3rem; /* 48 */
+
+  --tl-radius-sm: 0.5rem;
+  --tl-radius-md: 0.75rem;
+  --tl-radius-lg: 1rem;
+  --tl-radius-xl: 1.25rem;
+
+  --tl-text-xs: 0.75rem;
+  --tl-text-sm: 0.875rem;
+  --tl-text-md: 1rem;
+  --tl-text-lg: 1.25rem;
+  --tl-text-xl: 1.5rem;
+
+  --tl-input-pad-x: 0.875rem;
+  --tl-input-pad-y: 0.65rem;
+  --tl-tap: 2.75rem; /* 44px */
+
+  --tl-shell-pad-x: max(1rem, env(safe-area-inset-left, 0px));
+  --tl-shell-pad-x-end: max(1rem, env(safe-area-inset-right, 0px));
+
   color-scheme: light;
 }
 
@@ -30,21 +57,22 @@ html.dark {
   --tl-bg: #0b1220;
   --tl-panel: #111827;
   --tl-elevated: #1a2332;
-  --tl-border: #1f2937;
+  --tl-border: #243044;
   --tl-hairline: #1e293b;
-  --tl-accent: #14b8a6;
-  --tl-accent-dim: #0f766e;
-  --tl-accent-soft: #134e4a66;
+  --tl-accent: #2dd4bf;
+  --tl-accent-dim: #5eead4;
+  --tl-accent-soft: rgb(19 78 74 / 0.45);
+  --tl-accent-contrast: #042f2e;
   --tl-text: #e2e8f0;
   --tl-muted: #94a3b8;
   --tl-danger: #f87171;
   --tl-ok: #4ade80;
   --tl-danger-bg: rgb(69 10 10 / 0.4);
   --tl-danger-border: #7f1d1d;
-  --tl-header-bg: rgb(2 6 23 / 0.8);
-  --tl-nav-bg: rgb(11 18 32 / 0.94);
-  --tl-wash-1: #134e4a55;
-  --tl-wash-2: #1e3a5f44;
-  --tl-shadow: 0 1px 2px rgb(0 0 0 / 0.2);
+  --tl-header-bg: rgb(2 6 23 / 0.85);
+  --tl-nav-bg: rgb(11 18 32 / 0.96);
+  --tl-wash-1: rgb(19 78 74 / 0.35);
+  --tl-wash-2: rgb(30 58 95 / 0.3);
+  --tl-shadow: 0 1px 2px rgb(0 0 0 / 0.25), 0 8px 24px rgb(0 0 0 / 0.35);
   color-scheme: dark;
 }

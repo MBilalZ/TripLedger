@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { onMounted } from "vue";
+import { computed, onMounted, ref } from "vue";
 import { useRouter } from "vue-router";
 import Toast from "primevue/toast";
 import ConfirmDialog from "primevue/confirmdialog";
-import Button from "primevue/button";
+import Menu from "primevue/menu";
+import type { MenuItem } from "primevue/menuitem";
 import { isSupabaseConfigured } from "@/api/supabase";
 import PwaInstallBanner from "@/components/PwaInstallBanner.vue";
 import PushNotifyToggle from "@/components/PushNotifyToggle.vue";
@@ -11,11 +12,14 @@ import SyncStatusChip from "@/components/SyncStatusChip.vue";
 import { useTheme } from "@/composables/useTheme";
 import { useAuthStore } from "@/stores/auth";
 import { useTripsStore } from "@/stores/trips";
+import { useSyncStatus } from "@/sync/status";
 
 const { isDark, toggle } = useTheme();
 const auth = useAuthStore();
 const trips = useTripsStore();
 const router = useRouter();
+const { keepBothHint, dismissKeepBothHint } = useSyncStatus();
+const accountMenu = ref<InstanceType<typeof Menu> | null>(null);
 
 onMounted(() => {
   void auth.initAuth().then(() => {
@@ -29,46 +33,80 @@ async function onSignOut() {
   await auth.signOut();
   await router.push({ name: "auth" });
 }
+
+const accountItems = computed<MenuItem[]>(() => {
+  if (!isSupabaseConfigured()) {
+    return [
+      {
+        label: "Local · this device",
+        disabled: true,
+      },
+    ];
+  }
+  if (auth.isSignedIn) {
+    return [
+      {
+        label: auth.displayLabel || "Account",
+        disabled: true,
+      },
+      { separator: true },
+      {
+        label: "Sign out",
+        icon: "pi pi-sign-out",
+        command: () => void onSignOut(),
+      },
+    ];
+  }
+  return [
+    {
+      label: "Sign in",
+      icon: "pi pi-sign-in",
+      command: () => void router.push({ name: "auth" }),
+    },
+    {
+      label: "Create account",
+      icon: "pi pi-user-plus",
+      command: () =>
+        void router.push({ name: "auth", query: { mode: "signup" } }),
+    },
+  ];
+});
+
+function toggleAccount(event: Event) {
+  accountMenu.value?.toggle(event);
+}
 </script>
 
 <template>
   <div class="min-h-screen bg-tl">
     <Toast position="top-center" />
-    <ConfirmDialog />
+    <ConfirmDialog :draggable="false" />
     <header class="tl-app-header">
-      <div class="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
-        <router-link to="/" class="flex items-center gap-2 no-underline">
+      <div class="tl-app-header__inner">
+        <router-link to="/" class="tl-app-header__brand">
           <span class="tl-brand-mark">TL</span>
-          <span class="text-lg font-semibold tracking-tight text-tl"
-            >TripLedger</span
-          >
+          <span class="tl-app-header__brand-name">TripLedger</span>
         </router-link>
-        <div class="flex items-center gap-2">
+        <div class="tl-app-header__actions">
           <SyncStatusChip />
           <PushNotifyToggle />
-          <template v-if="isSupabaseConfigured()">
-            <template v-if="auth.isSignedIn">
-              <span class="tl-tagline max-w-[10rem] truncate sm:max-w-xs">{{
-                auth.displayLabel
-              }}</span>
-              <Button
-                label="Sign out"
-                size="small"
-                severity="secondary"
-                text
-                @click="onSignOut"
-              />
-            </template>
-            <Button
-              v-else
-              label="Sign in"
-              size="small"
-              severity="secondary"
-              text
-              @click="router.push({ name: 'auth' })"
-            />
-          </template>
-          <span v-else class="tl-tagline">Local · this device</span>
+          <button
+            v-if="isSupabaseConfigured()"
+            type="button"
+            class="tl-icon-btn"
+            aria-label="Account"
+            aria-haspopup="true"
+            aria-controls="account_menu"
+            @click="toggleAccount"
+          >
+            <i class="pi pi-user" />
+          </button>
+          <Menu
+            id="account_menu"
+            ref="accountMenu"
+            :model="accountItems"
+            popup
+          />
           <button
             type="button"
             class="tl-icon-btn"
@@ -80,7 +118,22 @@ async function onSignOut() {
         </div>
       </div>
     </header>
-    <main class="mx-auto max-w-6xl px-4 py-6">
+    <div v-if="keepBothHint" class="tl-sync-banner" role="status">
+      <div class="tl-sync-banner__inner">
+        <span
+          >Some changes from another device were kept — remove anything you
+          don’t need.</span
+        >
+        <button
+          type="button"
+          class="tl-sync-banner__dismiss"
+          @click="dismissKeepBothHint"
+        >
+          Dismiss
+        </button>
+      </div>
+    </div>
+    <main class="tl-app-main">
       <router-view />
     </main>
     <PwaInstallBanner />

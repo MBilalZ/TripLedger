@@ -42,7 +42,7 @@ async function join() {
     toast.add({
       severity: "warn",
       summary: "Name required",
-      detail: "Enter how others should see you on this trip.",
+      detail: "Enter how others should see you in this group.",
       life: 3000,
     });
     return;
@@ -56,7 +56,7 @@ async function join() {
     await trips.refresh();
     toast.add({
       severity: "success",
-      summary: result.already_member ? "Already a member" : "Joined trip",
+      summary: result.already_member ? "Already a member" : "Joined group",
       life: 2500,
     });
     await router.replace(`/trips/${result.trip_id}`);
@@ -76,11 +76,11 @@ async function join() {
 <template>
   <section class="tl-card mx-auto max-w-md space-y-4" aria-labelledby="join-title">
     <router-link to="/" class="text-xs text-tl-accent no-underline"
-      >← All trips</router-link
+      >← All groups</router-link
     >
-    <h1 id="join-title" class="text-2xl font-semibold text-tl">Join trip</h1>
+    <h1 id="join-title" class="text-2xl font-semibold text-tl">Join group</h1>
     <p class="text-sm text-tl-muted">
-      Confirm how others should see you on this trip. You’re signed in as
+      Confirm how others should see you in this group. You’re signed in as
       {{ auth.displayLabel || "your account" }}.
     </p>
     <div v-if="error" class="tl-alert" role="alert">{{ error }}</div>
@@ -96,7 +96,7 @@ async function join() {
       />
       <div class="mt-3 flex flex-wrap gap-2">
         <Button
-          label="Join trip"
+          label="Join group"
           icon="pi pi-sign-in"
           :loading="joining"
           @click="join"

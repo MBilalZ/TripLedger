@@ -12,7 +12,15 @@ body,
 
 body {
   margin: 0;
-  font-family: "Segoe UI", ui-sans-serif, system-ui, sans-serif;
+  font-family:
+    "Segoe UI",
+    ui-sans-serif,
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    sans-serif;
+  font-size: var(--tl-text-md);
+  line-height: 1.45;
   background:
     radial-gradient(1200px 600px at 10% -10%, var(--tl-wash-1), transparent),
     radial-gradient(900px 500px at 100% 0%, var(--tl-wash-2), transparent),
@@ -46,4 +54,3 @@ button:focus:not(:focus-visible),
 a:focus:not(:focus-visible) {
   outline: none;
 }
-

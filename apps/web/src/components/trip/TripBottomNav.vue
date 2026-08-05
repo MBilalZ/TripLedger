@@ -6,7 +6,7 @@ const emit = defineEmits<{ setTab: [tab: MainTab] }>();
 </script>
 
 <template>
-  <nav class="tl-bottom-nav" aria-label="Trip sections">
+  <nav class="tl-bottom-nav" aria-label="Group sections">
     <button
       type="button"
       :class="{ 'is-active': activeTab === 'expenses' }"
@@ -32,7 +32,7 @@ const emit = defineEmits<{ setTab: [tab: MainTab] }>();
       @click="emit('setTab', 'settle')"
     >
       <i class="pi pi-sync" aria-hidden="true" />
-      Settle
+      Settle up
     </button>
     <button
       type="button"

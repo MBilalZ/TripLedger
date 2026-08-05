@@ -14,9 +14,6 @@
 .text-tl-accent-bright {
   color: var(--tl-accent-dim);
 }
-html.dark .text-tl-accent-bright {
-  color: #5eead4;
-}
 .ml-auto {
   margin-left: auto;
 }
@@ -36,4 +33,29 @@ html.dark .text-tl-accent-bright {
   border-color: var(--tl-hairline);
 }
 
-/* Utility classes used in views (Tailwind-free) */
+.relative {
+  position: relative;
+}
+.absolute {
+  position: absolute;
+}
+.inset-0 {
+  inset: 0;
+}
+.z-0 {
+  z-index: 0;
+}
+.z-10 {
+  z-index: 10;
+}
+.pointer-events-none {
+  pointer-events: none;
+}
+.truncate {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.shrink-0 {
+  flex-shrink: 0;
+}

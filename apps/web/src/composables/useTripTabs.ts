@@ -8,9 +8,9 @@ export function useTripTabs() {
   const moreSection = ref<MoreSection>("menu");
 
   const moreTitle = computed(() => {
-    if (moreSection.value === "people") return "People";
+    if (moreSection.value === "people") return "Friends";
     if (moreSection.value === "pools") return "Pools";
-    if (moreSection.value === "adjustments") return "Adjustments";
+    if (moreSection.value === "adjustments") return "Payments";
     return "More";
   });
 

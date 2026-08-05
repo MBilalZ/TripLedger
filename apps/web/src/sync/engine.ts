@@ -1,8 +1,14 @@
 import { reportError } from "@/lib/reportError";
 import { listOutbox, markOutboxError, refreshPendingCount, removeOutbox } from "./outbox";
-import { setOnline, setSyncError, setSyncing } from "./status";
+import {
+  beginSyncing,
+  endSyncing,
+  setOnline,
+  setSyncError,
+} from "./status";
 
 let flushPromise: Promise<void> | null = null;
+let flushDirty = false;
 let started = false;
 
 function isOnline(): boolean {
@@ -29,43 +35,47 @@ export async function flushOutbox(tripId?: string): Promise<void> {
   setOnline(true);
 
   if (flushPromise) {
+    flushDirty = true;
     await flushPromise;
     return;
   }
 
   flushPromise = (async () => {
-    setSyncing(true);
+    beginSyncing();
     setSyncError(null);
     try {
-      const ops = await cloudOps();
-      const rows = await listOutbox(tripId);
-      for (const row of rows) {
-        try {
-          await ops.applyOutboxRowPrecise(row);
-          await removeOutbox(row.id);
-          if (row.tripId && row.op !== "deleteTrip") {
-            try {
-              await ops.pullTrip(row.tripId);
-            } catch (pullErr) {
-              reportError(pullErr, {
-                tag: "sync.pull_after_push",
-                tripId: row.tripId,
-                op: row.op,
-              });
+      do {
+        flushDirty = false;
+        const ops = await cloudOps();
+        const rows = await listOutbox(tripId);
+        for (const row of rows) {
+          try {
+            await ops.applyOutboxRowPrecise(row);
+            await removeOutbox(row.id);
+            if (row.tripId && row.op !== "deleteTrip") {
+              try {
+                await ops.pullTrip(row.tripId);
+              } catch (pullErr) {
+                reportError(pullErr, {
+                  tag: "sync.pull_after_push",
+                  tripId: row.tripId,
+                  op: row.op,
+                });
+              }
             }
+          } catch (e) {
+            const message = e instanceof Error ? e.message : "Sync failed";
+            await markOutboxError(row.id, message);
+            setSyncError(message);
+            reportError(e, { tag: "sync.outbox", tripId: row.tripId, op: row.op });
+            // Keep-both: do not drop the op; stop this pass so order is preserved.
+            break;
           }
-        } catch (e) {
-          const message = e instanceof Error ? e.message : "Sync failed";
-          await markOutboxError(row.id, message);
-          setSyncError(message);
-          reportError(e, { tag: "sync.outbox", tripId: row.tripId, op: row.op });
-          // Keep-both: do not drop the op; stop this pass so order is preserved.
-          break;
         }
-      }
-      await refreshPendingCount();
+        await refreshPendingCount();
+      } while (flushDirty);
     } finally {
-      setSyncing(false);
+      endSyncing();
       flushPromise = null;
     }
   })();
@@ -76,12 +86,15 @@ export async function flushOutbox(tripId?: string): Promise<void> {
 export async function syncTrip(tripId: string): Promise<void> {
   await flushOutbox(tripId);
   if (isOnline()) {
+    beginSyncing();
     try {
       await pullTrip(tripId);
       setSyncError(null);
     } catch (e) {
       const message = e instanceof Error ? e.message : "Pull failed";
       setSyncError(message);
+    } finally {
+      endSyncing();
     }
   }
 }
@@ -94,7 +107,7 @@ export async function syncAllCloudTrips(): Promise<void> {
   }
   setOnline(true);
 
-  setSyncing(true);
+  beginSyncing();
   try {
     await flushOutbox();
     const ops = await cloudOps();
@@ -103,7 +116,7 @@ export async function syncAllCloudTrips(): Promise<void> {
   } catch (e) {
     setSyncError(e instanceof Error ? e.message : "Sync failed");
   } finally {
-    setSyncing(false);
+    endSyncing();
     await refreshPendingCount();
   }
 }

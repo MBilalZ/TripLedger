@@ -29,16 +29,17 @@ const {
 <template>
   <div class="space-y-4">
     <div v-if="!participants.length" class="tl-card text-sm text-tl-muted">
-      Add people first before creating a pool.
+      Add friends first before creating a pool.
     </div>
-    <div v-else class="tl-card flex flex-col gap-2 sm:flex-row">
+    <div v-else class="tl-card flex flex-col gap-3 sm:flex-row sm:items-center">
       <InputText
         v-model="newPool"
         placeholder="Pool name (e.g. Part A)"
         class="w-full"
+        maxlength="80"
         @keyup.enter="onAddPool"
       />
-      <Button label="Add pool" @click="onAddPool" />
+      <Button label="Add pool" class="w-full sm:w-auto shrink-0" @click="onAddPool" />
     </div>
     <div
       v-if="participants.length && !pools.length"
@@ -62,7 +63,7 @@ const {
             />
           </template>
           <template v-else>
-            <h3 class="font-medium text-tl-accent-bright">{{ pool.name }}</h3>
+            <h3 class="font-medium text-tl">{{ pool.name }}</h3>
             <Button
               icon="pi pi-pencil"
               text

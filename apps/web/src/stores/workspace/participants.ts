@@ -31,19 +31,19 @@ export function createParticipantActions(state: WorkspaceState, core: CoreAction
       blockers.push(`on ${onAdj} adjustment${onAdj === 1 ? "" : "s"}`);
     }
     if (state.trip.value?.settlementHubId === id) {
-      blockers.push("settlement hub — pick another hub in Settle first");
+      blockers.push("settlement hub — pick another hub in Settle up first");
     }
     return blockers;
   }
 
   async function removeParticipant(id: string) {
     if (state.myRole.value === "member") {
-      throw new Error("Only the trip owner can remove people");
+      throw new Error("Only the group owner can remove friends");
     }
     const blockers = participantDeleteBlockers(id);
     if (blockers.length) {
       throw new Error(
-        `Cannot delete this person (${blockers.join("; ")}). Remove or reassign those first.`,
+        `Cannot delete this friend (${blockers.join("; ")}). Remove or reassign those first.`,
       );
     }
     await getWorkspaceRepo().removeParticipant(id);

@@ -32,7 +32,11 @@ Requires Supabase CLI + linked project (`supabase link`).
 pnpm sync:edge-engine
 supabase functions deploy recompute-settlement
 supabase functions deploy send-push
+supabase functions deploy auth-sign-in
 ```
+
+`auth-sign-in` uses the project’s service role (injected by Supabase) to distinguish
+unknown email (`USER_NOT_FOUND`) from wrong password (`BAD_PASSWORD`).
 
 Set VAPID secrets:
 

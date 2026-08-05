@@ -6,24 +6,31 @@ import { getWorkspaceRepo } from "@/repositories";
 import type { CoreActions } from "./core";
 import type { WorkspaceState } from "./state";
 
+/**
+ * Payments (adjustments): money moved outside expenses/pools.
+ * Engine: fromId adjNet -= amount, toId adjNet += amount.
+ * Splitwise "X paid Y" → Y owes X less / X is owed: fromId=Y (received), toId=X (paid by).
+ */
 export function createAdjustmentActions(state: WorkspaceState, core: CoreActions) {
   async function addAdjustment(input: {
-    fromId: string;
-    toId: string;
+    paidById: string;
+    receivedById: string;
     amountRupees: number;
     reason: string;
     groupId?: string | null;
   }) {
-    if (!input.fromId || !input.toId) {
-      throw new Error("Select both people");
+    if (!input.paidById || !input.receivedById) {
+      throw new Error("Select who paid and who received");
     }
     const amountPaisa = parseRupeesToPaisa(input.amountRupees);
-    if (input.fromId === input.toId) throw new Error("From and To must differ");
+    if (input.paidById === input.receivedById) {
+      throw new Error("Paid by and Received by must differ");
+    }
     const row: AdjustmentRow = {
       id: newId("adj"),
       tripId: state.tripId.value,
-      fromId: input.fromId,
-      toId: input.toId,
+      fromId: input.receivedById,
+      toId: input.paidById,
       amountPaisa,
       reason: input.reason,
       createdAt: new Date().toISOString(),
@@ -33,16 +40,16 @@ export function createAdjustmentActions(state: WorkspaceState, core: CoreActions
     state.adjustments.value = [...state.adjustments.value, row];
     await core.touch();
     core.recomputeSettlement();
-    state.announce("Adjustment added");
+    state.announce("Payment recorded");
     return row.id;
   }
 
   async function addSplitAdjustments(input: {
-    creditorId: string;
+    paidById: string;
     amountRupees: number;
     reason: string;
     splitMode: SplitMode;
-    debtors: Array<{
+    recipients: Array<{
       participantId: string;
       included: boolean;
       shares: number;
@@ -50,12 +57,12 @@ export function createAdjustmentActions(state: WorkspaceState, core: CoreActions
       exactPaisa: number;
     }>;
   }) {
-    if (!input.creditorId) throw new Error("Select who is owed");
+    if (!input.paidById) throw new Error("Select who paid");
     const amountPaisa = parseRupeesToPaisa(input.amountRupees);
-    const lines = input.debtors.filter(
-      (d) => d.included && d.participantId !== input.creditorId,
+    const lines = input.recipients.filter(
+      (d) => d.included && d.participantId !== input.paidById,
     );
-    if (!lines.length) throw new Error("Select at least one debtor");
+    if (!lines.length) throw new Error("Select at least one friend who received");
     const alloc = allocateSplit(amountPaisa, input.splitMode, lines);
     if (alloc.error) throw new Error(alloc.error);
     const groupId = newId("adjg");
@@ -65,7 +72,7 @@ export function createAdjustmentActions(state: WorkspaceState, core: CoreActions
         id: newId("adj"),
         tripId: state.tripId.value,
         fromId: slice.participantId,
-        toId: input.creditorId,
+        toId: input.paidById,
         amountPaisa: slice.sharePaisa,
         reason: input.reason,
         createdAt: new Date().toISOString(),
@@ -76,26 +83,30 @@ export function createAdjustmentActions(state: WorkspaceState, core: CoreActions
     }
     await core.touch();
     core.recomputeSettlement();
-    state.announce("Split adjustment added");
+    state.announce("Payment recorded");
   }
 
   async function updateAdjustment(
     id: string,
     input: {
-      fromId: string;
-      toId: string;
+      paidById: string;
+      receivedById: string;
       amountRupees: number;
       reason: string;
     },
   ) {
-    if (!input.fromId || !input.toId) {
-      throw new Error("Select both people");
+    if (!input.paidById || !input.receivedById) {
+      throw new Error("Select who paid and who received");
     }
     const amountPaisa = parseRupeesToPaisa(input.amountRupees);
-    if (input.fromId === input.toId) throw new Error("From and To must differ");
+    if (input.paidById === input.receivedById) {
+      throw new Error("Paid by and Received by must differ");
+    }
+    const fromId = input.receivedById;
+    const toId = input.paidById;
     await getWorkspaceRepo().updateAdjustment(id, {
-      fromId: input.fromId,
-      toId: input.toId,
+      fromId,
+      toId,
       amountPaisa,
       reason: input.reason,
     });
@@ -103,8 +114,8 @@ export function createAdjustmentActions(state: WorkspaceState, core: CoreActions
       a.id === id
         ? {
             ...a,
-            fromId: input.fromId,
-            toId: input.toId,
+            fromId,
+            toId,
             amountPaisa,
             reason: input.reason,
           }
@@ -112,7 +123,7 @@ export function createAdjustmentActions(state: WorkspaceState, core: CoreActions
     );
     await core.touch();
     core.recomputeSettlement();
-    state.announce("Adjustment updated");
+    state.announce("Payment updated");
   }
 
   async function removeAdjustment(id: string) {
@@ -125,7 +136,7 @@ export function createAdjustmentActions(state: WorkspaceState, core: CoreActions
     state.adjustments.value = state.adjustments.value.filter((a) => !ids.includes(a.id));
     await core.touch();
     core.recomputeSettlement();
-    state.announce("Adjustment deleted");
+    state.announce("Payment deleted");
   }
 
   return {

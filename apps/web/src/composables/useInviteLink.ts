@@ -44,7 +44,7 @@ export function useInviteLink(tripId: () => string) {
       return;
     }
     if (!workspace.isOwner) {
-      warn("Owner only", "Only the trip owner can create invite links.");
+      warn("Owner only", "Only the group owner can create invite links.");
       return;
     }
     inviting.value = true;

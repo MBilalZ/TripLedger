@@ -32,7 +32,7 @@ async function seed() {
   const id = await store.seedSample();
   toast.add({
     severity: "success",
-    summary: "Sample trip ready",
+    summary: "Sample group ready",
     detail: "Expected: Mamo→Bilal 19488, Salman→Bilal 656, Farhan→Bilal 718",
     life: 5000,
   });
@@ -71,7 +71,7 @@ const toolItems = computed<MenuItem[]>(() => [
   ...(isDev && !store.cloud
     ? [
         {
-          label: "Load sample trip",
+          label: "Load sample group",
           icon: "pi pi-sparkles",
           command: () => seed(),
         } satisfies MenuItem,
@@ -98,14 +98,14 @@ function confirmDeleteTrip(tripId: string, tripName: string, event: Event) {
   event.stopPropagation();
   confirm.require({
     message: `Delete “${tripName}”${store.cloud ? " for everyone" : " from this device"}? This cannot be undone.`,
-    header: "Delete trip",
+    header: "Delete group",
     icon: "pi pi-exclamation-triangle",
     acceptClass: "p-button-danger",
     accept: async () => {
       await store.deleteTrip(tripId);
       toast.add({
         severity: "success",
-        summary: "Trip deleted",
+        summary: "Group deleted",
         life: 2000,
       });
     },
@@ -115,28 +115,28 @@ function confirmDeleteTrip(tripId: string, tripName: string, event: Event) {
 
 <template>
   <div class="space-y-6">
-    <section class="tl-card">
-      <h1 class="mb-1 text-2xl font-semibold text-tl-accent-bright">
-        Your trips
-      </h1>
-      <p class="mb-4 text-sm text-tl-muted">
-        <template v-if="store.cloud">
-          Shared trips sync for everyone you invite. Copy an invite link from a
-          trip to add members.
-        </template>
-        <template v-else-if="isSupabaseConfigured() && !auth.isSignedIn">
-          Sign in to create shared trips and join invite links. Your account
-          works on every device.
-        </template>
-        <template v-else-if="isSupabaseConfigured() && store.authError">
-          Cloud auth error: {{ store.authError }}.
-        </template>
-        <template v-else>
-          Everything stays on this device. Add Supabase env vars to enable
-          shared trips and invites.
-        </template>
-      </p>
-      <div class="flex flex-col gap-3 sm:flex-row">
+    <section class="tl-card space-y-4">
+      <div>
+        <h1 class="mb-1 text-2xl font-semibold text-tl">Your groups</h1>
+        <p class="text-sm text-tl-muted">
+          <template v-if="store.cloud">
+            Shared groups sync for everyone you invite. Copy an invite link from a
+            group to add members.
+          </template>
+          <template v-else-if="isSupabaseConfigured() && !auth.isSignedIn">
+            Sign in to create shared groups and join invite links. Your account
+            works on every device.
+          </template>
+          <template v-else-if="isSupabaseConfigured() && store.authError">
+            Cloud auth error: {{ store.authError }}.
+          </template>
+          <template v-else>
+            Everything stays on this device. Add Supabase env vars to enable
+            shared groups and invites.
+          </template>
+        </p>
+      </div>
+      <div class="flex flex-col gap-3 sm:flex-row sm:items-center">
         <Button
           v-if="isSupabaseConfigured() && !auth.isSignedIn"
           label="Sign in"
@@ -146,19 +146,18 @@ function confirmDeleteTrip(tripId: string, tripName: string, event: Event) {
         />
         <Button
           v-else
-          label="New trip"
+          label="New group"
           icon="pi pi-plus"
           class="w-full sm:w-auto"
           @click="router.push('/trips/new')"
         />
-      </div>
-      <div class="mt-3 flex items-center gap-2">
         <Button
           label="Tools"
           icon="pi pi-ellipsis-h"
           severity="secondary"
           outlined
           size="small"
+          class="w-full sm:w-auto"
           @click="toggleTools"
           aria-haspopup="true"
           aria-controls="home_tools_menu"
@@ -179,42 +178,39 @@ function confirmDeleteTrip(tripId: string, tripName: string, event: Event) {
       </div>
     </section>
 
-    <section class="grid gap-3" aria-label="Trip list">
+    <section class="grid gap-3" aria-label="Group list">
       <div v-if="!store.trips.length" class="tl-card text-center text-tl-muted">
-        No trips yet. Create one{{
+        No groups yet. Create one{{
           isDev && !store.cloud ? " or load the sample" : ""
         }}.
       </div>
       <div
         v-for="t in store.trips"
         :key="t.id"
-        class="tl-card tl-pressable tl-trip-row relative flex items-center gap-3"
+        class="tl-card tl-pressable tl-trip-row flex items-center gap-2"
       >
         <router-link
           :to="`/trips/${t.id}`"
-          class="tl-trip-link absolute inset-0 z-0 rounded-[inherit] no-underline"
+          class="tl-trip-link no-underline"
           :aria-label="`Open ${t.name}`"
-        />
-        <div class="relative z-10 min-w-0 flex-1 pointer-events-none">
-          <div class="font-medium text-tl">{{ t.name }}</div>
-          <div class="text-xs text-tl-muted">
-            Updated {{ new Date(t.updatedAt).toLocaleString() }} ·
-            PKR
+        >
+          <div class="min-w-0 flex-1">
+            <div class="font-medium text-tl">{{ t.name }}</div>
+            <div class="text-xs text-tl-muted">
+              Updated {{ new Date(t.updatedAt).toLocaleString() }} · PKR
+            </div>
           </div>
-        </div>
+          <i class="pi pi-chevron-right shrink-0 text-tl-muted" aria-hidden="true" />
+        </router-link>
         <Button
           icon="pi pi-trash"
           severity="danger"
           text
           rounded
-          class="relative z-10"
-          aria-label="Delete trip"
-          v-tooltip="'Delete trip'"
+          class="shrink-0"
+          aria-label="Delete group"
+          v-tooltip="'Delete group'"
           @click="confirmDeleteTrip(t.id, t.name, $event)"
-        />
-        <i
-          class="pi pi-chevron-right relative z-10 text-tl-muted pointer-events-none"
-          aria-hidden="true"
         />
       </div>
     </section>

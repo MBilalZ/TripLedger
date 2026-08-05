@@ -23,6 +23,7 @@ import {
   deleteCachedTrip,
   listCachedCloudTrips,
   readCachedWorkspace,
+  reapplyPendingOutboxToCache,
   writeCachedWorkspace,
 } from "./cache";
 import { listOutbox } from "./outbox";
@@ -165,10 +166,12 @@ export async function applyOutboxRowPrecise(row: OutboxRow): Promise<void> {
       splitMode: "shares" | "equal" | "percent" | "exact";
     };
     const members = p.members as PoolMemberRow[];
-    await poolsApi.insertPool(poolToDb(pool));
-    for (const m of members) {
-      await poolsApi.insertPoolMember(poolMemberToDb(m));
-    }
+    await apiMutate((sb) =>
+      sb.rpc("add_pool_with_members", {
+        p_pool: poolToDb(pool),
+        p_members: members.map(poolMemberToDb),
+      }),
+    );
     return;
   }
 
@@ -195,6 +198,7 @@ export async function pullTrip(tripId: string): Promise<void> {
   const before = await readCachedWorkspace(tripId, userId);
   const snapshot = await loadWorkspace(tripId);
   await writeCachedWorkspace(userId, snapshot);
+  await reapplyPendingOutboxToCache(tripId);
   if (before?.expenses.length && snapshot.expenses.length) {
     const beforeIds = new Set(before.expenses.map((e) => e.id));
     const added = snapshot.expenses.some((e) => !beforeIds.has(e.id));
@@ -212,6 +216,7 @@ export async function syncAllCloudTripsWork(): Promise<void> {
   const remoteIds = new Set(remote.map((t) => t.id));
   for (const trip of remote) {
     await writeCachedWorkspace(user.id, await loadWorkspace(trip.id));
+    await reapplyPendingOutboxToCache(trip.id);
   }
   const cached = await listCachedCloudTrips(user.id);
   for (const trip of cached) {

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from "vue";
+import { computed, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import Button from "primevue/button";
 import InputText from "primevue/inputtext";
@@ -11,7 +11,9 @@ const auth = useAuthStore();
 const route = useRoute();
 const router = useRouter();
 
-const mode = ref<"signin" | "signup">("signin");
+const mode = ref<"signin" | "signup">(
+  route.query.mode === "signup" ? "signup" : "signin",
+);
 const email = ref("");
 const password = ref("");
 const displayName = ref("");
@@ -20,6 +22,15 @@ const formError = ref<string | null>(null);
 
 const title = computed(() =>
   mode.value === "signin" ? "Sign in" : "Create account",
+);
+
+watch(
+  () => route.query.mode,
+  (m) => {
+    if (m === "signup" || m === "signin") {
+      mode.value = m;
+    }
+  },
 );
 
 function safeRedirect(): string {
@@ -49,7 +60,14 @@ async function submit() {
     }
     await router.replace(safeRedirect());
   } catch (e) {
-    formError.value = toApiError(e).message;
+    const err = toApiError(e);
+    if (mode.value === "signin" && err.code === "USER_NOT_FOUND") {
+      mode.value = "signup";
+      formError.value =
+        "Couldn’t sign in. Create an account if you’re new, or go back if you already have one.";
+      return;
+    }
+    formError.value = err.message;
   } finally {
     submitting.value = false;
   }
@@ -58,17 +76,21 @@ async function submit() {
 function switchMode(next: "signin" | "signup") {
   mode.value = next;
   formError.value = null;
+  const query = { ...route.query };
+  if (next === "signup") query.mode = "signup";
+  else delete query.mode;
+  void router.replace({ query });
 }
 </script>
 
 <template>
   <section class="tl-card mx-auto max-w-md space-y-4" aria-labelledby="auth-title">
     <router-link to="/" class="text-xs text-tl-accent no-underline"
-      >← All trips</router-link
+      >← All groups</router-link
     >
     <h1 id="auth-title" class="text-2xl font-semibold text-tl">{{ title }}</h1>
     <p class="text-sm text-tl-muted">
-      Shared trips need an account so the same email works on every device. No
+      Shared groups need an account so the same email works on every device. No
       confirmation email is sent.
     </p>
 

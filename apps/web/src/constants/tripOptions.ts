@@ -2,14 +2,14 @@ import type { SettlementRounding, SplitMode, TransferMode } from "@tripledger/ty
 
 export const SPLIT_MODES: { label: string; value: SplitMode }[] = [
   { label: "Equal", value: "equal" },
-  { label: "Shares / heads", value: "shares" },
+  { label: "Shares", value: "shares" },
   { label: "Percent", value: "percent" },
   { label: "Exact amounts", value: "exact" },
 ];
 
 export const TRANSFER_MODES: { label: string; value: TransferMode }[] = [
   { label: "Minimize transactions", value: "minimize" },
-  { label: "Settle to one person", value: "settle_to_one" },
+  { label: "Settle to one friend", value: "settle_to_one" },
   { label: "Pairwise (proportional)", value: "pairwise" },
 ];
 

@@ -19,7 +19,7 @@ const balanced = computed(() => settlement.value?.consistency.ok ?? false);
 <template>
   <div v-show="visible" class="space-y-4">
     <div class="tl-card">
-      <h2 class="tl-section-title">Per person</h2>
+      <h2 class="tl-section-title">Per friend</h2>
       <div
         v-for="p in settlement?.participants ?? []"
         :key="p.participantId"
@@ -43,7 +43,7 @@ const balanced = computed(() => settlement.value?.consistency.ok ?? false);
         </div>
       </div>
       <p v-if="!(settlement?.participants.length)" class="text-sm text-tl-muted">
-        Add people to see balances.
+        Add friends to see balances.
       </p>
     </div>
 

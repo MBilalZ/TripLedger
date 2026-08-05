@@ -46,12 +46,12 @@ function formatExpiry(iso: string | null) {
 
 function confirmLeave() {
   confirmDanger({
-    message: "Leave this trip? You will lose access until invited again.",
-    header: "Leave trip",
+    message: "Leave this group? You will lose access until invited again.",
+    header: "Leave group",
     onAccept: async () => {
       try {
         await leaveTrip(store.tripId);
-        success("Left trip");
+        success("Left group");
         await router.push("/");
       } catch (e) {
         showError("Could not leave", e, 5000);
@@ -106,7 +106,7 @@ function confirmLeave() {
       </ul>
     </div>
     <p v-else-if="auth.cloud" class="text-xs text-tl-muted">
-      Ask the trip owner for an invite link to add more members.
+      Ask the group owner for an invite link to add more members.
     </p>
     <p class="text-xs text-tl-muted">
       {{
@@ -123,7 +123,7 @@ function confirmLeave() {
         v-model="newParticipant"
         :placeholder="editingParticipantId ? 'Edit name' : 'Name'"
         class="w-full"
-        aria-label="Person name"
+        aria-label="Friend name"
         maxlength="80"
       />
       <div class="flex gap-2">
@@ -142,7 +142,7 @@ function confirmLeave() {
         />
       </div>
     </form>
-    <ul class="m-0 list-none divide-y p-0" aria-label="People on this trip">
+    <ul class="m-0 list-none divide-y p-0" aria-label="Friends in this group">
       <li v-for="p in participants" :key="p.id" class="tl-list-row">
         <span>{{ p.displayName }}</span>
         <div class="flex gap-1">
@@ -165,12 +165,12 @@ function confirmLeave() {
         </div>
       </li>
       <li v-if="!participants.length" class="py-2 text-sm text-tl-muted">
-        No people yet.
+        No friends yet.
       </li>
     </ul>
     <Button
       v-if="auth.cloud && !isOwner"
-      label="Leave trip"
+      label="Leave group"
       icon="pi pi-sign-out"
       severity="secondary"
       outlined

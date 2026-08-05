@@ -30,7 +30,7 @@ const { trip, participants, settlement, isOwner } = storeToRefs(store);
             "
           />
           <p class="mt-1 text-xs text-tl-muted">
-            Minimize = fewest payments. Settle to one = everyone pays/receives via
+            Minimize = fewest transfers. Settle to one = everyone pays/receives via
             a hub.
           </p>
         </div>
@@ -51,7 +51,7 @@ const { trip, participants, settlement, isOwner } = storeToRefs(store);
           />
         </div>
         <div v-if="trip.transferMode === 'settle_to_one'">
-          <label class="tl-input-label">Hub person</label>
+          <label class="tl-input-label">Hub friend</label>
           <Select
             :model-value="trip.settlementHubId ?? ''"
             :options="[
@@ -71,7 +71,7 @@ const { trip, participants, settlement, isOwner } = storeToRefs(store);
         </div>
       </template>
       <p v-else class="text-sm text-tl-muted">
-        Settlement settings are managed by the trip owner.
+        Settlement settings are managed by the group owner.
       </p>
     </div>
     <div class="tl-card">

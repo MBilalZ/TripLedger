@@ -39,13 +39,13 @@ const {
 <template>
   <div v-show="visible" class="space-y-4">
     <div v-if="!canAddExpenses" class="tl-card space-y-3">
-      <h3 class="tl-section-title mb-0">Add people first</h3>
+      <h3 class="tl-section-title mb-0">Add friends first</h3>
       <p class="text-sm text-tl-muted">
-        Add at least one person before logging expenses. A default “General”
+        Add at least one friend before logging expenses. A default “General”
         pool is created automatically if you have not made one.
       </p>
       <Button
-        label="Add people"
+        label="Add friends"
         icon="pi pi-users"
         size="small"
         @click="emit('openMore', 'people')"

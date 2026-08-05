@@ -42,7 +42,7 @@ function toggleExport(event: Event) {
     <div class="flex items-start justify-between gap-2">
       <div class="min-w-0 flex-1">
         <router-link to="/" class="text-xs text-tl-accent no-underline"
-          >← All trips</router-link
+          >← All groups</router-link
         >
         <div v-if="!editingTrip" class="mt-1 flex flex-wrap items-center gap-2">
           <h1 class="text-2xl font-semibold text-tl">{{ trip.name }}</h1>
@@ -52,14 +52,14 @@ function toggleExport(event: Event) {
             text
             rounded
             size="small"
-            v-tooltip="'Edit trip'"
+            v-tooltip="'Edit group'"
             @click="emit('startEdit')"
           />
           <span class="text-sm text-tl-muted">Rs. (PKR)</span>
         </div>
         <div v-else class="mt-2 flex flex-col gap-2">
           <div>
-            <label class="tl-input-label">Trip name</label>
+            <label class="tl-input-label">Group name</label>
             <InputText
               :model-value="tripNameDraft"
               class="w-full"
@@ -105,8 +105,8 @@ function toggleExport(event: Event) {
           severity="danger"
           outlined
           rounded
-          aria-label="Delete trip"
-          v-tooltip="'Delete trip'"
+          aria-label="Delete group"
+          v-tooltip="'Delete group'"
           @click="emit('delete')"
         />
         <Button

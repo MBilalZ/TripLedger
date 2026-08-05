@@ -26,16 +26,16 @@ const { participants, pools, adjustments } = storeToRefs(store);
   <div v-show="visible" class="space-y-4">
     <template v-if="moreSection === 'menu'">
       <div class="tl-card space-y-1">
-        <h2 class="tl-section-title">Manage trip</h2>
+        <h2 class="tl-section-title">Manage group</h2>
         <button
           type="button"
           class="tl-list-row w-full text-left"
           @click="emit('openMore', 'people')"
         >
           <div>
-            <div class="font-medium">People</div>
+            <div class="font-medium">Friends</div>
             <div class="text-xs text-tl-muted">
-              {{ participants.length }} participant(s)
+              {{ participants.length }} friend(s)
             </div>
           </div>
           <i class="pi pi-chevron-right text-tl-muted" />
@@ -57,9 +57,9 @@ const { participants, pools, adjustments } = storeToRefs(store);
           @click="emit('openMore', 'adjustments')"
         >
           <div>
-            <div class="font-medium">Adjustments</div>
+            <div class="font-medium">Payments</div>
             <div class="text-xs text-tl-muted">
-              {{ adjustments.length }} adjustment(s)
+              {{ adjustments.length }} payment(s)
             </div>
           </div>
           <i class="pi pi-chevron-right text-tl-muted" />

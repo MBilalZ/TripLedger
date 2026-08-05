@@ -2,7 +2,8 @@ import { computed, ref } from "vue";
 import type { SyncStatusKind } from "./types";
 
 const online = ref(typeof navigator !== "undefined" ? navigator.onLine : true);
-const syncing = ref(false);
+const syncDepth = ref(0);
+const syncing = computed(() => syncDepth.value > 0);
 const pendingCount = ref(0);
 const lastError = ref<string | null>(null);
 const keepBothHint = ref(false);
@@ -11,8 +12,20 @@ export function setOnline(value: boolean) {
   online.value = value;
 }
 
+/** Nested-safe: begin a sync unit of work. */
+export function beginSyncing() {
+  syncDepth.value += 1;
+}
+
+/** Nested-safe: end a sync unit of work. */
+export function endSyncing() {
+  syncDepth.value = Math.max(0, syncDepth.value - 1);
+}
+
+/** @deprecated Prefer beginSyncing/endSyncing for nested work. */
 export function setSyncing(value: boolean) {
-  syncing.value = value;
+  if (value) beginSyncing();
+  else endSyncing();
 }
 
 export function setPendingCount(count: number) {
@@ -21,6 +34,10 @@ export function setPendingCount(count: number) {
 
 export function setSyncError(message: string | null) {
   lastError.value = message;
+}
+
+export function getSyncError(): string | null {
+  return lastError.value;
 }
 
 export function noteKeepBothMerge() {
