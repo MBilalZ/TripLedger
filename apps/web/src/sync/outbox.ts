@@ -13,11 +13,14 @@ export async function enqueueOutbox(
   payload: unknown,
   id = newId("op"),
 ): Promise<string> {
+  // Strip Vue reactive proxies (and other non-cloneables) so IndexedDB structured
+  // clone succeeds — callers often pass store arrays like pools/participants.
+  const plainPayload = JSON.parse(JSON.stringify(payload ?? null)) as unknown;
   const row: OutboxRow = {
     id,
     tripId,
     op,
-    payload,
+    payload: plainPayload,
     createdAt: new Date().toISOString(),
     retries: 0,
     lastError: null,
