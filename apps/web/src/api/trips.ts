@@ -63,20 +63,17 @@ export async function createTripWithIds(
   return tripId;
 }
 
-/** Owner delete; throws if RLS/no-op leaves the trip still visible. Idempotent if already gone. */
+/** Owner delete via RPC (bypasses cascade triggers that block owner teardown). Idempotent if gone. */
 export async function deleteTrip(tripId: string): Promise<void> {
   await requireUser();
   const sb = getSupabase();
-  const del = await sb.from("trips").delete().eq("id", tripId).select("id");
-  if (del.error) throw toApiError(del.error);
-  if ((del.data?.length ?? 0) > 0) return;
-
-  const still = await sb.from("trips").select("id").eq("id", tripId).maybeSingle();
-  if (still.error) throw toApiError(still.error);
-  if (still.data) {
-    throw new ApiError("Could not delete group (only the owner can delete)", {
-      code: "DELETE_DENIED",
-    });
+  const { error } = await sb.rpc("delete_trip_as_owner", { p_trip_id: tripId });
+  if (error) {
+    // Idempotent retry: trip already absent for this user.
+    const still = await sb.from("trips").select("id").eq("id", tripId).maybeSingle();
+    if (still.error) throw toApiError(still.error);
+    if (!still.data) return;
+    throw toApiError(error);
   }
 }
 
