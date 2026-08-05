@@ -8,17 +8,14 @@ import type { MenuItem } from "primevue/menuitem";
 import { isSupabaseConfigured } from "@/api/supabase";
 import PwaInstallBanner from "@/components/PwaInstallBanner.vue";
 import PushNotifyToggle from "@/components/PushNotifyToggle.vue";
-import SyncStatusChip from "@/components/SyncStatusChip.vue";
 import { useTheme } from "@/composables/useTheme";
 import { useAuthStore } from "@/stores/auth";
 import { useTripsStore } from "@/stores/trips";
-import { useSyncStatus } from "@/sync/status";
 
 const { isDark, toggle } = useTheme();
 const auth = useAuthStore();
 const trips = useTripsStore();
 const router = useRouter();
-const { keepBothHint, dismissKeepBothHint } = useSyncStatus();
 const accountMenu = ref<InstanceType<typeof Menu> | null>(null);
 
 onMounted(() => {
@@ -88,7 +85,6 @@ function toggleAccount(event: Event) {
           <span class="tl-app-header__brand-name">TripLedger</span>
         </router-link>
         <div class="tl-app-header__actions">
-          <SyncStatusChip />
           <PushNotifyToggle />
           <button
             v-if="isSupabaseConfigured()"
@@ -118,21 +114,6 @@ function toggleAccount(event: Event) {
         </div>
       </div>
     </header>
-    <div v-if="keepBothHint" class="tl-sync-banner" role="status">
-      <div class="tl-sync-banner__inner">
-        <span
-          >Some changes from another device were kept — remove anything you
-          don’t need.</span
-        >
-        <button
-          type="button"
-          class="tl-sync-banner__dismiss"
-          @click="dismissKeepBothHint"
-        >
-          Dismiss
-        </button>
-      </div>
-    </div>
     <main class="tl-app-main">
       <router-view />
     </main>

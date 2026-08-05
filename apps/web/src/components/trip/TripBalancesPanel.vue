@@ -14,6 +14,16 @@ const store = useWorkspaceStore();
 const { expenses, settlement } = storeToRefs(store);
 const { chartByCategory } = useTripCharts(expenses);
 const balanced = computed(() => settlement.value?.consistency.ok ?? false);
+const sortedParticipants = computed(() => {
+  const list = settlement.value?.participants ?? [];
+  return [...list].sort((a, b) => {
+    const byName = a.displayName.localeCompare(b.displayName, undefined, {
+      sensitivity: "base",
+    });
+    if (byName !== 0) return byName;
+    return a.participantId.localeCompare(b.participantId);
+  });
+});
 </script>
 
 <template>
@@ -21,7 +31,7 @@ const balanced = computed(() => settlement.value?.consistency.ok ?? false);
     <div class="tl-card">
       <h2 class="tl-section-title">Per friend</h2>
       <div
-        v-for="p in settlement?.participants ?? []"
+        v-for="p in sortedParticipants"
         :key="p.participantId"
         class="tl-list-row"
       >

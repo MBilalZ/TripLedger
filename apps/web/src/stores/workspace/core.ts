@@ -4,6 +4,7 @@ import type { SettlementRounding, TransferMode } from "@tripledger/types";
 import { computed } from "vue";
 import { subscribeTripChanges, unsubscribeChannel } from "@/api/realtime";
 import {
+  fetchSettlementSnapshot,
   hashTripFacts,
   recomputeSettlementRemote,
   upsertSettlementSnapshot,
@@ -19,6 +20,8 @@ export function createCoreActions(state: WorkspaceState) {
   let realtimeChannel: RealtimeChannel | null = null;
   let reloadTimer: ReturnType<typeof setTimeout> | null = null;
   let persistTimer: ReturnType<typeof setTimeout> | null = null;
+  /** Last facts hash successfully persisted (or confirmed matching remote). */
+  let lastPersistedHash: string | null = null;
 
   function currentFacts() {
     return mapToTripFacts({
@@ -53,14 +56,27 @@ export function createCoreActions(state: WorkspaceState) {
   async function persistSettlementSnapshot() {
     if (!auth.cloud || !state.trip.value || !state.settlement.value) return;
     try {
-      const remote = await recomputeSettlementRemote(state.tripId.value);
-      if (remote) {
-        state.settlement.value = remote;
-        return;
-      }
       const facts = currentFacts();
       const hash = await hashTripFacts(facts);
+      if (hash === lastPersistedHash) return;
+
+      const remote = await recomputeSettlementRemote(state.tripId.value);
+      if (remote) {
+        const snap = await fetchSettlementSnapshot(state.tripId.value);
+        const remoteHash = snap?.facts_hash ?? null;
+        if (remoteHash && remoteHash !== hash) {
+          // Server facts differ — adopt remote settlement.
+          state.settlement.value = remote;
+          lastPersistedHash = remoteHash;
+        } else {
+          // Same facts; keep local result (stable order) and mark persisted.
+          lastPersistedHash = hash;
+        }
+        return;
+      }
+
       await upsertSettlementSnapshot(state.tripId.value, hash, state.settlement.value);
+      lastPersistedHash = hash;
     } catch (e) {
       // Local settlement remains usable; surface the failure for ops.
       reportError(e, {
@@ -116,12 +132,18 @@ export function createCoreActions(state: WorkspaceState) {
       clearTimeout(reloadTimer);
       reloadTimer = null;
     }
+    if (persistTimer) {
+      clearTimeout(persistTimer);
+      persistTimer = null;
+    }
     unsubscribeChannel(realtimeChannel);
     realtimeChannel = null;
+    lastPersistedHash = null;
   }
 
   async function bindTrip(id: string) {
     state.tripId.value = id;
+    lastPersistedHash = null;
     await reload();
     subscribeRealtime();
   }
