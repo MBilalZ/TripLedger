@@ -13,7 +13,14 @@ const { showBanner, mode, dismiss, install } = usePwaInstall();
     aria-label="Install TripLedger"
   >
     <div class="tl-install-banner__body">
-      <span class="tl-brand-mark" aria-hidden="true">TL</span>
+      <img
+        src="/favicon.svg"
+        alt=""
+        class="tl-brand-mark"
+        width="32"
+        height="32"
+        aria-hidden="true"
+      />
       <div class="tl-install-banner__copy">
         <p class="tl-install-banner__title">Install TripLedger</p>
         <p v-if="mode === 'ios'" class="tl-install-banner__hint">

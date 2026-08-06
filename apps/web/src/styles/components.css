@@ -398,17 +398,12 @@ html {
 }
 
 .tl-brand-mark {
-  display: inline-flex;
+  display: block;
   height: 2rem;
   width: 2rem;
   flex-shrink: 0;
-  align-items: center;
-  justify-content: center;
   border-radius: var(--tl-radius-sm);
-  background: var(--tl-accent);
-  color: var(--tl-accent-contrast);
-  font-size: var(--tl-text-sm);
-  font-weight: 700;
+  object-fit: cover;
 }
 
 .tl-icon-btn {

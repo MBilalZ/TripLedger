@@ -1,7 +1,12 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
-  <rect width="64" height="64" rx="14" fill="#0f766e"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 550 550" role="img" aria-label="TripLedger">
+  <rect width="550" height="550" rx="104" fill="#0f766e"/>
   <!-- T -->
-  <path fill="#ecfdf5" d="M10 15h26v8H27V49h-9V23H10V15z"/>
-  <!-- L -->
-  <path fill="#ecfdf5" d="M40 15h8v26h12v8H40V15z"/>
+  <path fill="#FFFFFF" d="M130 110H324C329.5 110 334 114.5 334 120V147C334 152.5 329.5 157 324 157H253V429C253 437.8 245.8 445 237 445H215C206.2 445 199 437.8 199 429V157H130C124.5 157 120 152.5 120 147V120C120 114.5 124.5 110 130 110Z"/>
+  <!-- K arms (docked inside circle terminals) -->
+  <path fill="#FFFFFF" d="M253 267C300 267 344.5 244.7 370.13 198.51L395 180L395 211C366.4 262.1 333.6 282.7 310.2 283.3C332.7 292.6 359 311.1 384.96 361.47L395 390.8L366.4 378.83C330.2 325.8 291.7 303.8 253 303.8V267Z"/>
+  <!-- K crotch join -->
+  <path fill="#FFFFFF" d="M253 278H274C303.6 278 325 290 345 315C350 322 352 330 352 338C340 320 310 304 253 303.8V278Z"/>
+  <!-- Perfect circular terminals -->
+  <circle cx="395" cy="178" r="32" fill="#FFFFFF"/>
+  <circle cx="390" cy="395" r="32" fill="#FFFFFF"/>
 </svg>

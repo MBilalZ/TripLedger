@@ -39,7 +39,7 @@ const showHeader = computed(() => {
     <header v-if="showHeader" class="tl-app-header">
       <div class="tl-app-header__inner">
         <router-link to="/" class="tl-app-header__brand">
-          <span class="tl-brand-mark">TL</span>
+          <img src="/favicon.svg" alt="" class="tl-brand-mark" width="32" height="32" />
           <span class="tl-app-header__brand-name">TripLedger</span>
         </router-link>
       </div>
