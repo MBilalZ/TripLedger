@@ -66,7 +66,4 @@ jobs:
     steps:
       - name: Deploy to GitHub Pages
         id: deployment
-        # v5.0.0 still bundles @actions/artifact v2 → Node punycode DEP0040.
-        # Pin the open upstream fix (artifact → v6) until a tagged release ships:
-        # https://github.com/actions/deploy-pages/pull/433
-        uses: actions/deploy-pages@603eb11844d861763a61a844bd3118d5e1ae91c3
+        uses: actions/deploy-pages@v5
