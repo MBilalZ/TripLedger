@@ -23,6 +23,8 @@ jobs:
       GIT_CONFIG_VALUE_0: main
     steps:
       - uses: actions/checkout@v7
+      - name: Setup Pages
+        uses: actions/configure-pages@v6
       - uses: pnpm/setup@v1
         with:
           version: 11.20.0
@@ -59,8 +61,6 @@ jobs:
         run: pnpm --filter @tripledger/web build
       - name: SPA fallback for GitHub Pages
         run: cp apps/web/dist/index.html apps/web/dist/404.html
-      - name: Setup Pages
-        uses: actions/configure-pages@v6
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v5
         with:
@@ -69,12 +69,15 @@ jobs:
   deploy:
     needs: build
     runs-on: ubuntu-latest
-    env:
-      ACTIONS_STEP_DEBUG: true
     environment:
       name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
+      url: https://mbilalz.github.io/TripLedger/
     steps:
+      # GitHub Pages intermittently sticks at deployment_queued (actions/deploy-pages#406).
       - name: Deploy to GitHub Pages
         id: deployment
-        uses: actions/deploy-pages@v5
+        uses: Wandalen/wretry.action@v3.8.0
+        with:
+          action: actions/deploy-pages@v5
+          attempt_limit: 5
+          attempt_delay: 45000
