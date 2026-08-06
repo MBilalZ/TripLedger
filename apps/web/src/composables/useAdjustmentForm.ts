@@ -40,7 +40,7 @@ export function useAdjustmentForm() {
 
   function syncRecipientSplits() {
     const selected = new Set(receivedByIds.value);
-    recipientSplits.value = participants.value
+    const next = participants.value
       .filter((p) => selected.has(p.id) && p.id !== paidById.value)
       .map((p) => {
         const prev = recipientSplits.value.find((x) => x.participantId === p.id);
@@ -55,17 +55,28 @@ export function useAdjustmentForm() {
           }
         );
       });
+    // Avoid reassigning when unchanged — MultiSelect can re-emit a new array
+    // ref on option changes, which would otherwise loop this watch forever.
+    const prev = recipientSplits.value;
+    if (
+      prev.length === next.length &&
+      prev.every((row, i) => row.participantId === next[i]?.participantId)
+    ) {
+      return;
+    }
+    recipientSplits.value = next;
   }
 
-  watch([receivedByIds, paidById, participants], () => {
-    // Drop paid-by from recipients if selected (only assign when changed to avoid a loop)
-    if (paidById.value) {
-      const next = receivedByIds.value.filter((id) => id !== paidById.value);
-      if (next.length !== receivedByIds.value.length) {
-        receivedByIds.value = next;
-        return; // next watch run syncs splits after the update
-      }
+  // Keep paid-by out of recipients; only rewrite the array when an id is dropped.
+  watch(paidById, (id) => {
+    if (id && receivedByIds.value.includes(id)) {
+      receivedByIds.value = receivedByIds.value.filter((rid) => rid !== id);
+      return;
     }
+    syncRecipientSplits();
+  });
+
+  watch(receivedByIds, () => {
     syncRecipientSplits();
   });
 
