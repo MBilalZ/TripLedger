@@ -270,10 +270,7 @@ function setGhSecrets(url, anonKey, ref, dbPassword) {
   for (const [name, value] of secrets) {
     setGhSecret(name, value);
   }
-  log(
-    "github",
-    `Set ${secrets.map(([name]) => name).join(", ")}`,
-  );
+  log("github", `Set ${secrets.map(([name]) => name).join(", ")}`);
 }
 
 async function main() {
