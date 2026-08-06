@@ -69,9 +69,9 @@ const overall = computed(() => overallBalancePaisa(summaries.value));
 
 const overallLabel = computed(() => {
   const b = overall.value;
-  if (Math.abs(b) < 1) return "Overall, you are settled up";
-  if (b < 0) return "Overall, you owe";
-  return "Overall, you are owed";
+  if (Math.abs(b) < 1) return "Overall, you are settled up ";
+  if (b < 0) return "Overall, you owe ";
+  return "Overall, you are owed ";
 });
 
 const filterChips: { id: GroupBalanceFilter; label: string }[] = [
