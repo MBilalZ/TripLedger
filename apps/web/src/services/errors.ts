@@ -71,6 +71,17 @@ const FRIENDLY: Array<{ match: RegExp; message: string; code: string }> = [
     message: "Incorrect email or password.",
     code: "BAD_CREDENTIALS",
   },
+  {
+    match: /USER_NOT_FOUND|Couldn.?t sign in\. Create an account/i,
+    message:
+      "Couldn’t sign in. Create an account if you’re new, or go back if you already have one.",
+    code: "USER_NOT_FOUND",
+  },
+  {
+    match: /BAD_PASSWORD|Incorrect password/i,
+    message: "Incorrect password.",
+    code: "BAD_PASSWORD",
+  },
 ];
 
 export function friendlyApiMessage(raw: string): string {
@@ -90,8 +101,11 @@ export function friendlyApiMessage(raw: string): string {
 
 export function toApiError(error: unknown): ApiError {
   if (error instanceof ApiError) {
-    return new ApiError(friendlyApiMessage(error.message), {
-      code: error.code,
+    const matched = FRIENDLY.find(
+      (r) => r.code === error.code || r.match.test(error.message),
+    );
+    return new ApiError(matched?.message ?? friendlyApiMessage(error.message), {
+      code: matched?.code ?? error.code,
       status: error.status,
       cause: error.cause ?? error,
     });

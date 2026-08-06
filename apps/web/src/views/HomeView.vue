@@ -1,16 +1,24 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from "vue";
+import { computed, onMounted, ref, watch } from "vue";
 import { useRouter } from "vue-router";
 import { useToast } from "primevue/usetoast";
 import { useConfirm } from "primevue/useconfirm";
 import Button from "primevue/button";
 import Menu from "primevue/menu";
 import type { MenuItem } from "primevue/menuitem";
+import { formatPkr } from "@tripledger/engine";
 import { useAuthStore } from "@/stores/auth";
 import { useTripsStore } from "@/stores/trips";
 import { downloadFullBackup, importBackupFile } from "@/lib/backup";
-import { isSupabaseConfigured } from "@/api/supabase";
-import { toApiError } from "@/api/errors";
+import { isSupabaseConfigured } from "@/services/supabase";
+import { toApiError } from "@/services/errors";
+import {
+  buildTripSummaries,
+  filterSummaries,
+  overallBalancePaisa,
+  type GroupBalanceFilter,
+  type TripSummary,
+} from "@/lib/tripSummaries";
 
 const store = useTripsStore();
 const auth = useAuthStore();
@@ -19,20 +27,65 @@ const toast = useToast();
 const confirm = useConfirm();
 const fileInput = ref<HTMLInputElement | null>(null);
 const toolsMenu = ref<InstanceType<typeof Menu> | null>(null);
+const pickGroupMenu = ref<InstanceType<typeof Menu> | null>(null);
 const isDev = import.meta.env.DEV;
+const filter = ref<GroupBalanceFilter>("all");
+const summaries = ref<TripSummary[]>([]);
+const summariesLoading = ref(false);
+
+const myNames = computed(() => {
+  const names = ["You"];
+  if (auth.profile?.displayName) names.push(auth.profile.displayName);
+  return names;
+});
+
+async function refreshSummaries() {
+  summariesLoading.value = true;
+  try {
+    summaries.value = await buildTripSummaries(store.trips, myNames.value);
+  } finally {
+    summariesLoading.value = false;
+  }
+}
 
 onMounted(async () => {
   if (!auth.authReady) await auth.initAuth();
   if (auth.cloud || !isSupabaseConfigured()) {
     await store.refresh();
   }
+  await refreshSummaries();
 });
+
+watch(
+  () => store.trips.map((t) => t.id + t.updatedAt).join("|"),
+  () => void refreshSummaries(),
+);
+
+const visibleSummaries = computed(() =>
+  filterSummaries(summaries.value, filter.value),
+);
+
+const overall = computed(() => overallBalancePaisa(summaries.value));
+
+const overallLabel = computed(() => {
+  const b = overall.value;
+  if (Math.abs(b) < 1) return "Overall, you are settled up ";
+  if (b < 0) return "Overall, you owe ";
+  return "Overall, you are owed ";
+});
+
+const filterChips: { id: GroupBalanceFilter; label: string }[] = [
+  { id: "all", label: "All groups" },
+  { id: "outstanding", label: "Outstanding" },
+  { id: "you_owe", label: "You owe" },
+  { id: "owed_to_you", label: "Owed to you" },
+];
 
 async function seed() {
   const id = await store.seedSample();
   toast.add({
     severity: "success",
-    summary: "Sample trip ready",
+    summary: "Sample group ready",
     detail: "Expected: Mamo→Bilal 19488, Salman→Bilal 656, Farhan→Bilal 718",
     life: 5000,
   });
@@ -46,6 +99,7 @@ async function onImport(ev: Event) {
     const text = await file.text();
     const ids = await importBackupFile(text);
     await store.refresh();
+    await refreshSummaries();
     toast.add({
       severity: "success",
       summary: "Imported",
@@ -71,7 +125,7 @@ const toolItems = computed<MenuItem[]>(() => [
   ...(isDev && !store.cloud
     ? [
         {
-          label: "Load sample trip",
+          label: "Load sample group",
           icon: "pi pi-sparkles",
           command: () => seed(),
         } satisfies MenuItem,
@@ -89,86 +143,122 @@ const toolItems = computed<MenuItem[]>(() => [
   },
 ]);
 
+const pickGroupItems = computed<MenuItem[]>(() => {
+  if (!store.trips.length) {
+    return [
+      {
+        label: "Start a new group",
+        icon: "pi pi-plus",
+        command: () => router.push("/trips/new"),
+      },
+    ];
+  }
+  return store.trips.map(
+    (t) =>
+      ({
+        label: t.name,
+        command: () => router.push(`/trips/${t.id}`),
+      }) satisfies MenuItem,
+  );
+});
+
 function toggleTools(event: Event) {
   toolsMenu.value?.toggle(event);
 }
 
-function confirmDeleteTrip(tripId: string, tripName: string, event: Event) {
+function togglePickGroup(event: Event) {
+  pickGroupMenu.value?.toggle(event);
+}
+
+function leaveConfirmCopy(tripName: string, role: "owner" | "member" | null) {
+  if (role === "owner") {
+    return `Leave “${tripName}”? If you’re the last member the group is deleted for everyone. Otherwise another member becomes the owner.`;
+  }
+  return `Leave “${tripName}”? You will lose access until invited again.`;
+}
+
+function confirmRemoveTrip(tripId: string, tripName: string, event: Event) {
   event.preventDefault();
   event.stopPropagation();
+  const isCloudLeave = store.cloud;
+  const role = store.roleFor(tripId);
   confirm.require({
-    message: `Delete “${tripName}”${store.cloud ? " for everyone" : " from this device"}? This cannot be undone.`,
-    header: "Delete trip",
+    message: isCloudLeave
+      ? leaveConfirmCopy(tripName, role)
+      : `Delete “${tripName}” from this device? This cannot be undone.`,
+    header: isCloudLeave ? "Leave group" : "Delete group",
     icon: "pi pi-exclamation-triangle",
     acceptClass: "p-button-danger",
     accept: async () => {
-      await store.deleteTrip(tripId);
-      toast.add({
-        severity: "success",
-        summary: "Trip deleted",
-        life: 2000,
-      });
+      try {
+        if (isCloudLeave) {
+          const result = await store.leaveTrip(tripId);
+          toast.add({
+            severity: "success",
+            summary: result.action === "deleted" ? "Group deleted" : "Left group",
+            detail:
+              result.action === "deleted"
+                ? "You were the last member, so the group was removed."
+                : result.promotedUserId
+                  ? "Another member is now the owner."
+                  : undefined,
+            life: 3000,
+          });
+        } else {
+          await store.deleteTrip(tripId);
+          toast.add({
+            severity: "success",
+            summary: "Group deleted",
+            life: 2000,
+          });
+        }
+        await refreshSummaries();
+      } catch (e) {
+        toast.add({
+          severity: "error",
+          summary: isCloudLeave ? "Could not leave" : "Could not delete",
+          detail: toApiError(e).message,
+          life: 4000,
+        });
+      }
     },
   });
+}
+
+function balanceClass(paisa: number | null) {
+  if (paisa == null || Math.abs(paisa) < 1) return "text-tl-muted";
+  return paisa < 0 ? "money-neg" : "money-pos";
 }
 </script>
 
 <template>
-  <div class="space-y-6">
-    <section class="tl-card">
-      <h1 class="mb-1 text-2xl font-semibold text-tl-accent-bright">
-        Your trips
-      </h1>
-      <p class="mb-4 text-sm text-tl-muted">
-        <template v-if="store.cloud">
-          Shared trips sync for everyone you invite. Copy an invite link from a
-          trip to add members.
-        </template>
-        <template v-else-if="isSupabaseConfigured() && !auth.isSignedIn">
-          Sign in to create shared trips and join invite links. Your account
-          works on every device.
-        </template>
-        <template v-else-if="isSupabaseConfigured() && store.authError">
-          Cloud auth error: {{ store.authError }}.
-        </template>
-        <template v-else>
-          Everything stays on this device. Add Supabase env vars to enable
-          shared trips and invites.
-        </template>
-      </p>
-      <div class="flex flex-col gap-3 sm:flex-row">
+  <div class="tl-has-bottom-nav space-y-4">
+    <section class="space-y-3">
+      <div class="flex items-start justify-between gap-2">
+        <div>
+          <h1 class="text-2xl font-semibold text-tl">Groups</h1>
+          <p class="mt-1 text-sm">
+            <span class="text-tl-muted">{{ overallLabel }}</span>
+            <span
+              v-if="Math.abs(overall) >= 1"
+              class="ml-1 font-semibold"
+              :class="balanceClass(overall)"
+            >
+              {{ formatPkr(Math.abs(overall)) }}
+            </span>
+          </p>
+        </div>
         <Button
-          v-if="isSupabaseConfigured() && !auth.isSignedIn"
-          label="Sign in"
-          icon="pi pi-sign-in"
-          class="w-full sm:w-auto"
-          @click="router.push({ name: 'auth' })"
-        />
-        <Button
-          v-else
-          label="New trip"
-          icon="pi pi-plus"
-          class="w-full sm:w-auto"
-          @click="router.push('/trips/new')"
-        />
-      </div>
-      <div class="mt-3 flex items-center gap-2">
-        <Button
-          label="Tools"
           icon="pi pi-ellipsis-h"
           severity="secondary"
-          outlined
-          size="small"
-          @click="toggleTools"
+          text
+          rounded
+          aria-label="Tools"
           aria-haspopup="true"
           aria-controls="home_tools_menu"
+          @click="toggleTools"
         />
-        <Menu
-          id="home_tools_menu"
-          ref="toolsMenu"
-          :model="toolItems"
-          popup
-        />
+        <Menu id="home_tools_menu" ref="toolsMenu" :model="toolItems" popup />
         <input
           ref="fileInput"
           type="file"
@@ -177,46 +267,132 @@ function confirmDeleteTrip(tripId: string, tripName: string, event: Event) {
           @change="onImport"
         />
       </div>
+
+      <p class="text-xs text-tl-muted">
+        <template v-if="store.cloud">
+          Shared groups sync for everyone you invite.
+        </template>
+        <template v-else-if="isSupabaseConfigured() && !auth.isSignedIn">
+          Sign in to create shared groups and join invite links.
+        </template>
+        <template v-else-if="isSupabaseConfigured() && store.authError">
+          Cloud auth error: {{ store.authError }}.
+        </template>
+        <template v-else>
+          Everything stays on this device until you enable cloud sync.
+        </template>
+      </p>
+
+      <div class="tl-chip-bar">
+        <button
+          v-for="chip in filterChips"
+          :key="chip.id"
+          type="button"
+          class="tl-chip"
+          :class="{ 'is-active': filter === chip.id }"
+          @click="filter = chip.id"
+        >
+          {{ chip.label }}
+        </button>
+      </div>
     </section>
 
-    <section class="grid gap-3" aria-label="Trip list">
-      <div v-if="!store.trips.length" class="tl-card text-center text-tl-muted">
-        No trips yet. Create one{{
-          isDev && !store.cloud ? " or load the sample" : ""
-        }}.
+    <section class="grid gap-3" aria-label="Group list">
+      <div
+        v-if="summariesLoading && !visibleSummaries.length"
+        class="tl-card text-center text-tl-muted"
+      >
+        Loading…
       </div>
       <div
-        v-for="t in store.trips"
-        :key="t.id"
-        class="tl-card tl-pressable tl-trip-row relative flex items-center gap-3"
+        v-else-if="!visibleSummaries.length"
+        class="tl-card text-center text-tl-muted"
+      >
+        <template v-if="!store.trips.length">
+          No groups yet. Start a new group{{
+            isDev && !store.cloud ? " or load the sample" : ""
+          }}.
+        </template>
+        <template v-else>No groups match this filter.</template>
+      </div>
+      <div
+        v-for="s in visibleSummaries"
+        :key="s.trip.id"
+        class="tl-card tl-pressable tl-trip-row flex items-center gap-2"
       >
         <router-link
-          :to="`/trips/${t.id}`"
-          class="tl-trip-link absolute inset-0 z-0 rounded-[inherit] no-underline"
-          :aria-label="`Open ${t.name}`"
-        />
-        <div class="relative z-10 min-w-0 flex-1 pointer-events-none">
-          <div class="font-medium text-tl">{{ t.name }}</div>
-          <div class="text-xs text-tl-muted">
-            Updated {{ new Date(t.updatedAt).toLocaleString() }} ·
-            PKR
+          :to="`/trips/${s.trip.id}`"
+          class="tl-trip-link no-underline"
+          :aria-label="`Open ${s.trip.name}`"
+        >
+          <div class="tl-group-icon" aria-hidden="true">
+            <i class="pi pi-users" />
           </div>
-        </div>
+          <div class="min-w-0 flex-1">
+            <div class="font-medium text-tl">{{ s.trip.name }}</div>
+            <div class="text-sm" :class="balanceClass(s.myBalancePaisa)">
+              {{ s.label }}
+            </div>
+            <div
+              v-if="s.topCounterparty && s.myBalancePaisa != null && Math.abs(s.myBalancePaisa) >= 1"
+              class="text-xs text-tl-muted"
+            >
+              <template v-if="s.topCounterparty.paisa < 0">
+                You owe {{ s.topCounterparty.name }}
+                {{ formatPkr(-s.topCounterparty.paisa) }}
+              </template>
+              <template v-else>
+                {{ s.topCounterparty.name }} owes you
+                {{ formatPkr(s.topCounterparty.paisa) }}
+              </template>
+            </div>
+          </div>
+        </router-link>
         <Button
-          icon="pi pi-trash"
+          :icon="store.cloud ? 'pi pi-sign-out' : 'pi pi-trash'"
           severity="danger"
           text
           rounded
-          class="relative z-10"
-          aria-label="Delete trip"
-          v-tooltip="'Delete trip'"
-          @click="confirmDeleteTrip(t.id, t.name, $event)"
+          class="shrink-0"
+          :aria-label="store.cloud ? 'Leave group' : 'Delete group'"
+          v-tooltip="store.cloud ? 'Leave group' : 'Delete group'"
+          @click="confirmRemoveTrip(s.trip.id, s.trip.name, $event)"
         />
-        <i
-          class="pi pi-chevron-right relative z-10 text-tl-muted pointer-events-none"
-          aria-hidden="true"
+      </div>
+
+      <div class="flex justify-center pt-2">
+        <Button
+          v-if="isSupabaseConfigured() && !auth.isSignedIn"
+          label="Sign in"
+          icon="pi pi-sign-in"
+          outlined
+          @click="router.push({ name: 'auth' })"
+        />
+        <Button
+          v-else
+          label="Start a new group"
+          icon="pi pi-user-plus"
+          outlined
+          @click="router.push('/trips/new')"
         />
       </div>
     </section>
+
+    <button
+      type="button"
+      class="tl-fab"
+      aria-haspopup="true"
+      aria-controls="pick_group_menu"
+      @click="togglePickGroup"
+    >
+      <i class="pi pi-receipt" aria-hidden="true" />
+      Add expense
+    </button>
+    <Menu
+      id="pick_group_menu"
+      ref="pickGroupMenu"
+      :model="pickGroupItems"
+      popup
+    />
   </div>
 </template>

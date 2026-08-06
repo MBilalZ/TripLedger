@@ -1,21 +1,17 @@
 <script setup lang="ts">
-import { onMounted } from "vue";
-import { useRouter } from "vue-router";
+import { computed, onMounted } from "vue";
+import { useRoute } from "vue-router";
 import Toast from "primevue/toast";
 import ConfirmDialog from "primevue/confirmdialog";
-import Button from "primevue/button";
-import { isSupabaseConfigured } from "@/api/supabase";
+import { isSupabaseConfigured } from "@/services/supabase";
+import AppBottomNav from "@/components/AppBottomNav.vue";
 import PwaInstallBanner from "@/components/PwaInstallBanner.vue";
-import PushNotifyToggle from "@/components/PushNotifyToggle.vue";
-import SyncStatusChip from "@/components/SyncStatusChip.vue";
-import { useTheme } from "@/composables/useTheme";
 import { useAuthStore } from "@/stores/auth";
 import { useTripsStore } from "@/stores/trips";
 
-const { isDark, toggle } = useTheme();
 const auth = useAuthStore();
 const trips = useTripsStore();
-const router = useRouter();
+const route = useRoute();
 
 onMounted(() => {
   void auth.initAuth().then(() => {
@@ -25,64 +21,33 @@ onMounted(() => {
   });
 });
 
-async function onSignOut() {
-  await auth.signOut();
-  await router.push({ name: "auth" });
-}
+const showAppNav = computed(() => {
+  const name = String(route.name ?? "");
+  return name === "home" || name === "activity" || name === "account";
+});
+
+const showHeader = computed(() => {
+  const name = String(route.name ?? "");
+  return name !== "auth";
+});
 </script>
 
 <template>
   <div class="min-h-screen bg-tl">
     <Toast position="top-center" />
-    <ConfirmDialog />
-    <header class="tl-app-header">
-      <div class="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
-        <router-link to="/" class="flex items-center gap-2 no-underline">
-          <span class="tl-brand-mark">TL</span>
-          <span class="text-lg font-semibold tracking-tight text-tl"
-            >TripLedger</span
-          >
+    <ConfirmDialog :draggable="false" />
+    <header v-if="showHeader" class="tl-app-header">
+      <div class="tl-app-header__inner">
+        <router-link to="/" class="tl-app-header__brand">
+          <img src="/favicon.svg" alt="" class="tl-brand-mark" width="32" height="32" />
+          <span class="tl-app-header__brand-name">TripLedger</span>
         </router-link>
-        <div class="flex items-center gap-2">
-          <SyncStatusChip />
-          <PushNotifyToggle />
-          <template v-if="isSupabaseConfigured()">
-            <template v-if="auth.isSignedIn">
-              <span class="tl-tagline max-w-[10rem] truncate sm:max-w-xs">{{
-                auth.displayLabel
-              }}</span>
-              <Button
-                label="Sign out"
-                size="small"
-                severity="secondary"
-                text
-                @click="onSignOut"
-              />
-            </template>
-            <Button
-              v-else
-              label="Sign in"
-              size="small"
-              severity="secondary"
-              text
-              @click="router.push({ name: 'auth' })"
-            />
-          </template>
-          <span v-else class="tl-tagline">Local · this device</span>
-          <button
-            type="button"
-            class="tl-icon-btn"
-            :aria-label="isDark ? 'Switch to light mode' : 'Switch to dark mode'"
-            @click="toggle"
-          >
-            <i :class="isDark ? 'pi pi-sun' : 'pi pi-moon'" />
-          </button>
-        </div>
       </div>
     </header>
-    <main class="mx-auto max-w-6xl px-4 py-6">
+    <main class="tl-app-main" :class="{ 'tl-app-main--with-nav': showAppNav }">
       <router-view />
     </main>
+    <AppBottomNav v-if="showAppNav" />
     <PwaInstallBanner />
   </div>
 </template>

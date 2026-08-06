@@ -1,4 +1,3 @@
-import type { WorkspaceSnapshot } from "@/api/workspace";
 import {
   type AdjustmentRow,
   db,
@@ -9,6 +8,7 @@ import {
   type PoolRow,
   type TripRow,
 } from "@/db/dexie";
+import type { WorkspaceSnapshot } from "@/services/workspace";
 
 export async function readCachedWorkspace(
   tripId: string,
@@ -116,7 +116,6 @@ export async function deleteCachedTrip(tripId: string): Promise<void> {
       db.expenses,
       db.expenseSplits,
       db.adjustments,
-      db.receipts,
       db.syncMeta,
       db.outbox,
     ],
@@ -127,7 +126,6 @@ export async function deleteCachedTrip(tripId: string): Promise<void> {
       await db.expenses.where("tripId").equals(tripId).delete();
       await db.expenseSplits.where("tripId").equals(tripId).delete();
       await db.adjustments.where("tripId").equals(tripId).delete();
-      await db.receipts.where("tripId").equals(tripId).delete();
       await db.outbox.where("tripId").equals(tripId).delete();
       await db.syncMeta.delete(tripId);
       await db.trips.delete(tripId);
@@ -138,4 +136,41 @@ export async function deleteCachedTrip(tripId: string): Promise<void> {
 export async function listCachedCloudTrips(userId: string): Promise<TripRow[]> {
   const rows = await db.trips.where("cloudUserId").equals(userId).sortBy("updatedAt");
   return rows.reverse();
+}
+
+/**
+ * Re-apply optimistic outbox entities after a hard cache replace from remote,
+ * so unpushed pools/participants are not wiped by a concurrent pull.
+ */
+export async function reapplyPendingOutboxToCache(tripId: string): Promise<void> {
+  const pending = await db.outbox.where("tripId").equals(tripId).toArray();
+  if (!pending.length) return;
+
+  const pools: PoolRow[] = [];
+  const members: PoolMemberRow[] = [];
+  const participants: ParticipantRow[] = [];
+
+  for (const row of pending) {
+    const p = row.payload as Record<string, unknown>;
+    if (row.op === "addPool" && p.pool) {
+      pools.push(p.pool as PoolRow);
+      if (Array.isArray(p.members)) {
+        members.push(...(p.members as PoolMemberRow[]));
+      }
+    }
+    if (row.op === "addParticipant" && p.participant) {
+      participants.push(p.participant as ParticipantRow);
+      if (Array.isArray(p.members)) {
+        members.push(...(p.members as PoolMemberRow[]));
+      }
+    }
+  }
+
+  if (!pools.length && !members.length && !participants.length) return;
+
+  await db.transaction("rw", [db.pools, db.poolMembers, db.participants], async () => {
+    if (participants.length) await db.participants.bulkPut(participants);
+    if (pools.length) await db.pools.bulkPut(pools);
+    if (members.length) await db.poolMembers.bulkPut(members);
+  });
 }

@@ -77,6 +77,3 @@ export function mapToTripFacts(args: TripFactsSource): TripFacts {
     },
   };
 }
-
-/** @deprecated Use mapToTripFacts */
-export const factsFromState = mapToTripFacts;

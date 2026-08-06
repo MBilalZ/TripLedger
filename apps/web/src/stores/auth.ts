@@ -1,7 +1,7 @@
 import type { User } from "@supabase/supabase-js";
 import { defineStore } from "pinia";
 import { computed, ref } from "vue";
-import { toApiError } from "@/api/errors";
+import { toApiError } from "@/services/errors";
 import {
   signOut as apiSignOut,
   fetchUserProfile,
@@ -12,7 +12,7 @@ import {
   signUpWithPassword,
   type UserProfile,
   updateProfileDisplayName,
-} from "@/api/supabase";
+} from "@/services/supabase";
 
 export const useAuthStore = defineStore("auth", () => {
   const configured = ref(isSupabaseConfigured());

@@ -1,6 +1,11 @@
 import { ref } from "vue";
-import { createInvite, type InviteRow, listInvites, revokeInvite } from "@/api/invites";
-import { isSupabaseConfigured } from "@/api/supabase";
+import {
+  createInvite,
+  type InviteRow,
+  listInvites,
+  revokeInvite,
+} from "@/services/invites";
+import { isSupabaseConfigured } from "@/services/supabase";
 import { useAuthStore } from "@/stores/auth";
 import { useWorkspaceStore } from "@/stores/workspace";
 import { useFeedback } from "./useFeedback";
@@ -44,7 +49,7 @@ export function useInviteLink(tripId: () => string) {
       return;
     }
     if (!workspace.isOwner) {
-      warn("Owner only", "Only the trip owner can create invite links.");
+      warn("Owner only", "Only the group owner can create invite links.");
       return;
     }
     inviting.value = true;

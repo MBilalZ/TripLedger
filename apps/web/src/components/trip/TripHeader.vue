@@ -7,11 +7,13 @@ import Tag from "primevue/tag";
 import type { MenuItem } from "primevue/menuitem";
 import { formatPkr } from "@tripledger/engine";
 import type { TripRow } from "@/db/dexie";
+import { isEnabled } from "@/lib/features";
 
 defineProps<{
   trip: TripRow;
   balanced: boolean;
   tripTotalPaisa: number;
+  memberCount: number;
   editingTrip: boolean;
   tripNameDraft: string;
   showInvite: boolean;
@@ -28,6 +30,8 @@ const emit = defineEmits<{
   save: [];
   invite: [];
   delete: [];
+  goSettle: [];
+  goCharts: [];
 }>();
 
 const exportMenu = ref<InstanceType<typeof Menu> | null>(null);
@@ -42,7 +46,7 @@ function toggleExport(event: Event) {
     <div class="flex items-start justify-between gap-2">
       <div class="min-w-0 flex-1">
         <router-link to="/" class="text-xs text-tl-accent no-underline"
-          >← All trips</router-link
+          >← All groups</router-link
         >
         <div v-if="!editingTrip" class="mt-1 flex flex-wrap items-center gap-2">
           <h1 class="text-2xl font-semibold text-tl">{{ trip.name }}</h1>
@@ -52,14 +56,13 @@ function toggleExport(event: Event) {
             text
             rounded
             size="small"
-            v-tooltip="'Edit trip'"
+            v-tooltip="'Edit group'"
             @click="emit('startEdit')"
           />
-          <span class="text-sm text-tl-muted">Rs. (PKR)</span>
         </div>
         <div v-else class="mt-2 flex flex-col gap-2">
           <div>
-            <label class="tl-input-label">Trip name</label>
+            <label class="tl-input-label">Group name</label>
             <InputText
               :model-value="tripNameDraft"
               class="w-full"
@@ -78,12 +81,16 @@ function toggleExport(event: Event) {
           </div>
         </div>
         <div class="mt-2 flex flex-wrap items-center gap-2">
+          <span class="tl-member-chip">
+            <i class="pi pi-users" aria-hidden="true" />
+            {{ memberCount }} {{ memberCount === 1 ? "person" : "people" }}
+          </span>
           <Tag
             :severity="balanced ? 'success' : 'danger'"
             :value="balanced ? 'Balanced' : 'Consistency error'"
           />
           <span class="text-sm text-tl-muted">
-            Total {{ formatPkr(tripTotalPaisa, 0) }}
+            Total {{ formatPkr(tripTotalPaisa, 0) }} · PKR
           </span>
         </div>
       </div>
@@ -105,28 +112,41 @@ function toggleExport(event: Event) {
           severity="danger"
           outlined
           rounded
-          aria-label="Delete trip"
-          v-tooltip="'Delete trip'"
+          aria-label="Delete group"
+          v-tooltip="'Delete group'"
           @click="emit('delete')"
         />
-        <Button
-          icon="pi pi-share-alt"
-          severity="secondary"
-          outlined
-          rounded
-          aria-haspopup="true"
-          aria-controls="trip_export_menu"
-          aria-label="Share and export"
-          v-tooltip="'Share & export'"
-          @click="toggleExport"
-        />
-        <Menu
-          id="trip_export_menu"
-          ref="exportMenu"
-          :model="exportItems"
-          popup
-        />
       </div>
+    </div>
+
+    <div class="tl-chip-bar">
+      <button type="button" class="tl-chip" @click="emit('goSettle')">
+        Settle up
+      </button>
+      <button
+        v-if="isEnabled('charts')"
+        type="button"
+        class="tl-chip"
+        @click="emit('goCharts')"
+      >
+        Charts
+      </button>
+      <button
+        v-if="isEnabled('exports')"
+        type="button"
+        class="tl-chip"
+        aria-haspopup="true"
+        aria-controls="trip_export_menu"
+        @click="toggleExport"
+      >
+        Export
+      </button>
+      <Menu
+        id="trip_export_menu"
+        ref="exportMenu"
+        :model="exportItems"
+        popup
+      />
     </div>
   </div>
 </template>

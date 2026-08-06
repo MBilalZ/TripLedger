@@ -7,7 +7,7 @@ import InputText from "primevue/inputtext";
 import Select from "primevue/select";
 import type { SettlementRounding, TransferMode } from "@tripledger/types";
 import { ROUNDING_MODES, TRANSFER_MODES } from "@/constants/tripOptions";
-import { toApiError } from "@/api/errors";
+import { toApiError } from "@/services/errors";
 import { useTripsStore } from "@/stores/trips";
 
 const store = useTripsStore();
@@ -31,7 +31,7 @@ async function save() {
     toast.add({
       severity: "warn",
       summary: "Name required",
-      detail: "Enter a trip name before saving.",
+      detail: "Enter a group name before saving.",
       life: 3000,
     });
     return;
@@ -46,7 +46,7 @@ async function save() {
   } catch (e) {
     toast.add({
       severity: "error",
-      summary: "Could not create trip",
+      summary: "Could not create group",
       detail: toApiError(e).message,
       life: 4000,
     });
@@ -61,9 +61,9 @@ async function save() {
     <section class="tl-card space-y-4">
       <div>
         <router-link to="/" class="text-xs text-tl-accent no-underline"
-          >← All trips</router-link
+          >← All groups</router-link
         >
-        <h1 class="mt-1 text-2xl font-semibold text-tl">New trip</h1>
+        <h1 class="mt-1 text-2xl font-semibold text-tl">New group</h1>
         <p class="mt-1 text-sm text-tl-muted">
           Nothing is saved until you tap Save. Back discards this draft.
           After saving, invite friends with a share link so everyone can manage
@@ -72,7 +72,7 @@ async function save() {
       </div>
 
       <div>
-        <label class="tl-input-label">Trip name</label>
+        <label class="tl-input-label">Group name</label>
         <InputText
           v-model="name"
           class="w-full"
@@ -108,7 +108,7 @@ async function save() {
 
       <div class="flex flex-wrap gap-2">
         <Button
-          label="Save trip"
+          label="Save group"
           icon="pi pi-check"
           :disabled="!canSave"
           :loading="saving"

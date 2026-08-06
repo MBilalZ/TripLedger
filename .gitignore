@@ -11,6 +11,7 @@ dist-ssr
 coverage
 .vite
 dev-dist
+backups/
 supabase/.temp/
 apps/web/test-results/
 apps/web/playwright-report/

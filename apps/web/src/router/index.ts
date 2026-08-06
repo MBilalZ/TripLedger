@@ -1,5 +1,5 @@
 import { createRouter, createWebHistory } from "vue-router";
-import { isSupabaseConfigured } from "@/api/supabase";
+import { isSupabaseConfigured } from "@/services/supabase";
 import { useAuthStore } from "@/stores/auth";
 
 const router = createRouter({
@@ -9,6 +9,16 @@ const router = createRouter({
       path: "/",
       name: "home",
       component: () => import("@/views/HomeView.vue"),
+    },
+    {
+      path: "/activity",
+      name: "activity",
+      component: () => import("@/views/ActivityView.vue"),
+    },
+    {
+      path: "/account",
+      name: "account",
+      component: () => import("@/views/AccountView.vue"),
     },
     {
       path: "/auth",
@@ -33,6 +43,34 @@ const router = createRouter({
       path: "/trips/:tripId",
       name: "trip",
       component: () => import("@/views/TripView.vue"),
+      props: true,
+      meta: { requiresAuth: true },
+    },
+    {
+      path: "/trips/:tripId/expenses/new",
+      name: "expense-new",
+      component: () => import("@/views/ExpenseFormView.vue"),
+      props: true,
+      meta: { requiresAuth: true },
+    },
+    {
+      path: "/trips/:tripId/expenses/:expenseId/edit",
+      name: "expense-edit",
+      component: () => import("@/views/ExpenseFormView.vue"),
+      props: true,
+      meta: { requiresAuth: true },
+    },
+    {
+      path: "/trips/:tripId/payments/new",
+      name: "payment-new",
+      component: () => import("@/views/PaymentFormView.vue"),
+      props: true,
+      meta: { requiresAuth: true },
+    },
+    {
+      path: "/trips/:tripId/payments/:adjustmentId/edit",
+      name: "payment-edit",
+      component: () => import("@/views/PaymentFormView.vue"),
       props: true,
       meta: { requiresAuth: true },
     },

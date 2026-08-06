@@ -1,6 +1,4 @@
 import type { SettlementRounding, SplitMode, TransferMode } from "@tripledger/types";
-import type { CreateTripOptions } from "@/api/trips";
-import type { WorkspaceSnapshot } from "@/api/workspace";
 import type {
   AdjustmentRow,
   ExpenseRow,
@@ -10,6 +8,8 @@ import type {
   PoolRow,
   TripRow,
 } from "@/db/dexie";
+import type { CreateTripOptions } from "@/services/trips";
+import type { WorkspaceSnapshot } from "@/services/workspace";
 
 export type { CreateTripOptions, WorkspaceSnapshot };
 
@@ -43,10 +43,18 @@ export type PoolMemberPatch = Partial<
   Pick<PoolMemberRow, "included" | "shares" | "percentBps" | "exactPaisa">
 >;
 
+export type LeaveTripResult = {
+  action: "left" | "deleted";
+  promotedUserId?: string;
+};
+
 export interface TripListRepo {
   list(): Promise<TripRow[]>;
   create(name: string, options?: CreateTripOptions): Promise<string>;
+  /** Owner hard-delete (wipe group for everyone). */
   delete(tripId: string): Promise<void>;
+  /** Leave group (promote / delete-if-last on cloud; same as delete locally). */
+  leave(tripId: string): Promise<LeaveTripResult>;
   touch(tripId: string): Promise<void>;
 }
 

@@ -10,7 +10,3 @@ export async function updateAdjustment(
 ): Promise<void> {
   await apiMutate((sb) => sb.from("adjustments").update(patch).eq("id", id));
 }
-
-export async function deleteAdjustment(id: string): Promise<void> {
-  await apiMutate((sb) => sb.from("adjustments").delete().eq("id", id));
-}

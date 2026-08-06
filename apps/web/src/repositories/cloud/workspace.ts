@@ -1,6 +1,7 @@
-import * as adjustmentsApi from "@/api/adjustments";
-import { apiMutate } from "@/api/client";
-import * as expensesApi from "@/api/expenses";
+import { newId, type PoolMemberRow, type TripRow } from "@/db/dexie";
+import * as adjustmentsApi from "@/services/adjustments";
+import { apiMutate } from "@/services/client";
+import * as expensesApi from "@/services/expenses";
 import {
   adjustmentToDb,
   expenseSplitToDb,
@@ -8,12 +9,11 @@ import {
   participantToDb,
   poolMemberToDb,
   poolToDb,
-} from "@/api/mappers";
-import * as participantsApi from "@/api/participants";
-import * as poolsApi from "@/api/pools";
-import * as tripsApi from "@/api/trips";
-import { loadWorkspace } from "@/api/workspace";
-import { newId, type PoolMemberRow, type TripRow } from "@/db/dexie";
+} from "@/services/mappers";
+import * as participantsApi from "@/services/participants";
+import * as poolsApi from "@/services/pools";
+import * as tripsApi from "@/services/trips";
+import { loadWorkspace } from "@/services/workspace";
 import type { WorkspaceRepo } from "../types";
 
 export const cloudWorkspaceRepo: WorkspaceRepo = {
@@ -79,8 +79,9 @@ export const cloudWorkspaceRepo: WorkspaceRepo = {
   async addPool(tripId, name, participants) {
     const n = name.trim();
     if (!n) throw new Error("Pool name is required");
+    if (n.length > 80) throw new Error("Pool name must be 80 characters or fewer");
     if (!participants.length) {
-      throw new Error("Add at least one person before creating a pool");
+      throw new Error("Add at least one friend before creating a pool");
     }
     const pool = {
       id: newId("pool"),
@@ -98,10 +99,12 @@ export const cloudWorkspaceRepo: WorkspaceRepo = {
       percentBps: 0,
       exactPaisa: 0,
     }));
-    await poolsApi.insertPool(poolToDb(pool));
-    for (const m of members) {
-      await poolsApi.insertPoolMember(poolMemberToDb(m));
-    }
+    await apiMutate((sb) =>
+      sb.rpc("add_pool_with_members", {
+        p_pool: poolToDb(pool),
+        p_members: members.map(poolMemberToDb),
+      }),
+    );
     return { pool, members };
   },
 

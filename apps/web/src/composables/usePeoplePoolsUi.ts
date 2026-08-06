@@ -35,7 +35,7 @@ export function usePeoplePoolsUi() {
         await store.updateTrip({ name: tripNameDraft.value });
         editingTrip.value = false;
       },
-      { success: "Trip updated" },
+      { success: "Group updated" },
     );
   }
 
@@ -55,10 +55,10 @@ export function usePeoplePoolsUi() {
         await store.updateParticipant(editingParticipantId.value, {
           displayName: newParticipant.value,
         });
-        success("Person updated");
+        success("Friend updated");
       } else {
         await store.addParticipant(newParticipant.value);
-        success("Person added");
+        success("Friend added");
       }
       cancelEditParticipant();
     } catch (e) {
@@ -68,12 +68,12 @@ export function usePeoplePoolsUi() {
 
   function confirmRemoveParticipant(id: string, displayName: string) {
     confirmDanger({
-      message: `Remove ${displayName} from this trip?`,
-      header: "Remove person",
+      message: `Remove ${displayName} from this group?`,
+      header: "Remove friend",
       onAccept: async () => {
         try {
           await store.removeParticipant(id);
-          success("Person removed");
+          success("Friend removed");
         } catch (e) {
           error("Cannot remove", e, 5000);
         }
@@ -88,6 +88,12 @@ export function usePeoplePoolsUi() {
       newPool.value = "";
       success("Pool added");
     } catch (e) {
+      const msg = e instanceof Error ? e.message : "";
+      if (/saved locally|sync/i.test(msg)) {
+        newPool.value = "";
+        error("Pool saved on this device", e, 5000);
+        return;
+      }
       error("Cannot add pool", e, 4000);
     }
   }

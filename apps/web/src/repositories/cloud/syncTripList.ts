@@ -1,14 +1,19 @@
-import { requireUser } from "@/api/supabase";
-import * as tripsApi from "@/api/trips";
 import { db, newId, type ParticipantRow, type TripRow } from "@/db/dexie";
+import { requireUser } from "@/services/supabase";
+import * as tripsApi from "@/services/trips";
 import {
   deleteCachedTrip,
   listCachedCloudTrips,
   writeCachedWorkspace,
 } from "@/sync/cache";
 import { flushOutbox, syncAllCloudTrips } from "@/sync/engine";
-import { enqueueOutbox, listOutbox, removeOutbox } from "@/sync/outbox";
-import type { CreateTripOptions, TripListRepo } from "../types";
+import {
+  enqueueOutbox,
+  listOutbox,
+  pendingDeleteTripIds,
+  removeOutbox,
+} from "@/sync/outbox";
+import type { CreateTripOptions, LeaveTripResult, TripListRepo } from "../types";
 import { cloudTripListRepo } from "./tripList";
 
 function online(): boolean {
@@ -21,18 +26,43 @@ async function dropOps(tripId: string, op: string) {
   }
 }
 
+async function filterPendingDeletes(trips: TripRow[]): Promise<TripRow[]> {
+  const deleted = await pendingDeleteTripIds();
+  if (!deleted.size) return trips;
+  return trips.filter((t) => !deleted.has(t.id));
+}
+
+async function enqueueAndRun(
+  tripId: string,
+  mode: "leave" | "delete",
+  run: () => Promise<void>,
+): Promise<void> {
+  await enqueueOutbox(tripId, "deleteTrip", { mode });
+  await deleteCachedTrip(tripId);
+  // deleteCachedTrip clears outbox for trip — re-queue for server.
+  await enqueueOutbox(tripId, "deleteTrip", { mode });
+  if (online()) {
+    try {
+      await run();
+      await dropOps(tripId, "deleteTrip");
+    } catch {
+      /* queued */
+    }
+  }
+}
+
 export const syncCloudTripListRepo: TripListRepo = {
   async list() {
     const user = await requireUser();
     if (online()) {
       try {
         await syncAllCloudTrips();
-        return tripsApi.listTrips();
+        return filterPendingDeletes(await tripsApi.listTrips());
       } catch {
-        return listCachedCloudTrips(user);
+        return filterPendingDeletes(await listCachedCloudTrips(user));
       }
     }
-    return listCachedCloudTrips(user);
+    return filterPendingDeletes(await listCachedCloudTrips(user));
   },
 
   async create(name, options: CreateTripOptions = {}) {
@@ -99,18 +129,19 @@ export const syncCloudTripListRepo: TripListRepo = {
   },
 
   async delete(tripId) {
-    await enqueueOutbox(tripId, "deleteTrip", {});
-    await deleteCachedTrip(tripId);
-    // deleteCachedTrip clears outbox for trip — re-queue delete for server.
-    await enqueueOutbox(tripId, "deleteTrip", {});
-    if (online()) {
-      try {
-        await cloudTripListRepo.delete(tripId);
-        await dropOps(tripId, "deleteTrip");
-      } catch {
-        /* queued */
-      }
-    }
+    await enqueueAndRun(tripId, "delete", () => tripsApi.deleteTrip(tripId));
+  },
+
+  async leave(tripId): Promise<LeaveTripResult> {
+    let result: LeaveTripResult = { action: "left" };
+    await enqueueAndRun(tripId, "leave", async () => {
+      const r = await tripsApi.leaveTrip(tripId);
+      result = {
+        action: r.action,
+        promotedUserId: r.promotedUserId,
+      };
+    });
+    return result;
   },
 
   async touch(tripId) {

@@ -37,6 +37,25 @@ export async function listOutbox(tripId?: string): Promise<OutboxRow[]> {
   return db.outbox.orderBy("createdAt").toArray();
 }
 
+/** Trip ids with a pending delete/leave that must not be resurrected by pull/list. */
+export async function pendingDeleteTripIds(): Promise<Set<string>> {
+  const rows = await db.outbox.toArray();
+  const ids = new Set<string>();
+  for (const row of rows) {
+    if (row.op === "deleteTrip" && row.tripId) ids.add(row.tripId);
+  }
+  return ids;
+}
+
+/** Prefer the oldest outbox row's lastError for UI when flush leaves failures queued. */
+export async function headOutboxError(): Promise<string | null> {
+  const rows = await db.outbox.orderBy("createdAt").toArray();
+  for (const row of rows) {
+    if (row.lastError) return row.lastError;
+  }
+  return null;
+}
+
 export async function removeOutbox(id: string): Promise<void> {
   await db.outbox.delete(id);
   await refreshPendingCount();

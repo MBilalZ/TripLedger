@@ -9,6 +9,7 @@ export type {
   AdjustmentInput,
   CreateTripOptions,
   ExpenseInput,
+  LeaveTripResult,
   PoolMemberPatch,
   TripListRepo,
   WorkspaceRepo,

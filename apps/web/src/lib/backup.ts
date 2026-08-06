@@ -198,7 +198,6 @@ export async function importTripJson(
         db.expenses,
         db.expenseSplits,
         db.adjustments,
-        db.receipts,
         db.trips,
       ],
       async () => {
@@ -208,7 +207,6 @@ export async function importTripJson(
         await db.expenses.where("tripId").equals(trip.id).delete();
         await db.expenseSplits.where("tripId").equals(trip.id).delete();
         await db.adjustments.where("tripId").equals(trip.id).delete();
-        await db.receipts.where("tripId").equals(trip.id).delete();
         await db.trips.delete(trip.id);
       },
     );

@@ -12,7 +12,7 @@
       "!**/dist",
       "!**/dev-dist",
       "!**/coverage",
-      "!supabase/functions/_shared",
+      "!supabase/.temp",
       "!pnpm-lock.yaml",
       "!**/*.vue",
       "!**/test-results",

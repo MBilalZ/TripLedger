@@ -93,11 +93,3 @@ export async function unsubscribeFromPush(): Promise<void> {
     reportError(e, { tag: "push.unsubscribe_remote", endpoint });
   }
 }
-
-/**
- * Push queue drain is cron/ops-only (service role). The browser must not call
- * `send-push`. Kept as a no-op so older call sites remain harmless.
- */
-export async function drainPushEvents(): Promise<void> {
-  /* intentionally empty — see supabase/functions/README.md */
-}

@@ -37,7 +37,6 @@ export const localTripListRepo: TripListRepo = {
         db.expenses,
         db.expenseSplits,
         db.adjustments,
-        db.receipts,
       ],
       async () => {
         await db.participants.where("tripId").equals(tripId).delete();
@@ -46,10 +45,14 @@ export const localTripListRepo: TripListRepo = {
         await db.expenses.where("tripId").equals(tripId).delete();
         await db.expenseSplits.where("tripId").equals(tripId).delete();
         await db.adjustments.where("tripId").equals(tripId).delete();
-        await db.receipts.where("tripId").equals(tripId).delete();
         await db.trips.delete(tripId);
       },
     );
+  },
+
+  async leave(tripId) {
+    await this.delete(tripId);
+    return { action: "deleted" as const };
   },
 
   async touch(tripId) {

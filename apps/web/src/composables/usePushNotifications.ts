@@ -1,11 +1,11 @@
 import { computed, onMounted, ref } from "vue";
+import { isIosDevice, isPwaStandalone } from "@/pwa";
 import {
   getVapidPublicKey,
   pushSupported,
   subscribeToPush,
   unsubscribeFromPush,
-} from "@/api/push";
-import { isIosDevice, isPwaStandalone } from "@/pwa";
+} from "@/services/push";
 import { useAuthStore } from "@/stores/auth";
 
 export function usePushNotifications() {

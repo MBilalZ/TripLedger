@@ -1,6 +1,6 @@
 import { useConfirm } from "primevue/useconfirm";
 import { useToast } from "primevue/usetoast";
-import { toApiError } from "@/api/errors";
+import { toApiError } from "@/services/errors";
 
 export function useFeedback() {
   const toast = useToast();

@@ -97,8 +97,9 @@ export const localWorkspaceRepo: WorkspaceRepo = {
   async addPool(tripId, name, participants) {
     const n = name.trim();
     if (!n) throw new Error("Pool name is required");
+    if (n.length > 80) throw new Error("Pool name must be 80 characters or fewer");
     if (!participants.length) {
-      throw new Error("Add at least one person before creating a pool");
+      throw new Error("Add at least one friend before creating a pool");
     }
     const pool: PoolRow = {
       id: newId("pool"),

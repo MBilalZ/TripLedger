@@ -1,8 +1,9 @@
 import type { SettlementRounding, TransferMode } from "@tripledger/types";
 import { newId, type TripRow } from "@/db/dexie";
 import { apiCall, apiMutate } from "./client";
+import { toApiError } from "./errors";
 import { type DbTrip, tripFromDb } from "./mappers";
-import { fetchUserProfile, requireUser } from "./supabase";
+import { fetchUserProfile, getSupabase, requireUser } from "./supabase";
 
 export type CreateTripOptions = {
   transferMode?: TransferMode;
@@ -62,8 +63,18 @@ export async function createTripWithIds(
   return tripId;
 }
 
+/** Owner delete via RPC (bypasses cascade triggers that block owner teardown). Idempotent if gone. */
 export async function deleteTrip(tripId: string): Promise<void> {
-  await apiMutate((sb) => sb.from("trips").delete().eq("id", tripId));
+  await requireUser();
+  const sb = getSupabase();
+  const { error } = await sb.rpc("delete_trip_as_owner", { p_trip_id: tripId });
+  if (error) {
+    // Idempotent retry: trip already absent for this user.
+    const still = await sb.from("trips").select("id").eq("id", tripId).maybeSingle();
+    if (still.error) throw toApiError(still.error);
+    if (!still.data) return;
+    throw toApiError(error);
+  }
 }
 
 export async function touchTrip(tripId: string): Promise<void> {
@@ -101,9 +112,35 @@ export async function fetchMyTripRole(
   });
 }
 
-export async function leaveTrip(tripId: string): Promise<void> {
+export type LeaveTripAction = {
+  action: "left" | "deleted";
+  promotedUserId?: string;
+};
+
+/** Leave via RPC (promote another owner, or delete trip if last member). */
+export async function leaveTrip(tripId: string): Promise<LeaveTripAction> {
   const uid = await requireUser();
-  await apiMutate((sb) =>
-    sb.from("trip_members").delete().eq("trip_id", tripId).eq("user_id", uid),
-  );
+  const sb = getSupabase();
+  const { data, error } = await sb.rpc("leave_trip", { p_trip_id: tripId });
+  if (error) {
+    const still = await sb
+      .from("trip_members")
+      .select("trip_id")
+      .eq("trip_id", tripId)
+      .eq("user_id", uid)
+      .maybeSingle();
+    if (still.error) throw toApiError(still.error);
+    if (!still.data) {
+      const trip = await sb.from("trips").select("id").eq("id", tripId).maybeSingle();
+      if (trip.error) throw toApiError(trip.error);
+      return { action: trip.data ? "left" : "deleted" };
+    }
+    throw toApiError(error);
+  }
+  const row = (data ?? {}) as { action?: string; promoted_user_id?: string };
+  const action = row.action === "deleted" ? "deleted" : "left";
+  return {
+    action,
+    promotedUserId: row.promoted_user_id,
+  };
 }

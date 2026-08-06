@@ -11,6 +11,7 @@
  *   SUPABASE_SERVICE_ROLE_KEY  (validated only; not written to client env)
  *   SUPABASE_ACCESS_TOKEN      (Management API: email auth + redirect URLs)
  *   SUPABASE_DB_HOST           (override; default db.<ref>.supabase.co)
+ *   SUPABASE_DB_USER           (override; default postgres — use postgres.<ref> for pooler)
  *   SKIP_GH_SECRETS=1
  *   SKIP_MIGRATE=1
  */
@@ -45,8 +46,16 @@ function loadEnvFile(path) {
   }
 }
 
-loadEnvFile(join(root, ".env.supabase"));
+// SUPABASE_ENV=stage → load .env.supabase.stage (local testing project).
+// Default / prod → .env.supabase.
+const supabaseEnvName = (process.env.SUPABASE_ENV || "prod").trim().toLowerCase();
+const supabaseEnvFile =
+  supabaseEnvName === "stage" || supabaseEnvName === "staging"
+    ? ".env.supabase.stage"
+    : ".env.supabase";
+loadEnvFile(join(root, supabaseEnvFile));
 loadEnvFile(join(root, ".env"));
+console.log(`Using credentials from ${supabaseEnvFile}`);
 
 function requireEnv(name) {
   const v = process.env[name]?.trim();
@@ -84,12 +93,13 @@ async function applyMigrations(ref, password) {
     throw new Error(`No .sql migrations in ${migrationsDir}`);
   }
   const host = optionalEnv("SUPABASE_DB_HOST") || `db.${ref}.supabase.co`;
+  const user = optionalEnv("SUPABASE_DB_USER") || "postgres";
   const rejectUnauthorized = process.env.SUPABASE_DB_SSL_INSECURE !== "1";
   const client = new pg.Client({
     host,
     port: 5432,
     database: "postgres",
-    user: "postgres",
+    user,
     password,
     ssl: { rejectUnauthorized },
     connectionTimeoutMillis: 30_000,
@@ -97,7 +107,7 @@ async function applyMigrations(ref, password) {
 
   log(
     "migrate",
-    `Connecting to ${host} (TLS verify ${rejectUnauthorized ? "on" : "off"}) …`,
+    `Connecting to ${user}@${host} (TLS verify ${rejectUnauthorized ? "on" : "off"}) …`,
   );
   await client.connect();
   try {
@@ -274,13 +284,11 @@ Done.
 
 Local:  pnpm dev   (loads apps/web/.env.local)
 Auth:   email + password (no confirmation email). Sign up in the app.
-Edge:   pnpm sync:edge-engine
-        supabase functions deploy recompute-settlement
-        supabase functions deploy send-push
+Edge:   supabase functions deploy send-push
 Push:   npx web-push generate-vapid-keys
-        supabase secrets set VAPID_PUBLIC_KEY=... VAPID_PRIVATE_KEY=... VAPID_SUBJECT=mailto:you@example.com
+        supabase secrets set VAPID_PUBLIC_KEY=... VAPID_PRIVATE_KEY=... VAPID_SUBJECT=mailto:you@example.com PUSH_DRAIN_SECRET=...
         set VITE_VAPID_PUBLIC_KEY (local + gh secret)
-        schedule cron drain with service-role bearer (see docs/RUNBOOK.md)
+        schedule cron drain with PUSH_DRAIN_SECRET bearer (see docs/RUNBOOK.md)
 Prod:   push or redeploy the prod branch so GitHub Actions rebuilds with secrets.
 
   git checkout prod && git push origin prod

@@ -1,13 +1,8 @@
 /**
  * Cloud-only sync helpers. Loaded via dynamic import from `engine.ts`
- * so the sync entrypoint does not mix static/dynamic imports of api modules.
+ * so the sync entrypoint does not mix static/dynamic imports of service modules.
  */
-import { apiMutate } from "@/api/client";
-import { participantToDb, poolMemberToDb, poolToDb } from "@/api/mappers";
-import * as poolsApi from "@/api/pools";
-import { getSession, isSupabaseConfigured, requireUser } from "@/api/supabase";
-import * as tripsApi from "@/api/trips";
-import { loadWorkspace } from "@/api/workspace";
+
 import {
   type AdjustmentRow,
   type ExpenseRow,
@@ -17,15 +12,21 @@ import {
   type PoolMemberRow,
   type TripRow,
 } from "@/db/dexie";
-import { cloudTripListRepo } from "@/repositories/cloud/tripList";
 import { cloudWorkspaceRepo } from "@/repositories/cloud/workspace";
+import { apiMutate } from "@/services/client";
+import { participantToDb, poolMemberToDb, poolToDb } from "@/services/mappers";
+import * as poolsApi from "@/services/pools";
+import { getSession, isSupabaseConfigured, requireUser } from "@/services/supabase";
+import * as tripsApi from "@/services/trips";
+import { loadWorkspace } from "@/services/workspace";
 import {
   deleteCachedTrip,
   listCachedCloudTrips,
   readCachedWorkspace,
+  reapplyPendingOutboxToCache,
   writeCachedWorkspace,
 } from "./cache";
-import { listOutbox } from "./outbox";
+import { listOutbox, pendingDeleteTripIds } from "./outbox";
 import { noteKeepBothMerge } from "./status";
 
 async function applyOutboxRow(row: OutboxRow): Promise<void> {
@@ -46,12 +47,15 @@ async function applyOutboxRow(row: OutboxRow): Promise<void> {
       }
       break;
     }
-    case "deleteTrip":
-      await cloudTripListRepo.delete(row.tripId);
+    case "deleteTrip": {
+      const mode = p.mode === "leave" ? "leave" : "delete";
+      if (mode === "leave") await tripsApi.leaveTrip(row.tripId);
+      else await tripsApi.deleteTrip(row.tripId);
       await deleteCachedTrip(row.tripId);
       break;
+    }
     case "touchTrip":
-      await cloudTripListRepo.touch(row.tripId);
+      await tripsApi.touchTrip(row.tripId);
       break;
     case "addParticipant":
       await cloudWorkspaceRepo.addParticipant(
@@ -165,10 +169,12 @@ export async function applyOutboxRowPrecise(row: OutboxRow): Promise<void> {
       splitMode: "shares" | "equal" | "percent" | "exact";
     };
     const members = p.members as PoolMemberRow[];
-    await poolsApi.insertPool(poolToDb(pool));
-    for (const m of members) {
-      await poolsApi.insertPoolMember(poolMemberToDb(m));
-    }
+    await apiMutate((sb) =>
+      sb.rpc("add_pool_with_members", {
+        p_pool: poolToDb(pool),
+        p_members: members.map(poolMemberToDb),
+      }),
+    );
     return;
   }
 
@@ -195,6 +201,7 @@ export async function pullTrip(tripId: string): Promise<void> {
   const before = await readCachedWorkspace(tripId, userId);
   const snapshot = await loadWorkspace(tripId);
   await writeCachedWorkspace(userId, snapshot);
+  await reapplyPendingOutboxToCache(tripId);
   if (before?.expenses.length && snapshot.expenses.length) {
     const beforeIds = new Set(before.expenses.map((e) => e.id));
     const added = snapshot.expenses.some((e) => !beforeIds.has(e.id));
@@ -210,11 +217,15 @@ export async function syncAllCloudTripsWork(): Promise<void> {
   const user = session.user;
   const remote = await tripsApi.listTrips();
   const remoteIds = new Set(remote.map((t) => t.id));
+  const pendingDeletes = await pendingDeleteTripIds();
   for (const trip of remote) {
+    if (pendingDeletes.has(trip.id)) continue;
     await writeCachedWorkspace(user.id, await loadWorkspace(trip.id));
+    await reapplyPendingOutboxToCache(trip.id);
   }
   const cached = await listCachedCloudTrips(user.id);
   for (const trip of cached) {
+    if (pendingDeletes.has(trip.id)) continue;
     if (!remoteIds.has(trip.id)) {
       const pending = await listOutbox(trip.id);
       if (!pending.length) await deleteCachedTrip(trip.id);

@@ -29,7 +29,7 @@ function applyDom(dark: boolean) {
   root.style.colorScheme = dark ? "dark" : "light";
   const meta = document.querySelector('meta[name="theme-color"]');
   if (meta) {
-    meta.setAttribute("content", dark ? "#0f766e" : "#0d9488");
+    meta.setAttribute("content", dark ? "#0b1220" : "#0f766e");
   }
 }
 

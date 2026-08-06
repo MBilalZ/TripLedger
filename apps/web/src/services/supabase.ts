@@ -53,9 +53,6 @@ export async function requireUser(): Promise<string> {
   return id;
 }
 
-/** @deprecated Use requireUser — no longer signs in anonymously. */
-export const ensureAuthSession = requireUser;
-
 export async function getSession(): Promise<Session | null> {
   if (!isSupabaseConfigured()) return null;
   const sb = getSupabase();
@@ -95,8 +92,10 @@ export async function signUpWithPassword(
 
 export async function signInWithPassword(email: string, password: string): Promise<User> {
   const sb = getSupabase();
+  const trimmedEmail = email.trim().toLowerCase();
+
   const { data, error } = await sb.auth.signInWithPassword({
-    email: email.trim().toLowerCase(),
+    email: trimmedEmail,
     password,
   });
   if (error) throw toApiError(error);

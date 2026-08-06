@@ -12,12 +12,17 @@ export interface SplitPerson {
   exactPaisa: number;
 }
 
-const props = defineProps<{
-  mode: SplitMode;
-  people: SplitPerson[];
-  /** Optional pool/expense total in paisa for exact/percent hints */
-  totalPaisa?: number;
-}>();
+const props = withDefaults(
+  defineProps<{
+    mode: SplitMode;
+    people: SplitPerson[];
+    /** Optional pool/expense total in paisa for exact/percent hints */
+    totalPaisa?: number;
+    /** When true, inclusion is controlled elsewhere — show name only */
+    lockIncluded?: boolean;
+  }>(),
+  { lockIncluded: false },
+);
 
 const emit = defineEmits<{
   change: [participantId: string, patch: Partial<SplitPerson>];
@@ -30,7 +35,7 @@ const hint = computed(() => {
   }
   if (props.mode === "shares") {
     const heads = included.reduce((s, p) => s + p.shares, 0);
-    return `Total heads: ${heads}`;
+    return `Total shares: ${heads}`;
   }
   if (props.mode === "percent") {
     const pct = included.reduce((s, p) => s + p.percentBps, 0) / 100;
@@ -68,7 +73,7 @@ function bump(
   <div class="split-matrix">
     <p class="hint">{{ hint }}</p>
     <div v-for="p in people" :key="p.participantId" class="row">
-      <label class="check">
+      <label v-if="!lockIncluded" class="check">
         <input
           type="checkbox"
           :checked="p.included"
@@ -81,13 +86,14 @@ function bump(
         />
         <span>{{ p.displayName }}</span>
       </label>
+      <span v-else class="check">{{ p.displayName }}</span>
 
       <div v-if="p.included && mode === 'shares'" class="stepper">
-        <span class="field-label" :id="`heads-${p.participantId}`">Heads</span>
+        <span class="field-label" :id="`shares-${p.participantId}`">Shares</span>
         <button
           type="button"
           class="btn"
-          :aria-label="`Decrease heads for ${p.displayName}`"
+          :aria-label="`Decrease shares for ${p.displayName}`"
           @click="bump(p, 'shares', -1)"
         >
           −
@@ -97,7 +103,7 @@ function bump(
           type="number"
           min="1"
           :value="p.shares"
-          :aria-labelledby="`heads-${p.participantId}`"
+          :aria-labelledby="`shares-${p.participantId}`"
           @change="
             emit('change', p.participantId, {
               shares: Math.max(
@@ -110,7 +116,7 @@ function bump(
         <button
           type="button"
           class="btn"
-          :aria-label="`Increase heads for ${p.displayName}`"
+          :aria-label="`Increase shares for ${p.displayName}`"
           @click="bump(p, 'shares', 1)"
         >
           +
@@ -202,14 +208,22 @@ function bump(
 .stepper {
   display: flex;
   align-items: center;
-  gap: 0.4rem;
+  gap: 0.5rem;
 }
 .field-label {
   font-size: 0.7rem;
   color: var(--tl-muted);
-  width: 2.5rem;
+  width: 2.75rem;
+  flex-shrink: 0;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  min-height: 2.5rem;
 }
 .btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   width: 2.5rem;
   height: 2.5rem;
   border: 1px solid var(--tl-border);
@@ -219,11 +233,15 @@ function bump(
   cursor: pointer;
   font-size: 1.1rem;
   line-height: 1;
+  padding: 0;
 }
 .btn:hover {
   border-color: var(--tl-accent);
 }
 .num {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   width: 3.75rem;
   min-height: 2.5rem;
   text-align: center;
@@ -231,8 +249,15 @@ function bump(
   border-radius: 0.5rem;
   background: var(--tl-panel);
   color: var(--tl-text);
-  padding: 0.35rem;
+  padding: 0.35rem 0.5rem;
   font-size: 0.95rem;
+  appearance: textfield;
+  -moz-appearance: textfield;
+}
+.num::-webkit-outer-spin-button,
+.num::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
 }
 .num.wide {
   width: 5.75rem;
