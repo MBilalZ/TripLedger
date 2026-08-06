@@ -11,8 +11,6 @@ permissions:
 
 concurrency:
   group: pages
-  # Finish in-flight Pages deploys; cancel-in-progress races deploy-pages status polling.
-  cancel-in-progress: false
 
 jobs:
   build:
