@@ -75,8 +75,7 @@ export function createAdjustmentActions(state: WorkspaceState, core: CoreActions
     if (alloc.error) throw new Error(alloc.error);
 
     const transferSlices = alloc.slices.filter(
-      (slice) =>
-        slice.sharePaisa > 0 && slice.participantId !== input.paidById,
+      (slice) => slice.sharePaisa > 0 && slice.participantId !== input.paidById,
     );
     if (!transferSlices.length) {
       throw new Error("Include at least one friend besides the payer");

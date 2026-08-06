@@ -4,8 +4,8 @@ import { parseRupeesToPaisa } from "@tripledger/validation";
 import { storeToRefs } from "pinia";
 import { computed, ref, watch } from "vue";
 import type { SplitPerson } from "@/components/SplitMatrix.vue";
-import type { ParticipantRow } from "@/db/dexie";
 import type { PaymentPrefill } from "@/composables/useTripTabs";
+import type { ParticipantRow } from "@/db/dexie";
 import { useWorkspaceStore } from "@/stores/workspace";
 import { useFeedback } from "./useFeedback";
 
@@ -20,10 +20,7 @@ function defaultSplitPerson(p: ParticipantRow): SplitPerson {
   };
 }
 
-function syncSplitPeople(
-  people: SplitPerson[],
-  list: ParticipantRow[],
-): SplitPerson[] {
+function syncSplitPeople(people: SplitPerson[], list: ParticipantRow[]): SplitPerson[] {
   const byId = new Map(people.map((p) => [p.participantId, p]));
   return list.map((p) => {
     const existing = byId.get(p.id);
@@ -55,9 +52,7 @@ export function useAdjustmentForm() {
     participants.value.filter((p) => p.id !== paidById.value),
   );
 
-  const includedPeople = computed(() =>
-    splitPeople.value.filter((p) => p.included),
-  );
+  const includedPeople = computed(() => splitPeople.value.filter((p) => p.included));
 
   const nonPayerIncluded = computed(() =>
     includedPeople.value.filter((p) => p.participantId !== paidById.value),
@@ -91,10 +86,7 @@ export function useAdjustmentForm() {
 
     const paidName = store.participantName(paidById.value);
 
-    if (
-      nonPayerIncluded.value.length === 1 &&
-      includedPeople.value.length === 1
-    ) {
+    if (nonPayerIncluded.value.length === 1 && includedPeople.value.length === 1) {
       const only = nonPayerIncluded.value[0]!;
       return `${paidName} paid ${only.displayName} ${formatPkr(Math.round(amountRupees.value * 100))}`;
     }
@@ -147,16 +139,10 @@ export function useAdjustmentForm() {
         editReceivedById.value = "";
         return;
       }
-      if (
-        !editingAdjustmentId.value &&
-        !list.some((p) => p.id === paidById.value)
-      ) {
+      if (!editingAdjustmentId.value && !list.some((p) => p.id === paidById.value)) {
         paidById.value = list[0]!.id;
       }
-      if (
-        editReceivedById.value &&
-        !list.some((p) => p.id === editReceivedById.value)
-      ) {
+      if (editReceivedById.value && !list.some((p) => p.id === editReceivedById.value)) {
         editReceivedById.value = "";
       }
     },
@@ -209,10 +195,7 @@ export function useAdjustmentForm() {
       }
 
       // Simple path: only one person in Split with, and they are not the payer
-      if (
-        nonPayerIncluded.value.length === 1 &&
-        includedPeople.value.length === 1
-      ) {
+      if (nonPayerIncluded.value.length === 1 && includedPeople.value.length === 1) {
         await store.addAdjustment({
           paidById: paidById.value,
           receivedById: nonPayerIncluded.value[0]!.participantId,
