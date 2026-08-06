@@ -1,6 +1,6 @@
 # Active migrations
 
-Only SQL files in this directory are applied by `pnpm setup:supabase` (sorted by filename).
+Only SQL files in this directory are applied by `pnpm setup:supabase` / `pnpm migrate:supabase` (sorted by filename).
 
 | File | Role |
 |---|---|
@@ -12,14 +12,17 @@ Only SQL files in this directory are applied by `pnpm setup:supabase` (sorted by
 | `20260806160005_rpcs.sql` | Application RPCs |
 | `20260806160006_grants_and_rls.sql` | Grants + RLS policies |
 | `20260806160007_realtime.sql` | Realtime publication |
+| `20260806170000_rls_initplan_and_fk_indexes.sql` | RLS auth initplan + FK indexes |
 
 Add new changes as **new timestamped files** after these (do not edit applied chunks in place on shared DBs).
 
-## Fresh project / stage
+## Apply
 
-```bash
-SKIP_GH_SECRETS=1 pnpm setup:supabase
-```
+| Target | Command |
+|---|---|
+| Stage (local) | `pnpm setup:supabase:stage` or `pnpm migrate:supabase:stage` |
+| Prod | Merge to `prod` — Deploy GitHub Pages runs `pnpm migrate:supabase` |
+| Prod one-shot bootstrap | `pnpm setup:supabase` (also syncs GH secrets for CI) |
 
 ## Existing DB that already ran the old monolith
 

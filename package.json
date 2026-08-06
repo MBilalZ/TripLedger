@@ -12,7 +12,10 @@
     "lint": "biome check .",
     "lint:fix": "biome check --write .",
     "check:rls": "node scripts/check-rls-policies.mjs",
-    "setup:supabase": "node scripts/setup-supabase.mjs"
+    "setup:supabase": "node scripts/setup-supabase.mjs",
+    "setup:supabase:stage": "node scripts/setup-supabase.mjs --stage",
+    "migrate:supabase": "node scripts/setup-supabase.mjs --migrate-only",
+    "migrate:supabase:stage": "node scripts/setup-supabase.mjs --stage --migrate-only"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.2.4",

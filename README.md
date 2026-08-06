@@ -53,14 +53,16 @@ One-command setup applies SQL migrations, writes `apps/web/.env.local`, and can 
 
 ```bash
 cp .env.example .env.supabase          # prod project
-# or: cp .env.example .env.supabase.stage   # stage_tripledger for local testing
+# or: cp .env.example .env.supabase.stage   # stage for local testing
 # edit with anon key, DB password, optional service role + access token + VAPID public key
 
 pnpm install
-pnpm setup:supabase                              # uses .env.supabase
-# SUPABASE_ENV=stage pnpm setup:supabase         # uses .env.supabase.stage → apps/web/.env.local
+pnpm setup:supabase                              # prod (.env.supabase) → also syncs GH deploy secrets
+pnpm setup:supabase:stage                        # stage (.env.supabase.stage) → apps/web/.env.local
 pnpm dev
 ```
+
+Prod schema changes apply on **Deploy GitHub Pages** (`pnpm migrate:supabase` in CI). Use `pnpm migrate:supabase:stage` only for the stage project locally.
 
 `setup:supabase` does **not** deploy Edge Functions or set Edge secrets. After setup, deploy functions and VAPID secrets as described in [supabase/functions/README.md](supabase/functions/README.md) and [docs/RUNBOOK.md](docs/RUNBOOK.md).
 
@@ -92,6 +94,8 @@ Then: **Sign up** → create a trip → **Copy invite link** → other device **
 - `VITE_SUPABASE_URL`
 - `VITE_SUPABASE_ANON_KEY`
 - `VITE_VAPID_PUBLIC_KEY` (when present in `.env.supabase`)
+- `SUPABASE_PROJECT_REF`, `SUPABASE_DB_PASSWORD` (for CI migrations)
+- `SUPABASE_DB_HOST`, `SUPABASE_DB_USER`, `SUPABASE_DB_SSL_INSECURE` (when set — pooler)
 
 Or set them manually under Repo → Settings → Secrets. Auth Site URL should include `https://MBilalZ.github.io/TripLedger`.
 

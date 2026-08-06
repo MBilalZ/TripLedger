@@ -13,8 +13,21 @@ Use a dedicated Supabase project (not prod). Credentials: gitignored `.env.supab
 # once: copy from .env.example and fill stage project values
 cp .env.example .env.supabase.stage
 
-SUPABASE_ENV=stage SKIP_GH_SECRETS=1 pnpm setup:supabase
-# writes apps/web/.env.local from the stage project
+pnpm setup:supabase:stage
+# writes apps/web/.env.local from the stage project (does not touch GH secrets)
+
+# migrations only:
+pnpm migrate:supabase:stage
+```
+
+### Prod
+
+Prod migrations run in **Deploy GitHub Pages** (`pnpm migrate:supabase`). Do not apply prod SQL by hand for routine releases.
+
+One-shot bootstrap (fresh project / sync GH secrets from `.env.supabase`):
+
+```bash
+pnpm setup:supabase
 ```
 
 ### Fresh / reset project
@@ -22,22 +35,14 @@ SUPABASE_ENV=stage SKIP_GH_SECRETS=1 pnpm setup:supabase
 1. In Supabase Dashboard: reset the database (or use a new project).
 2. If an old `receipts` Storage bucket still exists, **empty and delete it via the Storage UI or Storage API** — do not `DELETE FROM storage.objects` in SQL (blocked by Supabase).
 3. Clear remote `public.schema_migrations` if present after a partial wipe.
-4. Apply:
-
-```bash
-cp .env.example .env.supabase   # once (prod) or .env.supabase.stage (stage)
-# fill SUPABASE_PROJECT_REF, SUPABASE_ANON_KEY, SUPABASE_DB_PASSWORD, …
-
-SKIP_GH_SECRETS=1 pnpm setup:supabase
-# or: SUPABASE_ENV=stage SKIP_GH_SECRETS=1 pnpm setup:supabase
-```
+4. Apply: `pnpm setup:supabase:stage` (stage) or `pnpm setup:supabase` (prod bootstrap).
 
 If a migration fails with “already exists”, **do not** mark it applied blindly. Inspect the remote schema/policies, reconcile, then insert the filename into `public.schema_migrations` only when the migration is fully present.
 
 ## Deploy GitHub Pages
 
-1. Ensure GH secrets: `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, optional `VITE_VAPID_PUBLIC_KEY` / `VITE_SENTRY_DSN`.
-2. Merge to `prod` and push:
+1. Ensure GH secrets from `pnpm setup:supabase`: `VITE_SUPABASE_*`, `SUPABASE_PROJECT_REF`, `SUPABASE_DB_PASSWORD`, plus pooler overrides if used; optional `VITE_VAPID_PUBLIC_KEY` / `VITE_SENTRY_DSN`.
+2. Merge to `prod` and push — the workflow applies pending migrations, then builds and deploys the site:
 
 ```bash
 git checkout prod

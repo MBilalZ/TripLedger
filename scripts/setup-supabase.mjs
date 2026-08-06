@@ -2,18 +2,24 @@
 /**
  * One-shot Supabase setup for TripLedger.
  *
- * Required env:
- *   SUPABASE_PROJECT_REF
- *   SUPABASE_ANON_KEY
- *   SUPABASE_DB_PASSWORD
+ * Usage (prefer pnpm scripts — do not prefix FOO=1 on the shell):
+ *   pnpm setup:supabase              # prod: migrate + auth + .env.local + GH secrets
+ *   pnpm setup:supabase:stage        # stage: migrate + auth + .env.local (no GH)
+ *   pnpm migrate:supabase            # prod: migrations only (CI / deploy)
+ *   pnpm migrate:supabase:stage      # stage: migrations only
+ *
+ * Flags:
+ *   --stage           load .env.supabase.stage (implies --no-gh-secrets)
+ *   --migrate-only    apply SQL migrations only
+ *   --no-gh-secrets   skip writing GitHub Actions secrets
+ *
+ * Required from env file or CI secrets:
+ *   SUPABASE_PROJECT_REF, SUPABASE_DB_PASSWORD
+ *   (+ SUPABASE_ANON_KEY unless --migrate-only)
  *
  * Optional:
- *   SUPABASE_SERVICE_ROLE_KEY  (validated only; not written to client env)
- *   SUPABASE_ACCESS_TOKEN      (Management API: email auth + redirect URLs)
- *   SUPABASE_DB_HOST           (override; default db.<ref>.supabase.co)
- *   SUPABASE_DB_USER           (override; default postgres — use postgres.<ref> for pooler)
- *   SKIP_GH_SECRETS=1
- *   SKIP_MIGRATE=1
+ *   SUPABASE_SERVICE_ROLE_KEY, SUPABASE_ACCESS_TOKEN
+ *   SUPABASE_DB_HOST, SUPABASE_DB_USER, SUPABASE_DB_SSL_INSECURE
  */
 import { spawnSync } from "node:child_process";
 import { existsSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
@@ -24,6 +30,16 @@ import pg from "pg";
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const root = join(__dirname, "..");
 const migrationsDir = join(root, "supabase/migrations");
+
+function parseArgs(argv) {
+  const args = new Set(argv.slice(2));
+  const stage = args.has("--stage");
+  return {
+    stage,
+    migrateOnly: args.has("--migrate-only"),
+    noGhSecrets: args.has("--no-gh-secrets") || stage,
+  };
+}
 
 /** Load KEY=VALUE from a gitignored file into process.env (does not override). */
 function loadEnvFile(path) {
@@ -46,13 +62,8 @@ function loadEnvFile(path) {
   }
 }
 
-// SUPABASE_ENV=stage → load .env.supabase.stage (local testing project).
-// Default / prod → .env.supabase.
-const supabaseEnvName = (process.env.SUPABASE_ENV || "prod").trim().toLowerCase();
-const supabaseEnvFile =
-  supabaseEnvName === "stage" || supabaseEnvName === "staging"
-    ? ".env.supabase.stage"
-    : ".env.supabase";
+const flags = parseArgs(process.argv);
+const supabaseEnvFile = flags.stage ? ".env.supabase.stage" : ".env.supabase";
 loadEnvFile(join(root, supabaseEnvFile));
 loadEnvFile(join(root, ".env"));
 console.log(`Using credentials from ${supabaseEnvFile}`);
@@ -84,10 +95,6 @@ function listMigrationFiles() {
 }
 
 async function applyMigrations(ref, password) {
-  if (process.env.SKIP_MIGRATE === "1") {
-    log("migrate", "Skipped (SKIP_MIGRATE=1)");
-    return;
-  }
   const files = listMigrationFiles();
   if (!files.length) {
     throw new Error(`No .sql migrations in ${migrationsDir}`);
@@ -217,9 +224,20 @@ function writeEnvLocal(url, anonKey) {
   log("env", `Wrote ${path}`);
 }
 
-function setGhSecrets(url, anonKey) {
-  if (process.env.SKIP_GH_SECRETS === "1") {
-    log("github", "Skipped (SKIP_GH_SECRETS=1)");
+function setGhSecret(name, value) {
+  const r = spawnSync("gh", ["secret", "set", name], {
+    input: value,
+    encoding: "utf8",
+    cwd: root,
+  });
+  if (r.status !== 0) {
+    throw new Error(`gh secret set ${name} failed:\n${r.stderr || r.stdout}`);
+  }
+}
+
+function setGhSecrets(url, anonKey, ref, dbPassword) {
+  if (flags.noGhSecrets) {
+    log("github", "Skipped (--no-gh-secrets / stage)");
     return;
   }
   const gh = spawnSync("gh", ["--version"], { encoding: "utf8" });
@@ -227,7 +245,9 @@ function setGhSecrets(url, anonKey) {
     log(
       "github",
       "gh CLI not found — set secrets manually:\n" +
-        "  VITE_SUPABASE_URL\n  VITE_SUPABASE_ANON_KEY\n  VITE_VAPID_PUBLIC_KEY",
+        "  VITE_SUPABASE_URL\n  VITE_SUPABASE_ANON_KEY\n  VITE_VAPID_PUBLIC_KEY\n" +
+        "  SUPABASE_PROJECT_REF\n  SUPABASE_DB_PASSWORD\n" +
+        "  SUPABASE_DB_HOST / SUPABASE_DB_USER / SUPABASE_DB_SSL_INSECURE (if using pooler)",
     );
     return;
   }
@@ -235,32 +255,38 @@ function setGhSecrets(url, anonKey) {
   const secrets = [
     ["VITE_SUPABASE_URL", url],
     ["VITE_SUPABASE_ANON_KEY", anonKey],
+    ["SUPABASE_PROJECT_REF", ref],
+    ["SUPABASE_DB_PASSWORD", dbPassword],
   ];
   const vapid = optionalEnv("VITE_VAPID_PUBLIC_KEY");
   if (vapid) secrets.push(["VITE_VAPID_PUBLIC_KEY", vapid]);
+  const dbHost = optionalEnv("SUPABASE_DB_HOST");
+  if (dbHost) secrets.push(["SUPABASE_DB_HOST", dbHost]);
+  const dbUser = optionalEnv("SUPABASE_DB_USER");
+  if (dbUser) secrets.push(["SUPABASE_DB_USER", dbUser]);
+  const sslInsecure = optionalEnv("SUPABASE_DB_SSL_INSECURE");
+  if (sslInsecure) secrets.push(["SUPABASE_DB_SSL_INSECURE", sslInsecure]);
 
   for (const [name, value] of secrets) {
-    const r = spawnSync("gh", ["secret", "set", name], {
-      input: value,
-      encoding: "utf8",
-      cwd: root,
-    });
-    if (r.status !== 0) {
-      throw new Error(`gh secret set ${name} failed:\n${r.stderr || r.stdout}`);
-    }
+    setGhSecret(name, value);
   }
   log(
     "github",
-    vapid
-      ? "Set VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY, VITE_VAPID_PUBLIC_KEY"
-      : "Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY",
+    `Set ${secrets.map(([name]) => name).join(", ")}`,
   );
 }
 
 async function main() {
   const ref = requireEnv("SUPABASE_PROJECT_REF");
-  const anonKey = requireEnv("SUPABASE_ANON_KEY");
   const dbPassword = requireEnv("SUPABASE_DB_PASSWORD");
+
+  if (flags.migrateOnly) {
+    await applyMigrations(ref, dbPassword);
+    console.log("\nDone (migrate only).\n");
+    return;
+  }
+
+  const anonKey = requireEnv("SUPABASE_ANON_KEY");
   const serviceRole = optionalEnv("SUPABASE_SERVICE_ROLE_KEY");
   const accessToken = optionalEnv("SUPABASE_ACCESS_TOKEN");
   const url = `https://${ref}.supabase.co`;
@@ -277,7 +303,7 @@ async function main() {
   await applyMigrations(ref, dbPassword);
   await configureAuth(ref, accessToken);
   writeEnvLocal(url, anonKey);
-  setGhSecrets(url, anonKey);
+  setGhSecrets(url, anonKey, ref, dbPassword);
 
   console.log(`
 Done.
@@ -289,9 +315,7 @@ Push:   npx web-push generate-vapid-keys
         supabase secrets set VAPID_PUBLIC_KEY=... VAPID_PRIVATE_KEY=... VAPID_SUBJECT=mailto:you@example.com PUSH_DRAIN_SECRET=...
         set VITE_VAPID_PUBLIC_KEY (local + gh secret)
         schedule cron drain with PUSH_DRAIN_SECRET bearer (see docs/RUNBOOK.md)
-Prod:   push or redeploy the prod branch so GitHub Actions rebuilds with secrets.
-
-  git checkout prod && git push origin prod
+Prod:   merge to prod — Deploy GitHub Pages applies migrations then rebuilds the site.
 `);
 }
 
