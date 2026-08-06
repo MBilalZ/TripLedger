@@ -11,6 +11,8 @@ import TripBottomNav from "@/components/trip/TripBottomNav.vue";
 import TripExpensesPanel from "@/components/trip/TripExpensesPanel.vue";
 import TripHeader from "@/components/trip/TripHeader.vue";
 import TripMorePanel from "@/components/trip/TripMorePanel.vue";
+import TripPaymentsPanel from "@/components/trip/TripPaymentsPanel.vue";
+import TripPoolsPanel from "@/components/trip/TripPoolsPanel.vue";
 import TripSettlePanel from "@/components/trip/TripSettlePanel.vue";
 
 const props = defineProps<{ tripId: string }>();
@@ -20,7 +22,16 @@ const { trip, settlement, loading, statusMessage, isOwner } = useTripWorkspace(
   () => props.tripId,
 );
 
-const { activeTab, moreSection, moreTitle, setTab, openMore } = useTripTabs();
+const {
+  activeTab,
+  moreSection,
+  moreTitle,
+  paymentPrefill,
+  setTab,
+  openMore,
+  openPaymentsWithPrefill,
+  consumePaymentPrefill,
+} = useTripTabs();
 const {
   editingTrip,
   tripNameDraft,
@@ -36,6 +47,20 @@ const { exportItems, deleteTrip, formatTransferAmount } = useTripExports({
 });
 
 const balanced = computed(() => settlement.value?.consistency.ok ?? false);
+const memberCount = computed(
+  () => settlement.value?.summary.participantCount ?? 0,
+);
+
+function onRecordPayment(payload: {
+  paidById: string;
+  receivedById: string;
+  amountRupees: number;
+}) {
+  openPaymentsWithPrefill({
+    ...payload,
+    reason: "Settle up",
+  });
+}
 </script>
 
 <template>
@@ -50,6 +75,7 @@ const balanced = computed(() => settlement.value?.consistency.ok ?? false);
       :trip="trip"
       :balanced="balanced"
       :trip-total-paisa="settlement?.summary.tripTotalPaisa ?? 0"
+      :member-count="memberCount"
       :editing-trip="editingTrip"
       v-model:trip-name-draft="tripNameDraft"
       :show-invite="auth.cloud && isOwner"
@@ -62,23 +88,41 @@ const balanced = computed(() => settlement.value?.consistency.ok ?? false);
       @save="saveTrip"
       @invite="copyInviteLink"
       @delete="deleteTrip"
+      @go-settle="setTab('settle')"
+      @go-charts="setTab('balances')"
     />
 
     <TripExpensesPanel
       :visible="activeTab === 'expenses'"
-      @open-more="openMore"
+      @open-friends="openMore('people')"
     />
     <TripBalancesPanel
       :visible="activeTab === 'balances'"
       :format-transfer-amount="formatTransferAmount"
+      @record-payment="onRecordPayment"
     />
-    <TripSettlePanel :visible="activeTab === 'settle'" />
+    <TripSettlePanel
+      :visible="activeTab === 'settle'"
+      @record-payment="onRecordPayment"
+    />
+    <TripPoolsPanel :visible="activeTab === 'pools'" />
+    <TripPaymentsPanel
+      :visible="activeTab === 'payments'"
+      :prefill="paymentPrefill"
+      @consumed-prefill="consumePaymentPrefill"
+    />
     <TripMorePanel
       :visible="activeTab === 'more'"
       :more-section="moreSection"
       :more-title="moreTitle"
+      :export-items="exportItems"
+      :show-invite="auth.cloud && isOwner"
+      :inviting="inviting"
+      :can-delete-trip="isOwner"
       @update:more-section="moreSection = $event"
       @open-more="openMore"
+      @invite="copyInviteLink"
+      @delete="deleteTrip"
     />
 
     <TripBottomNav :active-tab="activeTab" @set-tab="setTab" />

@@ -178,6 +178,26 @@ button.tl-list-row {
   backdrop-filter: blur(10px);
 }
 
+.tl-bottom-nav--app {
+  grid-template-columns: repeat(3, 1fr);
+}
+
+.tl-bottom-nav--trip {
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 0;
+  overflow-x: auto;
+}
+
+.tl-bottom-nav--trip button {
+  font-size: 0.58rem;
+  min-width: 0;
+  padding: 0.2rem 0.1rem;
+}
+
+.tl-bottom-nav--trip button i {
+  font-size: 1.05rem;
+}
+
 .tl-bottom-nav button {
   display: flex;
   flex-direction: column;
@@ -206,6 +226,114 @@ button.tl-list-row {
 
 .tl-has-bottom-nav {
   padding-bottom: calc(5.75rem + env(safe-area-inset-bottom, 0px));
+}
+
+.tl-fab {
+  position: fixed;
+  right: max(1rem, var(--tl-shell-pad-x-end));
+  bottom: calc(4.75rem + env(safe-area-inset-bottom, 0px));
+  z-index: 25;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  min-height: 3rem;
+  padding: 0.65rem 1.15rem;
+  border: none;
+  border-radius: 999px;
+  background: var(--tl-accent);
+  color: #fff;
+  font-size: var(--tl-text-sm);
+  font-weight: 600;
+  box-shadow: var(--tl-shadow);
+  cursor: pointer;
+}
+
+.tl-fab:active {
+  transform: scale(0.98);
+}
+
+.tl-member-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.2rem 0.65rem;
+  border-radius: 999px;
+  background: var(--tl-elevated);
+  border: 1px solid var(--tl-border);
+  color: var(--tl-muted);
+  font-size: var(--tl-text-xs, 0.75rem);
+}
+
+.tl-group-icon {
+  display: inline-flex;
+  height: 2.75rem;
+  width: 2.75rem;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--tl-radius-md);
+  background: var(--tl-accent-soft);
+  color: var(--tl-accent-dim);
+}
+
+.tl-avatar-lg {
+  display: inline-flex;
+  height: 3.25rem;
+  width: 3.25rem;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: var(--tl-accent-soft);
+  color: var(--tl-accent-dim);
+  font-weight: 700;
+  font-size: 1.15rem;
+}
+
+.tl-date-group {
+  margin: var(--tl-space-3) 0 var(--tl-space-2);
+  font-size: var(--tl-text-xs, 0.75rem);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--tl-muted);
+}
+
+.tl-pool-tag {
+  display: inline;
+  font-weight: 600;
+  color: var(--tl-accent-dim);
+}
+
+.tl-activity-row {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--tl-space-3);
+  width: 100%;
+  padding: var(--tl-space-3) 0;
+  border: none;
+  border-bottom: 1px solid var(--tl-hairline);
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  text-align: left;
+}
+
+.tl-activity-row:last-child {
+  border-bottom: none;
+}
+
+.tl-activity-icon {
+  display: inline-flex;
+  height: 2.5rem;
+  width: 2.5rem;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--tl-radius-md);
+  background: var(--tl-accent-soft);
+  color: var(--tl-accent-dim);
 }
 
 html {
@@ -506,17 +634,22 @@ html {
   background: var(--tl-elevated);
 }
 
-/* —— Form controls (symmetric padding) —— */
+/* —— Form controls (symmetric padding + shared height) —— */
 .p-inputtext,
 .p-password-input,
 .p-textarea,
-.p-select,
 .p-datepicker-input-icon-container input,
 input.p-inputtext {
   padding-left: var(--tl-input-pad-x) !important;
   padding-right: var(--tl-input-pad-x) !important;
   padding-top: var(--tl-input-pad-y) !important;
   padding-bottom: var(--tl-input-pad-y) !important;
+  border-radius: var(--tl-radius-md) !important;
+}
+
+.p-select,
+.p-multiselect,
+.p-inputnumber {
   border-radius: var(--tl-radius-md) !important;
 }
 
@@ -528,10 +661,46 @@ input.p-inputtext {
   width: 100%;
 }
 
+.p-select,
+.p-multiselect,
+.p-inputnumber,
+.tl-control.p-select,
+.tl-control.p-multiselect,
+.tl-control.p-inputnumber,
+input.p-inputtext.tl-control,
+.p-inputtext.tl-control {
+  min-height: var(--tl-tap) !important;
+  box-sizing: border-box;
+}
+
+.p-select .p-select-label,
+.p-multiselect .p-multiselect-label,
+.p-multiselect .p-multiselect-label-container,
 .p-inputnumber-input {
+  min-height: calc(var(--tl-tap) - 2px) !important;
+  display: flex !important;
+  align-items: center;
   padding-left: var(--tl-input-pad-x) !important;
   padding-right: var(--tl-input-pad-x) !important;
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+  box-sizing: border-box;
+}
+
+.p-inputnumber {
+  display: flex;
+  align-items: stretch;
+  padding: 0 !important;
+}
+
+.p-inputnumber-input {
+  width: 100%;
   text-align: left;
+}
+
+.p-multiselect {
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
 }
 
 /* —— Dialogs / confirms —— */

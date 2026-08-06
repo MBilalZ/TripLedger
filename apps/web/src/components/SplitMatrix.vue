@@ -12,12 +12,17 @@ export interface SplitPerson {
   exactPaisa: number;
 }
 
-const props = defineProps<{
-  mode: SplitMode;
-  people: SplitPerson[];
-  /** Optional pool/expense total in paisa for exact/percent hints */
-  totalPaisa?: number;
-}>();
+const props = withDefaults(
+  defineProps<{
+    mode: SplitMode;
+    people: SplitPerson[];
+    /** Optional pool/expense total in paisa for exact/percent hints */
+    totalPaisa?: number;
+    /** When true, inclusion is controlled elsewhere — show name only */
+    lockIncluded?: boolean;
+  }>(),
+  { lockIncluded: false },
+);
 
 const emit = defineEmits<{
   change: [participantId: string, patch: Partial<SplitPerson>];
@@ -68,7 +73,7 @@ function bump(
   <div class="split-matrix">
     <p class="hint">{{ hint }}</p>
     <div v-for="p in people" :key="p.participantId" class="row">
-      <label class="check">
+      <label v-if="!lockIncluded" class="check">
         <input
           type="checkbox"
           :checked="p.included"
@@ -81,6 +86,7 @@ function bump(
         />
         <span>{{ p.displayName }}</span>
       </label>
+      <span v-else class="check">{{ p.displayName }}</span>
 
       <div v-if="p.included && mode === 'shares'" class="stepper">
         <span class="field-label" :id="`shares-${p.participantId}`">Shares</span>

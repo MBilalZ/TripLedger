@@ -1,6 +1,10 @@
 # TripLedger
 
-Multi-pool trip expense settlement for family & friends.
+**Group expense tracking for trips with different sharing groups.**
+
+Named **pools** (Hotel, BBQ, Fuel, …) carry who shares and the default split; **payments** record cash outside the expense feed. Settlement stays integer-paisa / PKR.
+
+**UAT / public testing:** every capability is unlocked (charts, exports, receipts, advanced splits). There is no subscription UI yet — flags live in `apps/web/src/lib/features.ts` for a future paywall. Monetization is deferred.
 
 **Cost: free-tier friendly** — Vue SPA on GitHub Pages + optional **Supabase** (email/password auth with no confirmation email, Postgres, Realtime, Edge Functions) for shared trips, invite links, and Web Push. Without Supabase env vars, the app runs locally on this device (IndexedDB / PWA offline).
 
@@ -67,12 +71,13 @@ Then: **Sign up** → create a trip → **Copy invite link** → other device **
 ## Use
 
 1. **Sign in / Sign up** (cloud) with email + password.
-2. **New trip** → name → Save (draft until Save).
-3. Invite members (cloud) or add people under **More → People**.
-4. Log expenses (a **General** pool is created automatically if needed).
-5. Adjustments: simple A→B or **Split a total** (equal/shares/percent/exact).
-6. Export WhatsApp / Excel / PDF / JSON when balanced.
-7. (Optional) enable Web Push when `VITE_VAPID_PUBLIC_KEY` is configured.
+2. App tabs: **Groups** · **Activity** · **Account**.
+3. **New group** → name → Save. Inside a group: **Expenses · Balances · Settle · Pools · Payments · More**.
+4. Invite members (cloud) or add friends under **More → Friends**.
+5. Add expenses **pool-first** (a **General** pool is created automatically if needed).
+6. **Payments** for cash / settle-ups outside expenses; **Settle up** to preview transfers and record them.
+7. Export WhatsApp / Excel / PDF / JSON from More or the Export chip when balanced.
+8. (Optional) enable Web Push when `VITE_VAPID_PUBLIC_KEY` is configured.
 
 ## Deploy (GitHub Pages)
 

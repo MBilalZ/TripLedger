@@ -3,45 +3,29 @@ import type { MainTab } from "@/composables/useTripTabs";
 
 defineProps<{ activeTab: MainTab }>();
 const emit = defineEmits<{ setTab: [tab: MainTab] }>();
+
+const tabs: { id: MainTab; label: string; icon: string }[] = [
+  { id: "expenses", label: "Expenses", icon: "pi pi-receipt" },
+  { id: "balances", label: "Balances", icon: "pi pi-chart-bar" },
+  { id: "settle", label: "Settle", icon: "pi pi-sync" },
+  { id: "pools", label: "Pools", icon: "pi pi-th-large" },
+  { id: "payments", label: "Payments", icon: "pi pi-wallet" },
+  { id: "more", label: "More", icon: "pi pi-ellipsis-h" },
+];
 </script>
 
 <template>
-  <nav class="tl-bottom-nav" aria-label="Group sections">
+  <nav class="tl-bottom-nav tl-bottom-nav--trip" aria-label="Group sections">
     <button
+      v-for="tab in tabs"
+      :key="tab.id"
       type="button"
-      :class="{ 'is-active': activeTab === 'expenses' }"
-      :aria-current="activeTab === 'expenses' ? 'page' : undefined"
-      @click="emit('setTab', 'expenses')"
+      :class="{ 'is-active': activeTab === tab.id }"
+      :aria-current="activeTab === tab.id ? 'page' : undefined"
+      @click="emit('setTab', tab.id)"
     >
-      <i class="pi pi-receipt" aria-hidden="true" />
-      Expenses
-    </button>
-    <button
-      type="button"
-      :class="{ 'is-active': activeTab === 'balances' }"
-      :aria-current="activeTab === 'balances' ? 'page' : undefined"
-      @click="emit('setTab', 'balances')"
-    >
-      <i class="pi pi-chart-bar" aria-hidden="true" />
-      Balances
-    </button>
-    <button
-      type="button"
-      :class="{ 'is-active': activeTab === 'settle' }"
-      :aria-current="activeTab === 'settle' ? 'page' : undefined"
-      @click="emit('setTab', 'settle')"
-    >
-      <i class="pi pi-sync" aria-hidden="true" />
-      Settle up
-    </button>
-    <button
-      type="button"
-      :class="{ 'is-active': activeTab === 'more' }"
-      :aria-current="activeTab === 'more' ? 'page' : undefined"
-      @click="emit('setTab', 'more')"
-    >
-      <i class="pi pi-ellipsis-h" aria-hidden="true" />
-      More
+      <i :class="tab.icon" aria-hidden="true" />
+      {{ tab.label }}
     </button>
   </nav>
 </template>

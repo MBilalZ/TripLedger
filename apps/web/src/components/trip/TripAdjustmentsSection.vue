@@ -1,37 +1,57 @@
 <script setup lang="ts">
 import { storeToRefs } from "pinia";
+import { watch } from "vue";
 import Button from "primevue/button";
 import InputNumber from "primevue/inputnumber";
 import InputText from "primevue/inputtext";
-import MultiSelect from "primevue/multiselect";
 import Select from "primevue/select";
 import { formatPkr } from "@tripledger/engine";
 import SplitMatrix from "@/components/SplitMatrix.vue";
 import { SPLIT_MODES } from "@/constants/tripOptions";
 import { useAdjustmentForm } from "@/composables/useAdjustmentForm";
+import type { PaymentPrefill } from "@/composables/useTripTabs";
+import { isEnabled } from "@/lib/features";
 import { useWorkspaceStore } from "@/stores/workspace";
+
+const props = defineProps<{
+  prefill?: PaymentPrefill | null;
+}>();
+
+const emit = defineEmits<{ consumedPrefill: [] }>();
 
 const store = useWorkspaceStore();
 const { participants, adjustments } = storeToRefs(store);
 const {
   editingAdjustmentId,
   paidById,
-  receivedByIds,
   editReceivedById,
   amountRupees,
   reason,
   splitMode,
-  recipientSplits,
+  splitPeople,
   recipientOptions,
   showSplitControls,
+  paymentPreview,
   adjFormTitle,
   clearAdjForm,
+  applyPrefill,
   startEditAdjustment,
   onSaveAdj,
   confirmRemoveAdjustment,
-  onRecipientSplitChange,
+  onSplitPersonChange,
+  toggleIncluded,
   paymentLabel,
 } = useAdjustmentForm();
+
+watch(
+  () => props.prefill,
+  (p) => {
+    if (!p) return;
+    applyPrefill(p);
+    emit("consumedPrefill");
+  },
+  { immediate: true },
+);
 </script>
 
 <template>
@@ -49,8 +69,8 @@ const {
         />
       </div>
       <p class="text-sm text-tl-muted">
-        Record money moved outside expenses and pools — prior cash, IOUs, or
-        settle-ups already paid — so Settle up stays accurate.
+        Record settle-ups and cash moved outside expenses. If someone paid a
+        shared bill, log that under Expenses (payer can be in the split).
       </p>
 
       <div>
@@ -61,7 +81,7 @@ const {
           option-label="displayName"
           option-value="id"
           placeholder="Who paid?"
-          class="w-full"
+          class="w-full tl-control"
         />
       </div>
 
@@ -69,63 +89,95 @@ const {
         <label class="tl-input-label">Amount (Rs)</label>
         <InputNumber
           v-model="amountRupees"
-          class="w-full"
+          class="w-full tl-control"
           :min-fraction-digits="0"
           :max-fraction-digits="2"
         />
       </div>
 
-      <div>
-        <label class="tl-input-label">Note</label>
-        <InputText
-          v-model="reason"
-          class="w-full"
-          placeholder="Optional"
-        />
-      </div>
-
-      <div>
+      <div v-if="editingAdjustmentId">
         <label class="tl-input-label">Received by</label>
         <Select
-          v-if="editingAdjustmentId"
           v-model="editReceivedById"
           :options="recipientOptions"
           option-label="displayName"
           option-value="id"
           placeholder="Who received?"
-          class="w-full"
-        />
-        <MultiSelect
-          v-else
-          v-model="receivedByIds"
-          :options="recipientOptions"
-          option-label="displayName"
-          option-value="id"
-          placeholder="One or more friends"
-          display="chip"
-          class="w-full"
-          :filter="recipientOptions.length > 6"
+          class="w-full tl-control"
         />
       </div>
 
-      <template v-if="showSplitControls">
+      <div v-else class="space-y-2">
+        <label class="tl-input-label">Split with</label>
+        <p class="text-xs text-tl-muted">
+          Include everyone this payment covers. The payer can be included; their
+          share is not recorded as a transfer.
+        </p>
+        <ul class="split-with-list">
+          <li v-for="p in splitPeople" :key="p.participantId">
+            <label class="split-with-row">
+              <input
+                type="checkbox"
+                :checked="p.included"
+                :aria-label="`Include ${p.displayName}`"
+                @change="
+                  toggleIncluded(
+                    p.participantId,
+                    ($event.target as HTMLInputElement).checked,
+                  )
+                "
+              />
+              <span>{{ p.displayName }}</span>
+              <span
+                v-if="p.participantId === paidById"
+                class="text-xs text-tl-muted"
+              >
+                (payer)
+              </span>
+            </label>
+          </li>
+        </ul>
+      </div>
+
+      <div
+        v-if="paymentPreview && !showSplitControls"
+        class="rounded-md border border-tl-hairline bg-tl-elevated px-3 py-2 text-sm text-tl"
+      >
+        {{ paymentPreview }}
+      </div>
+
+      <template v-if="showSplitControls && isEnabled('advanced_splits')">
         <div>
-          <label class="tl-input-label">Split among recipients</label>
+          <label class="tl-input-label">How to split</label>
           <Select
             v-model="splitMode"
             :options="SPLIT_MODES"
             option-label="label"
             option-value="value"
-            class="w-full"
+            class="w-full tl-control"
           />
+          <p v-if="paymentPreview" class="mt-1 text-xs text-tl-muted">
+            {{ paymentPreview }}
+          </p>
         </div>
+        <!-- Weights only for included people; inclusion stays on the checklist above -->
         <SplitMatrix
           :mode="splitMode"
-          :people="recipientSplits"
+          :people="splitPeople.filter((p) => p.included)"
           :total-paisa="Math.round(Number(amountRupees ?? 0) * 100)"
-          @change="onRecipientSplitChange"
+          lock-included
+          @change="onSplitPersonChange"
         />
       </template>
+
+      <div>
+        <label class="tl-input-label">Note</label>
+        <InputText
+          v-model="reason"
+          class="w-full tl-control"
+          placeholder="Optional"
+        />
+      </div>
 
       <div class="flex flex-wrap gap-2">
         <Button
@@ -176,3 +228,34 @@ const {
     </div>
   </div>
 </template>
+
+<style scoped>
+.split-with-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border: 1px solid var(--tl-hairline, #e5e7eb);
+  border-radius: 0.5rem;
+  overflow: hidden;
+}
+
+.split-with-row {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.65rem 0.85rem;
+  border-bottom: 1px solid var(--tl-hairline, #e5e7eb);
+  cursor: pointer;
+  font-size: 0.95rem;
+}
+
+.split-with-list li:last-child .split-with-row {
+  border-bottom: none;
+}
+
+.split-with-row input {
+  width: 1.05rem;
+  height: 1.05rem;
+  accent-color: var(--tl-accent, #0f766e);
+}
+</style>

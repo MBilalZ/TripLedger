@@ -21,6 +21,7 @@ const { success, error } = useFeedback();
 const receipts = ref<ExpenseReceiptMeta[]>([]);
 const loading = ref(false);
 const uploading = ref(false);
+const fileInput = ref<HTMLInputElement | null>(null);
 
 async function refresh() {
   if (!auth.cloud) {
@@ -81,11 +82,17 @@ watch(
 </script>
 
 <template>
-  <div v-if="auth.cloud" class="space-y-2 border-t border-tl-border pt-2">
+  <div class="space-y-2 border-t border-tl pt-2">
     <div class="flex items-center justify-between gap-2">
-      <span class="text-xs font-medium text-tl-muted">Receipts</span>
-      <label class="inline-flex">
+      <div>
+        <div class="text-xs font-medium text-tl-muted">Receipts</div>
+        <div v-if="!auth.cloud" class="text-xs text-tl-muted">
+          Sign in with cloud to attach images or PDFs.
+        </div>
+      </div>
+      <template v-if="auth.cloud">
         <input
+          ref="fileInput"
           type="file"
           class="sr-only"
           accept="image/*,application/pdf"
@@ -93,41 +100,52 @@ watch(
           @change="onFile"
         />
         <Button
-          as="span"
           label="Attach"
-          icon="pi pi-paperclip"
+          icon="pi pi-camera"
           size="small"
-          text
+          outlined
           :loading="uploading"
+          @click="fileInput?.click()"
         />
-      </label>
+      </template>
     </div>
-    <p v-if="loading" class="text-xs text-tl-muted">Loading…</p>
-    <ul v-else class="m-0 list-none space-y-1 p-0">
-      <li
-        v-for="r in receipts"
-        :key="r.id"
-        class="flex items-center justify-between gap-2 text-sm"
-      >
-        <button
-          type="button"
-          class="truncate text-left text-tl-accent underline"
-          @click="openReceipt(r)"
+    <template v-if="auth.cloud">
+      <p v-if="loading" class="text-xs text-tl-muted">Loading…</p>
+      <ul v-else class="m-0 list-none space-y-1 p-0">
+        <li
+          v-for="r in receipts"
+          :key="r.id"
+          class="flex items-center justify-between gap-2 rounded-md bg-tl-elevated px-2 py-1.5 text-sm"
         >
-          {{ r.contentType.startsWith("image/") ? "Image" : "File" }}
-          ({{ Math.round(r.byteSize / 1024) }} KB)
-        </button>
-        <Button
-          icon="pi pi-trash"
-          severity="danger"
-          text
-          rounded
-          size="small"
-          aria-label="Delete receipt"
-          @click="remove(r)"
-        />
-      </li>
-      <li v-if="!receipts.length" class="text-xs text-tl-muted">No receipts</li>
-    </ul>
+          <button
+            type="button"
+            class="truncate text-left text-tl-accent underline"
+            @click="openReceipt(r)"
+          >
+            <i
+              class="pi mr-1"
+              :class="
+                r.contentType.startsWith('image/') ? 'pi-image' : 'pi-file'
+              "
+              aria-hidden="true"
+            />
+            {{ r.contentType.startsWith("image/") ? "Photo" : "PDF" }}
+            · {{ Math.round(r.byteSize / 1024) }} KB
+          </button>
+          <Button
+            icon="pi pi-trash"
+            severity="danger"
+            text
+            rounded
+            size="small"
+            aria-label="Delete receipt"
+            @click="remove(r)"
+          />
+        </li>
+        <li v-if="!receipts.length" class="text-xs text-tl-muted">
+          No receipts yet — attach a photo of the bill.
+        </li>
+      </ul>
+    </template>
   </div>
 </template>

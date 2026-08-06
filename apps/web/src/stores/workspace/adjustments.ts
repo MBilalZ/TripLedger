@@ -10,6 +10,9 @@ import type { WorkspaceState } from "./state";
  * Payments (adjustments): money moved outside expenses/pools.
  * Engine: fromId adjNet -= amount, toId adjNet += amount.
  * Splitwise "X paid Y" → Y owes X less / X is owed: fromId=Y (received), toId=X (paid by).
+ *
+ * Split-with may include the payer; allocation runs over everyone included, then
+ * payer slices are skipped (they already "paid themselves").
  */
 export function createAdjustmentActions(state: WorkspaceState, core: CoreActions) {
   async function addAdjustment(input: {
@@ -59,15 +62,28 @@ export function createAdjustmentActions(state: WorkspaceState, core: CoreActions
   }) {
     if (!input.paidById) throw new Error("Select who paid");
     const amountPaisa = parseRupeesToPaisa(input.amountRupees);
-    const lines = input.recipients.filter(
-      (d) => d.included && d.participantId !== input.paidById,
-    );
-    if (!lines.length) throw new Error("Select at least one friend who received");
+    const lines = input.recipients.filter((d) => d.included);
+    if (!lines.length) {
+      throw new Error("Include at least one person in Split with");
+    }
+    const nonPayerLines = lines.filter((d) => d.participantId !== input.paidById);
+    if (!nonPayerLines.length) {
+      throw new Error("Include at least one friend besides the payer");
+    }
+
     const alloc = allocateSplit(amountPaisa, input.splitMode, lines);
     if (alloc.error) throw new Error(alloc.error);
-    const groupId = newId("adjg");
-    for (const slice of alloc.slices) {
-      if (slice.sharePaisa <= 0) continue;
+
+    const transferSlices = alloc.slices.filter(
+      (slice) =>
+        slice.sharePaisa > 0 && slice.participantId !== input.paidById,
+    );
+    if (!transferSlices.length) {
+      throw new Error("Include at least one friend besides the payer");
+    }
+
+    const groupId = transferSlices.length > 1 ? newId("adjg") : null;
+    for (const slice of transferSlices) {
       const row: AdjustmentRow = {
         id: newId("adj"),
         tripId: state.tripId.value,
