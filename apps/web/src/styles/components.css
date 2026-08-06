@@ -97,6 +97,12 @@ button.tl-list-row {
   overflow-x: auto;
   padding-bottom: var(--tl-space-1);
   -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.tl-chip-bar::-webkit-scrollbar {
+  display: none;
 }
 
 .tl-chip {
