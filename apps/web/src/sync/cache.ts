@@ -116,7 +116,6 @@ export async function deleteCachedTrip(tripId: string): Promise<void> {
       db.expenses,
       db.expenseSplits,
       db.adjustments,
-      db.receipts,
       db.syncMeta,
       db.outbox,
     ],
@@ -127,7 +126,6 @@ export async function deleteCachedTrip(tripId: string): Promise<void> {
       await db.expenses.where("tripId").equals(tripId).delete();
       await db.expenseSplits.where("tripId").equals(tripId).delete();
       await db.adjustments.where("tripId").equals(tripId).delete();
-      await db.receipts.where("tripId").equals(tripId).delete();
       await db.outbox.where("tripId").equals(tripId).delete();
       await db.syncMeta.delete(tripId);
       await db.trips.delete(tripId);

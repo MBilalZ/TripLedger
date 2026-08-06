@@ -5,7 +5,6 @@
 export type Feature =
   | "charts"
   | "exports"
-  | "receipts"
   | "advanced_splits"
   | "activity_feed"
   | "settlement_modes";
@@ -14,7 +13,6 @@ export type Feature =
 const FLAGS: Record<Feature, boolean> = {
   charts: true,
   exports: true,
-  receipts: true,
   advanced_splits: true,
   activity_feed: true,
   settlement_modes: true,

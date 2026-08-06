@@ -91,19 +91,6 @@ function runExport(item: MenuItem) {
           </div>
           <i class="pi pi-link text-tl-muted" />
         </button>
-        <div class="tl-list-row">
-          <div>
-            <div class="font-medium">Receipts</div>
-            <div class="text-xs text-tl-muted">
-              {{
-                isEnabled("receipts")
-                  ? "Attach images or PDFs on each expense"
-                  : "Unavailable"
-              }}
-            </div>
-          </div>
-          <i class="pi pi-images text-tl-muted" />
-        </div>
         <button
           v-if="canDeleteTrip"
           type="button"

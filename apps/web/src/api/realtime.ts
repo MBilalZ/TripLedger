@@ -9,7 +9,6 @@ const TABLES = [
   "expense_splits",
   "adjustments",
   "trip_members",
-  "expense_receipts",
 ] as const;
 
 export function subscribeTripChanges(

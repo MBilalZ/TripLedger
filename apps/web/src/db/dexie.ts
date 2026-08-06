@@ -118,15 +118,6 @@ export interface AdjustmentRow {
   groupId?: string | null;
 }
 
-export interface ReceiptRow {
-  id: string;
-  tripId: string;
-  expenseId: string;
-  mime: string;
-  blob: Blob;
-  createdAt: string;
-}
-
 export class TripLedgerDB extends Dexie {
   trips!: Table<TripRow, string>;
   participants!: Table<ParticipantRow, string>;
@@ -135,7 +126,6 @@ export class TripLedgerDB extends Dexie {
   expenses!: Table<ExpenseRow, string>;
   expenseSplits!: Table<ExpenseSplitRow, string>;
   adjustments!: Table<AdjustmentRow, string>;
-  receipts!: Table<ReceiptRow, string>;
   syncMeta!: Table<SyncMetaRow, string>;
   outbox!: Table<OutboxRow, string>;
 
@@ -202,6 +192,18 @@ export class TripLedgerDB extends Dexie {
       expenseSplits: "id, tripId, expenseId, [expenseId+participantId]",
       adjustments: "id, tripId, createdAt",
       receipts: "id, tripId, expenseId",
+      syncMeta: "tripId, userId",
+      outbox: "id, tripId, createdAt",
+    });
+    this.version(4).stores({
+      trips: "id, updatedAt, cloudUserId",
+      participants: "id, tripId, displayName",
+      pools: "id, tripId, name",
+      poolMembers: "id, tripId, poolId, [poolId+participantId]",
+      expenses: "id, tripId, poolId, supersededById, createdAt",
+      expenseSplits: "id, tripId, expenseId, [expenseId+participantId]",
+      adjustments: "id, tripId, createdAt",
+      receipts: null,
       syncMeta: "tripId, userId",
       outbox: "id, tripId, createdAt",
     });

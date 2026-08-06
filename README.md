@@ -4,7 +4,7 @@
 
 Named **pools** (Hotel, BBQ, Fuel, …) carry who shares and the default split; **payments** record cash outside the expense feed. Settlement stays integer-paisa / PKR.
 
-**UAT / public testing:** every capability is unlocked (charts, exports, receipts, advanced splits). There is no subscription UI yet — flags live in `apps/web/src/lib/features.ts` for a future paywall. Monetization is deferred.
+**UAT / public testing:** every capability is unlocked (charts, exports, advanced splits). There is no subscription UI yet — flags live in `apps/web/src/lib/features.ts` for a future paywall. Monetization is deferred.
 
 **Cost: free-tier friendly** — Vue SPA on GitHub Pages + optional **Supabase** (email/password auth with no confirmation email, Postgres, Realtime, Edge Functions) for shared trips, invite links, and Web Push. Without Supabase env vars, the app runs locally on this device (IndexedDB / PWA offline).
 
@@ -12,7 +12,7 @@ Named **pools** (Hotel, BBQ, Fuel, …) carry who shares and the default split; 
 
 - **App:** Vue 3 + Vite + Pinia + PrimeVue + vue-router + PWA (`vite-plugin-pwa`)
 - **Local / offline:** Dexie (IndexedDB) + outbox sync when cloud is enabled
-- **Cloud:** Supabase Auth, Postgres + RLS, Realtime, Storage, Edge Functions
+- **Cloud:** Supabase Auth, Postgres + RLS, Realtime, Edge Functions
 - **Domain packages:** `@tripledger/types`, `@tripledger/engine` (integer paisa settlement), `@tripledger/validation`
 - **Push:** Web Push + VAPID (`send-push` Edge Function)
 
