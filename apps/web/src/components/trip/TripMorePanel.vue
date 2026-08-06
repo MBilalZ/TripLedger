@@ -6,6 +6,7 @@ import type { MoreSection } from "@/composables/useTripTabs";
 import { isEnabled } from "@/lib/features";
 import { useWorkspaceStore } from "@/stores/workspace";
 import TripPeopleSection from "./TripPeopleSection.vue";
+import TripPoolsSection from "./TripPoolsSection.vue";
 
 defineProps<{
   visible: boolean;
@@ -26,7 +27,7 @@ const emit = defineEmits<{
 }>();
 
 const store = useWorkspaceStore();
-const { participants } = storeToRefs(store);
+const { participants, pools } = storeToRefs(store);
 
 function runExport(item: MenuItem) {
   if (typeof item.command === "function") {
@@ -40,7 +41,7 @@ function runExport(item: MenuItem) {
   <div v-show="visible" class="space-y-4">
     <template v-if="moreSection === 'menu'">
       <div class="tl-card space-y-1">
-        <h2 class="tl-section-title">People</h2>
+        <h2 class="tl-section-title">People & pools</h2>
         <button
           type="button"
           class="tl-list-row w-full text-left"
@@ -50,6 +51,19 @@ function runExport(item: MenuItem) {
             <div class="font-medium">Friends</div>
             <div class="text-xs text-tl-muted">
               {{ participants.length }} friend(s) in this group
+            </div>
+          </div>
+          <i class="pi pi-chevron-right text-tl-muted" />
+        </button>
+        <button
+          type="button"
+          class="tl-list-row w-full text-left"
+          @click="emit('openMore', 'pools')"
+        >
+          <div>
+            <div class="font-medium">Pools</div>
+            <div class="text-xs text-tl-muted">
+              {{ pools.length }} pool(s) · sharing groups
             </div>
           </div>
           <i class="pi pi-chevron-right text-tl-muted" />
@@ -117,6 +131,7 @@ function runExport(item: MenuItem) {
         <h2 class="text-lg font-semibold text-tl">{{ moreTitle }}</h2>
       </div>
       <TripPeopleSection v-if="moreSection === 'people'" />
+      <TripPoolsSection v-else-if="moreSection === 'pools'" />
     </template>
   </div>
 </template>

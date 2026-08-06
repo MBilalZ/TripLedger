@@ -7,6 +7,7 @@ import InputNumber from "primevue/inputnumber";
 import InputText from "primevue/inputtext";
 import Select from "primevue/select";
 import Textarea from "primevue/textarea";
+import AppLoading from "@/components/AppLoading.vue";
 import SplitMatrix from "@/components/SplitMatrix.vue";
 import { EXPENSE_CATEGORIES, SPLIT_MODES } from "@/constants/tripOptions";
 import { useExpenseForm } from "@/composables/useExpenseForm";
@@ -73,8 +74,8 @@ watch(
 </script>
 
 <template>
-  <div v-if="loading" class="text-tl-muted" role="status">Loading…</div>
-  <div v-else-if="!trip" class="tl-card">Group not found.</div>
+  <AppLoading v-if="loading && (!trip || trip.id !== tripId)" />
+  <div v-else-if="!trip || trip.id !== tripId" class="tl-card">Group not found.</div>
   <div v-else-if="!canAddExpenses" class="tl-card space-y-3">
     <h3 class="tl-section-title mb-0">Add friends first</h3>
     <p class="text-sm text-tl-muted">

@@ -16,6 +16,7 @@ export const useTripsStore = defineStore("trips", () => {
   const trips = ref<TripRow[]>([]);
   const tripRoles = ref<Record<string, "owner" | "member" | null>>({});
   const loading = ref(false);
+  let revalidateTimer: ReturnType<typeof setTimeout> | null = null;
 
   const cloud = computed(() => auth.cloud);
   const authReady = computed(() => auth.authReady);
@@ -36,31 +37,49 @@ export const useTripsStore = defineStore("trips", () => {
     tripRoles.value = next;
   }
 
-  async function refresh() {
-    loading.value = true;
+  async function applyList() {
+    trips.value = await getTripRepos().list();
+    if (auth.cloud) await loadRoles(trips.value.map((t) => t.id));
+    else tripRoles.value = {};
+  }
+
+  function scheduleRevalidate() {
+    if (!auth.cloud) return;
+    if (revalidateTimer) clearTimeout(revalidateTimer);
+    revalidateTimer = setTimeout(() => {
+      revalidateTimer = null;
+      void import("@/sync/engine").then(({ syncAllCloudTrips }) =>
+        syncAllCloudTrips().then(() => refresh({ quiet: true, revalidate: false })),
+      );
+    }, 0);
+  }
+
+  async function refresh(opts: { quiet?: boolean; revalidate?: boolean } = {}) {
+    const quiet = opts.quiet ?? trips.value.length > 0;
+    const revalidate = opts.revalidate ?? true;
+    if (!quiet) loading.value = true;
     try {
-      trips.value = await getTripRepos().list();
-      if (auth.cloud) await loadRoles(trips.value.map((t) => t.id));
-      else tripRoles.value = {};
+      await applyList();
     } finally {
-      loading.value = false;
+      if (!quiet) loading.value = false;
     }
+    if (revalidate) scheduleRevalidate();
   }
 
   async function createTrip(name: string, options: CreateTripOptions = {}) {
     const id = await getTripRepos().create(name, options);
-    await refresh();
+    await refresh({ quiet: true });
     return id;
   }
 
   async function deleteTrip(tripId: string) {
     await getTripRepos().delete(tripId);
-    await refresh();
+    await refresh({ quiet: true });
   }
 
   async function leaveTrip(tripId: string): Promise<LeaveTripResult> {
     const result = await getTripRepos().leave(tripId);
-    await refresh();
+    await refresh({ quiet: true });
     return result;
   }
 
@@ -73,7 +92,7 @@ export const useTripsStore = defineStore("trips", () => {
       throw new Error("Sample seed is only available in local (Dexie) mode");
     }
     const id = await seedSampleTrip();
-    await refresh();
+    await refresh({ quiet: true, revalidate: false });
     return id;
   }
 

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { storeToRefs } from "pinia";
+import { computed } from "vue";
 import Button from "primevue/button";
 import Select from "primevue/select";
 import { formatPkr, paisaToRupees } from "@tripledger/engine";
@@ -18,6 +19,9 @@ const emit = defineEmits<{
 
 const store = useWorkspaceStore();
 const { trip, participants, settlement, isOwner } = storeToRefs(store);
+const useRounded = computed(
+  () => (trip.value?.settlementRounding ?? "rupee") === "rupee",
+);
 
 function recordAsPayment(t: {
   fromId: string;
@@ -119,13 +123,12 @@ function recordAsPayment(t: {
             <strong>{{ t.toName }}</strong>
           </div>
           <div class="mt-1 text-lg font-semibold text-tl-accent-bright">
-            {{ formatPkr(t.amountPaisa) }}
+            {{ formatPkr(t.amountPaisa, useRounded ? 0 : undefined) }}
           </div>
         </div>
         <Button
           label="Record"
           icon="pi pi-wallet"
-          size="small"
           outlined
           @click="recordAsPayment(t)"
         />

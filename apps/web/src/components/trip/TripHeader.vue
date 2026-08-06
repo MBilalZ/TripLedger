@@ -1,13 +1,9 @@
 <script setup lang="ts">
-import { ref } from "vue";
 import Button from "primevue/button";
 import InputText from "primevue/inputtext";
-import Menu from "primevue/menu";
 import Tag from "primevue/tag";
-import type { MenuItem } from "primevue/menuitem";
 import { formatPkr } from "@tripledger/engine";
 import type { TripRow } from "@/db/dexie";
-import { isEnabled } from "@/lib/features";
 
 defineProps<{
   trip: TripRow;
@@ -16,11 +12,7 @@ defineProps<{
   memberCount: number;
   editingTrip: boolean;
   tripNameDraft: string;
-  showInvite: boolean;
   canEditTrip: boolean;
-  canDeleteTrip: boolean;
-  inviting: boolean;
-  exportItems: MenuItem[];
 }>();
 
 const emit = defineEmits<{
@@ -28,125 +20,60 @@ const emit = defineEmits<{
   startEdit: [];
   cancelEdit: [];
   save: [];
-  invite: [];
-  delete: [];
-  goSettle: [];
-  goCharts: [];
 }>();
-
-const exportMenu = ref<InstanceType<typeof Menu> | null>(null);
-
-function toggleExport(event: Event) {
-  exportMenu.value?.toggle(event);
-}
 </script>
 
 <template>
   <div class="tl-card space-y-3">
-    <div class="flex items-start justify-between gap-2">
-      <div class="min-w-0 flex-1">
-        <router-link to="/" class="text-xs text-tl-accent no-underline"
-          >← All groups</router-link
-        >
-        <div v-if="!editingTrip" class="mt-1 flex flex-wrap items-center gap-2">
-          <h1 class="text-2xl font-semibold text-tl">{{ trip.name }}</h1>
+    <div class="min-w-0">
+      <router-link to="/" class="text-xs text-tl-accent no-underline"
+        >← All groups</router-link
+      >
+      <div v-if="!editingTrip" class="mt-1 flex flex-wrap items-center gap-2">
+        <h1 class="text-2xl font-semibold text-tl">{{ trip.name }}</h1>
+        <Button
+          v-if="canEditTrip"
+          icon="pi pi-pencil"
+          text
+          rounded
+          size="small"
+          v-tooltip="'Edit group'"
+          @click="emit('startEdit')"
+        />
+      </div>
+      <div v-else class="mt-2 flex flex-col gap-2">
+        <div>
+          <label class="tl-input-label">Group name</label>
+          <InputText
+            :model-value="tripNameDraft"
+            class="w-full"
+            @update:model-value="emit('update:tripNameDraft', String($event))"
+          />
+        </div>
+        <div class="flex flex-wrap gap-2">
+          <Button label="Save" size="small" @click="emit('save')" />
           <Button
-            v-if="canEditTrip"
-            icon="pi pi-pencil"
-            text
-            rounded
+            label="Cancel"
             size="small"
-            v-tooltip="'Edit group'"
-            @click="emit('startEdit')"
+            severity="secondary"
+            outlined
+            @click="emit('cancelEdit')"
           />
         </div>
-        <div v-else class="mt-2 flex flex-col gap-2">
-          <div>
-            <label class="tl-input-label">Group name</label>
-            <InputText
-              :model-value="tripNameDraft"
-              class="w-full"
-              @update:model-value="emit('update:tripNameDraft', String($event))"
-            />
-          </div>
-          <div class="flex flex-wrap gap-2">
-            <Button label="Save" size="small" @click="emit('save')" />
-            <Button
-              label="Cancel"
-              size="small"
-              severity="secondary"
-              outlined
-              @click="emit('cancelEdit')"
-            />
-          </div>
-        </div>
-        <div class="mt-2 flex flex-wrap items-center gap-2">
-          <span class="tl-member-chip">
-            <i class="pi pi-users" aria-hidden="true" />
-            {{ memberCount }} {{ memberCount === 1 ? "person" : "people" }}
-          </span>
-          <Tag
-            :severity="balanced ? 'success' : 'danger'"
-            :value="balanced ? 'Balanced' : 'Consistency error'"
-          />
-          <span class="text-sm text-tl-muted">
-            Total {{ formatPkr(tripTotalPaisa, 0) }} · PKR
-          </span>
-        </div>
       </div>
-      <div class="flex shrink-0 flex-wrap justify-end gap-1">
-        <Button
-          v-if="showInvite"
-          icon="pi pi-user-plus"
-          severity="secondary"
-          outlined
-          rounded
-          aria-label="Copy invite link"
-          v-tooltip="'Copy invite link'"
-          :loading="inviting"
-          @click="emit('invite')"
+      <div class="mt-2 flex flex-wrap items-center gap-2">
+        <span class="tl-member-chip">
+          <i class="pi pi-users" aria-hidden="true" />
+          {{ memberCount }} {{ memberCount === 1 ? "person" : "people" }}
+        </span>
+        <Tag
+          :severity="balanced ? 'success' : 'danger'"
+          :value="balanced ? 'Balanced' : 'Consistency error'"
         />
-        <Button
-          v-if="canDeleteTrip"
-          icon="pi pi-trash"
-          severity="danger"
-          outlined
-          rounded
-          aria-label="Delete group"
-          v-tooltip="'Delete group'"
-          @click="emit('delete')"
-        />
+        <span class="text-sm text-tl-muted">
+          Total {{ formatPkr(tripTotalPaisa, 0) }} · PKR
+        </span>
       </div>
-    </div>
-
-    <div class="tl-chip-bar">
-      <button type="button" class="tl-chip" @click="emit('goSettle')">
-        Settle up
-      </button>
-      <button
-        v-if="isEnabled('charts')"
-        type="button"
-        class="tl-chip"
-        @click="emit('goCharts')"
-      >
-        Charts
-      </button>
-      <button
-        v-if="isEnabled('exports')"
-        type="button"
-        class="tl-chip"
-        aria-haspopup="true"
-        aria-controls="trip_export_menu"
-        @click="toggleExport"
-      >
-        Export
-      </button>
-      <Menu
-        id="trip_export_menu"
-        ref="exportMenu"
-        :model="exportItems"
-        popup
-      />
     </div>
   </div>
 </template>

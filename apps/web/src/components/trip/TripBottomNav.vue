@@ -8,7 +8,6 @@ const tabs: { id: MainTab; label: string; icon: string }[] = [
   { id: "expenses", label: "Expenses", icon: "pi pi-receipt" },
   { id: "balances", label: "Balances", icon: "pi pi-chart-bar" },
   { id: "settle", label: "Settle", icon: "pi pi-sync" },
-  { id: "pools", label: "Pools", icon: "pi pi-th-large" },
   { id: "payments", label: "Payments", icon: "pi pi-wallet" },
   { id: "more", label: "More", icon: "pi pi-ellipsis-h" },
 ];

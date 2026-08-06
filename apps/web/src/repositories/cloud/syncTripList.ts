@@ -54,15 +54,21 @@ async function enqueueAndRun(
 export const syncCloudTripListRepo: TripListRepo = {
   async list() {
     const user = await requireUser();
-    if (online()) {
-      try {
-        await syncAllCloudTrips();
-        return filterPendingDeletes(await tripsApi.listTrips());
-      } catch {
-        return filterPendingDeletes(await listCachedCloudTrips(user));
-      }
+    const cached = await filterPendingDeletes(await listCachedCloudTrips(user));
+
+    if (!online()) return cached;
+
+    // Stale-while-revalidate: paint from Dexie; caller revalidates in background.
+    if (cached.length) return cached;
+
+    try {
+      await syncAllCloudTrips();
+      const fresh = await filterPendingDeletes(await listCachedCloudTrips(user));
+      if (fresh.length) return fresh;
+      return filterPendingDeletes(await tripsApi.listTrips());
+    } catch {
+      return cached;
     }
-    return filterPendingDeletes(await listCachedCloudTrips(user));
   },
 
   async create(name, options: CreateTripOptions = {}) {

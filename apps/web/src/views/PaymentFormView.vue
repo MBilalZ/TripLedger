@@ -5,6 +5,7 @@ import Button from "primevue/button";
 import InputNumber from "primevue/inputnumber";
 import InputText from "primevue/inputtext";
 import Select from "primevue/select";
+import AppLoading from "@/components/AppLoading.vue";
 import SplitMatrix from "@/components/SplitMatrix.vue";
 import { SPLIT_MODES } from "@/constants/tripOptions";
 import { useAdjustmentForm } from "@/composables/useAdjustmentForm";
@@ -87,8 +88,8 @@ watch(
 </script>
 
 <template>
-  <div v-if="loading" class="text-tl-muted" role="status">Loading…</div>
-  <div v-else-if="!trip" class="tl-card">Group not found.</div>
+  <AppLoading v-if="loading && (!trip || trip.id !== tripId)" />
+  <div v-else-if="!trip || trip.id !== tripId" class="tl-card">Group not found.</div>
   <div v-else class="space-y-4">
     <div class="tl-card grid gap-3">
       <div class="flex items-center justify-between gap-2">

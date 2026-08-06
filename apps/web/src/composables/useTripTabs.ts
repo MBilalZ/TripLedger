@@ -1,8 +1,8 @@
 import { computed, ref, watch } from "vue";
 
-export type MainTab = "expenses" | "balances" | "settle" | "pools" | "payments" | "more";
+export type MainTab = "expenses" | "balances" | "settle" | "payments" | "more";
 
-export type MoreSection = "menu" | "people";
+export type MoreSection = "menu" | "people" | "pools";
 
 export type PaymentPrefill = {
   paidById: string;
@@ -15,12 +15,15 @@ const MAIN_TABS: ReadonlySet<MainTab> = new Set([
   "expenses",
   "balances",
   "settle",
-  "pools",
   "payments",
   "more",
 ]);
 
-const MORE_SECTIONS: ReadonlySet<MoreSection> = new Set(["menu", "people"]);
+const MORE_SECTIONS: ReadonlySet<MoreSection> = new Set([
+  "menu",
+  "people",
+  "pools",
+]);
 
 type PersistedTripUi = {
   activeTab: MainTab;
@@ -31,26 +34,38 @@ function storageKey(tripId: string) {
   return `tl:tripUi:${tripId}`;
 }
 
+function normalizePersisted(raw: unknown): PersistedTripUi | null {
+  if (!raw || typeof raw !== "object") return null;
+  const parsed = raw as { activeTab?: string; moreSection?: string };
+  let activeTab = parsed.activeTab;
+  let moreSection = parsed.moreSection ?? "menu";
+
+  // Legacy: Pools was a main tab — migrate into More → Pools.
+  if (activeTab === "pools") {
+    activeTab = "more";
+    moreSection = "pools";
+  }
+
+  if (
+    typeof activeTab !== "string" ||
+    !MAIN_TABS.has(activeTab as MainTab) ||
+    typeof moreSection !== "string" ||
+    !MORE_SECTIONS.has(moreSection as MoreSection)
+  ) {
+    return null;
+  }
+  return {
+    activeTab: activeTab as MainTab,
+    moreSection: moreSection as MoreSection,
+  };
+}
+
 function readPersisted(tripId: string): PersistedTripUi | null {
   if (typeof localStorage === "undefined" || !tripId) return null;
   try {
     const raw = localStorage.getItem(storageKey(tripId));
     if (!raw) return null;
-    const parsed = JSON.parse(raw) as Partial<PersistedTripUi>;
-    const activeTab = parsed.activeTab;
-    const moreSection = parsed.moreSection;
-    if (
-      typeof activeTab !== "string" ||
-      !MAIN_TABS.has(activeTab as MainTab) ||
-      typeof moreSection !== "string" ||
-      !MORE_SECTIONS.has(moreSection as MoreSection)
-    ) {
-      return null;
-    }
-    return {
-      activeTab: activeTab as MainTab,
-      moreSection: moreSection as MoreSection,
-    };
+    return normalizePersisted(JSON.parse(raw));
   } catch {
     return null;
   }
@@ -73,6 +88,7 @@ export function useTripTabs(tripId: () => string) {
 
   const moreTitle = computed(() => {
     if (moreSection.value === "people") return "Friends";
+    if (moreSection.value === "pools") return "Pools";
     return "More";
   });
 

@@ -12,10 +12,12 @@ import { useTripsStore } from "@/stores/trips";
 import { downloadFullBackup, importBackupFile } from "@/lib/backup";
 import { isSupabaseConfigured } from "@/services/supabase";
 import { toApiError } from "@/services/errors";
+import AppLoading from "@/components/AppLoading.vue";
 import {
   buildTripSummaries,
   filterSummaries,
   overallBalancePaisa,
+  overallUsesRounding,
   type GroupBalanceFilter,
   type TripSummary,
 } from "@/lib/tripSummaries";
@@ -39,26 +41,29 @@ const myNames = computed(() => {
   return names;
 });
 
-async function refreshSummaries() {
-  summariesLoading.value = true;
+async function refreshSummaries(opts: { quiet?: boolean } = {}) {
+  const quiet = opts.quiet ?? summaries.value.length > 0;
+  if (!quiet) summariesLoading.value = true;
   try {
     summaries.value = await buildTripSummaries(store.trips, myNames.value);
   } finally {
-    summariesLoading.value = false;
+    if (!quiet) summariesLoading.value = false;
   }
 }
 
 onMounted(async () => {
   if (!auth.authReady) await auth.initAuth();
   if (auth.cloud || !isSupabaseConfigured()) {
-    await store.refresh();
+    // Cache-first: paint immediately when store already has trips.
+    if (store.trips.length) await refreshSummaries({ quiet: true });
+    await store.refresh({ quiet: store.trips.length > 0 });
   }
-  await refreshSummaries();
+  await refreshSummaries({ quiet: summaries.value.length > 0 });
 });
 
 watch(
   () => store.trips.map((t) => t.id + t.updatedAt).join("|"),
-  () => void refreshSummaries(),
+  () => void refreshSummaries({ quiet: true }),
 );
 
 const visibleSummaries = computed(() =>
@@ -66,6 +71,7 @@ const visibleSummaries = computed(() =>
 );
 
 const overall = computed(() => overallBalancePaisa(summaries.value));
+const overallRounded = computed(() => overallUsesRounding(summaries.value));
 
 const overallLabel = computed(() => {
   const b = overall.value;
@@ -244,7 +250,7 @@ function balanceClass(paisa: number | null) {
               class="ml-1 font-semibold"
               :class="balanceClass(overall)"
             >
-              {{ formatPkr(Math.abs(overall)) }}
+              {{ formatPkr(Math.abs(overall), overallRounded ? 0 : undefined) }}
             </span>
           </p>
         </div>
@@ -300,9 +306,9 @@ function balanceClass(paisa: number | null) {
     <section class="grid gap-3" aria-label="Group list">
       <div
         v-if="summariesLoading && !visibleSummaries.length"
-        class="tl-card text-center text-tl-muted"
+        class="tl-card"
       >
-        Loading…
+        <AppLoading />
       </div>
       <div
         v-else-if="!visibleSummaries.length"
@@ -339,11 +345,11 @@ function balanceClass(paisa: number | null) {
             >
               <template v-if="s.topCounterparty.paisa < 0">
                 You owe {{ s.topCounterparty.name }}
-                {{ formatPkr(-s.topCounterparty.paisa) }}
+                {{ formatPkr(-s.topCounterparty.paisa, s.rounded ? 0 : undefined) }}
               </template>
               <template v-else>
                 {{ s.topCounterparty.name }} owes you
-                {{ formatPkr(s.topCounterparty.paisa) }}
+                {{ formatPkr(s.topCounterparty.paisa, s.rounded ? 0 : undefined) }}
               </template>
             </div>
           </div>

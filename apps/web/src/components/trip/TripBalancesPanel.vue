@@ -1,21 +1,13 @@
 <script setup lang="ts">
 import { storeToRefs } from "pinia";
 import { computed } from "vue";
-import Button from "primevue/button";
-import { formatPkr, paisaToRupees } from "@tripledger/engine";
+import { formatPkr } from "@tripledger/engine";
 import { useTripCharts } from "@/composables/useTripCharts";
 import { isEnabled } from "@/lib/features";
 import { useWorkspaceStore } from "@/stores/workspace";
 
 defineProps<{
   visible: boolean;
-  formatTransferAmount: (amountRupees: number) => string;
-}>();
-
-const emit = defineEmits<{
-  recordPayment: [
-    payload: { paidById: string; receivedById: string; amountRupees: number },
-  ];
 }>();
 
 const store = useWorkspaceStore();
@@ -26,7 +18,6 @@ const {
   chartByPersonPaid,
   chartByPersonShare,
 } = useTripCharts(expenses, pools, settlement);
-const balanced = computed(() => settlement.value?.consistency.ok ?? false);
 const useRoundedBalance = computed(
   () => (trip.value?.settlementRounding ?? "rupee") === "rupee",
 );
@@ -46,18 +37,6 @@ function displayBalancePaisa(p: {
   balanceRupeesPaisa: number;
 }) {
   return useRoundedBalance.value ? p.balanceRupeesPaisa : p.balancePaisa;
-}
-
-function recordAsPayment(t: {
-  fromId: string;
-  toId: string;
-  amountPaisa: number;
-}) {
-  emit("recordPayment", {
-    paidById: t.fromId,
-    receivedById: t.toId,
-    amountRupees: paisaToRupees(t.amountPaisa),
-  });
 }
 </script>
 
@@ -155,68 +134,6 @@ function recordAsPayment(t: {
               <div class="tl-bar-fill" :style="{ width: `${c.pct}%` }" />
             </div>
           </div>
-        </div>
-      </div>
-    </div>
-
-    <div class="tl-card">
-      <h2 class="tl-section-title">Pools</h2>
-      <div
-        v-for="p in settlement?.pools ?? []"
-        :key="p.poolId"
-        class="tl-list-row"
-      >
-        <span class="text-sm"
-          >{{ p.name }}
-          <span class="text-tl-muted"
-            >({{ p.splitMode
-            }}{{ p.headCount ? ` · ${p.headCount}` : "" }})</span
-          ></span
-        >
-        <span class="font-medium">{{ formatPkr(p.totalPaisa, 0) }}</span>
-      </div>
-    </div>
-
-    <div class="tl-card">
-      <h2 class="tl-section-title">Who pays whom</h2>
-      <div v-if="!balanced" class="tl-alert mb-3">
-        <div class="font-medium">Settlement blocked</div>
-        <ul class="mt-1 list-disc pl-5">
-          <li
-            v-for="(v, i) in settlement?.consistency.violations ?? []"
-            :key="i"
-          >
-            {{ v.id }}: {{ v.message }}
-          </li>
-        </ul>
-      </div>
-      <div
-        v-else-if="!(settlement?.settlements.length)"
-        class="text-tl-muted text-sm"
-      >
-        All settled — nothing to pay.
-      </div>
-      <div v-else class="space-y-2">
-        <div
-          v-for="(t, i) in settlement?.settlements"
-          :key="i"
-          class="tl-transfer-card"
-        >
-          <div class="min-w-0 flex-1">
-            <span
-              ><strong>{{ t.fromName }}</strong> →
-              <strong>{{ t.toName }}</strong></span
-            >
-            <div class="text-lg font-semibold text-tl-accent-bright">
-              Rs. {{ formatTransferAmount(t.amountRupees) }}
-            </div>
-          </div>
-          <Button
-            label="Record"
-            size="small"
-            text
-            @click="recordAsPayment(t)"
-          />
         </div>
       </div>
     </div>

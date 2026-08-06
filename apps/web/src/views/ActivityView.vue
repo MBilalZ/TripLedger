@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { onMounted, ref, watch } from "vue";
 import { useRouter } from "vue-router";
+import AppLoading from "@/components/AppLoading.vue";
 import {
   buildActivityFeed,
   formatActivityWhen,
@@ -17,27 +18,32 @@ const router = useRouter();
 const items = ref<ActivityItem[]>([]);
 const loading = ref(true);
 
-async function refresh() {
-  loading.value = true;
+async function rebuildFeed(opts: { quiet?: boolean } = {}) {
+  const quiet = opts.quiet ?? items.value.length > 0;
+  if (!quiet) loading.value = true;
   try {
-    if (!auth.authReady) await auth.initAuth();
-    if (auth.cloud || !isSupabaseConfigured()) {
-      await trips.refresh();
-    }
     if (!isEnabled("activity_feed")) {
       items.value = [];
       return;
     }
     items.value = await buildActivityFeed(trips.trips);
   } finally {
-    loading.value = false;
+    if (!quiet) loading.value = false;
   }
 }
 
-onMounted(() => void refresh());
+onMounted(async () => {
+  if (!auth.authReady) await auth.initAuth();
+  if (trips.trips.length) await rebuildFeed({ quiet: true });
+  if (auth.cloud || !isSupabaseConfigured()) {
+    await trips.refresh({ quiet: trips.trips.length > 0 });
+  }
+  await rebuildFeed({ quiet: items.value.length > 0 });
+});
+
 watch(
   () => trips.trips.map((t) => t.id + t.updatedAt).join("|"),
-  () => void refresh(),
+  () => void rebuildFeed({ quiet: true }),
 );
 
 function iconFor(kind: ActivityItem["kind"]) {
@@ -57,7 +63,7 @@ function iconFor(kind: ActivityItem["kind"]) {
     </section>
 
     <section class="tl-card space-y-1" aria-label="Activity feed">
-      <p v-if="loading" class="text-sm text-tl-muted">Loading…</p>
+      <AppLoading v-if="loading && !items.length" />
       <p v-else-if="!items.length" class="text-sm text-tl-muted">
         No activity yet. Add an expense or payment in a group.
       </p>
