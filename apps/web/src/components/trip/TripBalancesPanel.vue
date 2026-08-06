@@ -19,7 +19,7 @@ const emit = defineEmits<{
 }>();
 
 const store = useWorkspaceStore();
-const { expenses, pools, settlement } = storeToRefs(store);
+const { trip, expenses, pools, settlement } = storeToRefs(store);
 const {
   chartByCategory,
   chartByPool,
@@ -27,6 +27,9 @@ const {
   chartByPersonShare,
 } = useTripCharts(expenses, pools, settlement);
 const balanced = computed(() => settlement.value?.consistency.ok ?? false);
+const useRoundedBalance = computed(
+  () => (trip.value?.settlementRounding ?? "rupee") === "rupee",
+);
 const sortedParticipants = computed(() => {
   const list = settlement.value?.participants ?? [];
   return [...list].sort((a, b) => {
@@ -37,6 +40,13 @@ const sortedParticipants = computed(() => {
     return a.participantId.localeCompare(b.participantId);
   });
 });
+
+function displayBalancePaisa(p: {
+  balancePaisa: number;
+  balanceRupeesPaisa: number;
+}) {
+  return useRoundedBalance.value ? p.balanceRupeesPaisa : p.balancePaisa;
+}
 
 function recordAsPayment(t: {
   fromId: string;
@@ -72,9 +82,9 @@ function recordAsPayment(t: {
         </div>
         <div
           class="font-semibold"
-          :class="p.balancePaisa >= 0 ? 'money-pos' : 'money-neg'"
+          :class="displayBalancePaisa(p) >= 0 ? 'money-pos' : 'money-neg'"
         >
-          {{ formatPkr(p.balancePaisa) }}
+          {{ formatPkr(displayBalancePaisa(p), useRoundedBalance ? 0 : undefined) }}
         </div>
       </div>
       <p v-if="!(settlement?.participants.length)" class="text-sm text-tl-muted">

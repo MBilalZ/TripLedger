@@ -153,7 +153,12 @@ export function startSyncEngine(): void {
   window.addEventListener("offline", onOffline);
   document.addEventListener("visibilitychange", () => {
     if (document.visibilityState === "visible" && isOnline()) {
-      void syncAllCloudTrips();
+      void syncAllCloudTrips().then(() => {
+        void import("@/stores/workspace").then(({ useWorkspaceStore }) => {
+          const store = useWorkspaceStore();
+          if (store.tripId) void store.reload({ quiet: true });
+        });
+      });
     }
   });
 

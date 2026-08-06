@@ -121,10 +121,18 @@ export function createCoreActions(state: WorkspaceState) {
   }
 
   async function bindTrip(id: string) {
+    const hasUsable = state.trip.value?.id === id;
     state.tripId.value = id;
     lastPersistedHash = null;
-    await reload();
+    await reload({ quiet: hasUsable });
     subscribeRealtime();
+
+    // Revalidate in background so cache-first load can refresh quietly.
+    if (auth.cloud) {
+      void import("@/sync/engine").then(({ syncTrip }) =>
+        syncTrip(id).then(() => scheduleQuietReload()),
+      );
+    }
   }
 
   async function updateTrip(patch: { name?: string }) {

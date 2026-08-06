@@ -30,7 +30,8 @@ const {
   moreTitle,
   setTab,
   openMore,
-} = useTripTabs();
+  setMoreSection,
+} = useTripTabs(() => props.tripId);
 const {
   editingTrip,
   tripNameDraft,
@@ -69,8 +70,14 @@ function onRecordPayment(payload: {
 </script>
 
 <template>
-  <div v-if="loading" class="text-tl-muted" role="status">Loading…</div>
-  <div v-else-if="!trip" class="tl-card">Group not found.</div>
+  <div
+    v-if="loading && (!trip || trip.id !== tripId)"
+    class="text-tl-muted"
+    role="status"
+  >
+    Loading…
+  </div>
+  <div v-else-if="!trip || trip.id !== tripId" class="tl-card">Group not found.</div>
   <div v-else class="tl-has-bottom-nav space-y-4">
     <div class="sr-only" aria-live="polite" aria-atomic="true">
       {{ statusMessage }}
@@ -120,7 +127,7 @@ function onRecordPayment(payload: {
       :show-invite="auth.cloud && isOwner"
       :inviting="inviting"
       :can-delete-trip="isOwner"
-      @update:more-section="moreSection = $event"
+      @update:more-section="setMoreSection"
       @open-more="openMore"
       @invite="copyInviteLink"
       @delete="deleteTrip"

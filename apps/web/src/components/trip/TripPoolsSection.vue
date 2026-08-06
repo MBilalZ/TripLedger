@@ -79,7 +79,7 @@ async function addPool() {
       <div v-for="pool in pools" :key="pool.id" class="tl-card">
         <button
           type="button"
-          class="flex w-full items-center justify-between gap-2 text-left"
+          class="tl-list-row w-full text-left"
           :aria-expanded="expandedId === pool.id"
           @click="togglePool(pool.id, pool.name)"
         >
@@ -102,7 +102,7 @@ async function addPool() {
             <InputText v-model="poolNameDraft" class="w-full" aria-label="Pool name" />
             <div class="flex gap-2">
               <Button
-                v-if="editingPoolId === pool.id"
+                v-if="editingPoolId === pool.id && poolNameDraft.trim() !== pool.name.trim()"
                 icon="pi pi-check"
                 size="small"
                 aria-label="Save name"

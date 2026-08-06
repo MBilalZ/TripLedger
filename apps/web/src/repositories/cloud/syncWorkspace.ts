@@ -42,17 +42,15 @@ export const syncCloudWorkspaceRepo: WorkspaceRepo = {
       throw new Error("You are offline and this trip is not cached yet");
     }
 
-    try {
-      await syncTrip(tripId);
-      const fresh = await readCachedWorkspace(tripId, user);
-      if (fresh) return fresh;
-      const remote = await cloudWorkspaceRepo.load(tripId);
-      await writeCachedWorkspace(user, remote);
-      return remote;
-    } catch (e) {
-      if (cached) return cached;
-      throw e;
-    }
+    // Stale-while-revalidate: paint from Dexie immediately; caller revalidates.
+    if (cached) return cached;
+
+    await syncTrip(tripId);
+    const fresh = await readCachedWorkspace(tripId, user);
+    if (fresh) return fresh;
+    const remote = await cloudWorkspaceRepo.load(tripId);
+    await writeCachedWorkspace(user, remote);
+    return remote;
   },
 
   async touch(tripId) {
