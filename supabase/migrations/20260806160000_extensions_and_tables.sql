@@ -98,7 +98,7 @@ create table if not exists public.expenses (
   superseded_by_id text,
   created_at timestamptz not null default now(),
   split_mode text,
-  voided boolean not null default false,
+  removed boolean not null default false,
   created_by uuid references auth.users (id),
   updated_by uuid references auth.users (id),
   updated_at timestamptz not null default now(),

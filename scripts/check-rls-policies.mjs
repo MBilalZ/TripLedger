@@ -44,7 +44,7 @@ const checks = [
     ok:
       /create or replace function public\.create_expense_with_splits/i.test(combined) &&
       /create or replace function public\.revise_expense_with_splits/i.test(combined) &&
-      /create or replace function public\.void_expense/i.test(combined),
+      /create or replace function public\.remove_expense/i.test(combined),
   },
   {
     name: "no receipts / storage SQL in active migrations",

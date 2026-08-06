@@ -44,15 +44,13 @@ export function useFeedback() {
     message: string;
     header: string;
     onAccept: () => void | Promise<void>;
-    acceptLabel?: string;
-    rejectLabel?: string;
   }) {
     confirm.require({
       message: opts.message,
       header: opts.header,
       icon: "pi pi-exclamation-triangle",
-      acceptLabel: opts.acceptLabel ?? "Confirm",
-      rejectLabel: opts.rejectLabel ?? "Keep",
+      acceptLabel: "Confirm",
+      rejectLabel: "Cancel",
       acceptClass: "p-button-danger",
       rejectClass: "p-button-secondary p-button-outlined",
       defaultFocus: "reject",
@@ -62,5 +60,33 @@ export function useFeedback() {
     });
   }
 
-  return { toast, confirm, success, error, warn, run, confirmDanger };
+  function confirmAction(opts: {
+    message: string;
+    header: string;
+    onAccept: () => void | Promise<void>;
+  }) {
+    confirm.require({
+      message: opts.message,
+      header: opts.header,
+      icon: "pi pi-info-circle",
+      acceptLabel: "Confirm",
+      rejectLabel: "Cancel",
+      rejectClass: "p-button-secondary p-button-outlined",
+      defaultFocus: "reject",
+      accept: () => {
+        void opts.onAccept();
+      },
+    });
+  }
+
+  return {
+    toast,
+    confirm,
+    success,
+    error,
+    warn,
+    run,
+    confirmDanger,
+    confirmAction,
+  };
 }

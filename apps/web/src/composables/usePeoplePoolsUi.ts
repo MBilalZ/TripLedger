@@ -68,10 +68,8 @@ export function usePeoplePoolsUi() {
 
   function confirmRemoveParticipant(id: string, displayName: string) {
     confirmDanger({
-      message: `Remove ${displayName} from this group?`,
-      header: "Remove friend",
-      acceptLabel: "Remove",
-      rejectLabel: "Keep",
+      header: "Remove friend?",
+      message: `${displayName} will be removed from this group.`,
       onAccept: async () => {
         try {
           await store.removeParticipant(id);
@@ -125,16 +123,14 @@ export function usePeoplePoolsUi() {
 
   function confirmRemovePool(id: string, poolLabel: string) {
     confirmDanger({
-      message: `Delete pool “${poolLabel}”?`,
-      header: "Delete pool",
-      acceptLabel: "Delete",
-      rejectLabel: "Keep",
+      header: "Remove pool?",
+      message: `“${poolLabel}” and its sharing setup will be removed.`,
       onAccept: async () => {
         try {
           await store.removePool(id);
-          success("Pool deleted");
+          success("Pool removed");
         } catch (e) {
-          error("Cannot delete", e, 5000);
+          error("Cannot remove", e, 5000);
         }
       },
     });

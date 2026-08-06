@@ -96,18 +96,18 @@ export function createExpenseActions(
     state.announce("Expense updated");
   }
 
-  async function voidExpense(expenseId: string) {
+  async function removeExpense(expenseId: string) {
     const old = state.expenses.value.find((e) => e.id === expenseId);
-    if (!old || old.supersededById || old.voided) return;
-    await getWorkspaceRepo().voidExpense(expenseId, state.tripId.value);
+    if (!old || old.supersededById || old.removed) return;
+    await getWorkspaceRepo().removeExpense(expenseId, state.tripId.value);
     state.expenses.value = state.expenses.value.filter((e) => e.id !== expenseId);
     state.expenseSplits.value = state.expenseSplits.value.filter(
       (s) => s.expenseId !== expenseId,
     );
     await core.touch();
     core.recomputeSettlement();
-    state.announce("Expense voided");
+    state.announce("Expense removed");
   }
 
-  return { addExpense, reviseExpense, voidExpense };
+  return { addExpense, reviseExpense, removeExpense };
 }

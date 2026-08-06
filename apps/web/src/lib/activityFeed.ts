@@ -6,7 +6,7 @@ export type ActivityItem = {
   tripId: string;
   tripName: string;
   at: string;
-  kind: "expense" | "payment" | "void";
+  kind: "expense" | "payment" | "removed";
   title: string;
   detail: string;
 };
@@ -28,15 +28,15 @@ export async function buildActivityFeed(
       participants.find((p) => p.id === id)?.displayName ?? "Someone";
 
     for (const e of expenses) {
-      const voided = !!e.voided || !!e.supersededById;
+      const removed = !!e.removed || !!e.supersededById;
       items.push({
         id: `exp:${e.id}`,
         tripId: trip.id,
         tripName: trip.name,
         at: e.createdAt || e.date || trip.updatedAt,
-        kind: voided ? "void" : "expense",
-        title: voided
-          ? `Expense voided in “${trip.name}”`
+        kind: removed ? "removed" : "expense",
+        title: removed
+          ? `Expense removed in “${trip.name}”`
           : `${nameOf(e.paidById)} added “${e.description || "Expense"}” in “${trip.name}”`,
         detail: formatPkr(e.amountPaisa),
       });

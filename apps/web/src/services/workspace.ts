@@ -68,7 +68,7 @@ export async function loadWorkspace(tripId: string): Promise<WorkspaceSnapshot> 
 
     const expenses = (expRes.data ?? [])
       .map(expenseFromDb)
-      .filter((e) => !e.supersededById && !e.voided)
+      .filter((e) => !e.supersededById && !e.removed)
       .sort((a, b) => a.createdAt.localeCompare(b.createdAt));
 
     const role = roleRes.data?.role;

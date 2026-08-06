@@ -103,8 +103,8 @@ export interface WorkspaceRepo {
     splits: ExpenseSplitRow[],
   ): Promise<void>;
 
-  /** Second arg is tripId (cloud RPC) or legacy void sentinel (local). */
-  voidExpense(expenseId: string, tripIdOrVoidId: string): Promise<void>;
+  /** Second arg is tripId (cloud RPC / local). */
+  removeExpense(expenseId: string, tripIdOrVoidId: string): Promise<void>;
 
   addAdjustment(row: AdjustmentRow): Promise<void>;
 

@@ -15,7 +15,7 @@ const auth = useAuthStore();
 const store = useWorkspaceStore();
 const trips = useTripsStore();
 const router = useRouter();
-const { error: showError, success, confirmDanger } = useFeedback();
+const { error: showError, success, confirmDanger, confirmAction } = useFeedback();
 const { participants, isOwner, myRole } = storeToRefs(store);
 const {
   inviting,
@@ -87,16 +87,24 @@ async function saveAdd() {
   showAdd.value = false;
 }
 
+function confirmRevokeInvite(token: string) {
+  confirmAction({
+    header: "Revoke invite?",
+    message: "People with this link won’t be able to join.",
+    onAccept: () => {
+      void revoke(token);
+    },
+  });
+}
+
 function confirmLeave() {
-  const ownerLeave =
+  const message =
     myRole.value === "owner"
-      ? "Leave this group? If you’re the last member the group is deleted for everyone. Otherwise another member becomes the owner."
-      : "Leave this group? You will lose access until invited again.";
+      ? "If you’re the last member, the group is deleted for everyone. Otherwise another member becomes the owner."
+      : "You’ll lose access until you’re invited again.";
   confirmDanger({
-    message: ownerLeave,
-    header: "Leave group",
-    acceptLabel: "Leave",
-    rejectLabel: "Stay",
+    header: "Leave group?",
+    message,
     onAccept: async () => {
       try {
         const result = await trips.leaveTrip(store.tripId);
@@ -156,7 +164,7 @@ function confirmLeave() {
               size="small"
               severity="danger"
               text
-              @click="revoke(inv.token)"
+              @click="confirmRevokeInvite(inv.token)"
             />
           </div>
         </li>

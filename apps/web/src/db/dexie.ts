@@ -25,6 +25,8 @@ export type OutboxOpType =
   | "upsertPoolMember"
   | "addExpense"
   | "reviseExpense"
+  | "removeExpense"
+  /** @deprecated pending outbox rows may still use this op name */
   | "voidExpense"
   | "addAdjustment"
   | "updateAdjustment"
@@ -91,8 +93,8 @@ export interface ExpenseRow {
   supersededById: string | null;
   createdAt: string;
   splitMode: SplitMode | null;
-  /** Soft-void; preferred over fake superseded_by_id sentinels. */
-  voided?: boolean;
+  /** Soft-remove; preferred over fake superseded_by_id sentinels. */
+  removed?: boolean;
 }
 
 export interface ExpenseSplitRow {
@@ -207,6 +209,35 @@ export class TripLedgerDB extends Dexie {
       syncMeta: "tripId, userId",
       outbox: "id, tripId, createdAt",
     });
+    this.version(5)
+      .stores({
+        trips: "id, updatedAt, cloudUserId",
+        participants: "id, tripId, displayName",
+        pools: "id, tripId, name",
+        poolMembers: "id, tripId, poolId, [poolId+participantId]",
+        expenses: "id, tripId, poolId, supersededById, createdAt",
+        expenseSplits: "id, tripId, expenseId, [expenseId+participantId]",
+        adjustments: "id, tripId, createdAt",
+        syncMeta: "tripId, userId",
+        outbox: "id, tripId, createdAt",
+      })
+      .upgrade(async (tx) => {
+        await tx
+          .table("expenses")
+          .toCollection()
+          .modify((e: ExpenseRow & { voided?: boolean }) => {
+            if (e.removed == null && e.voided != null) {
+              e.removed = !!e.voided;
+            }
+            delete e.voided;
+          });
+        await tx
+          .table("outbox")
+          .toCollection()
+          .modify((row: OutboxRow) => {
+            if (row.op === "voidExpense") row.op = "removeExpense";
+          });
+      });
   }
 }
 

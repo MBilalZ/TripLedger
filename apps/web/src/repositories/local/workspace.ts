@@ -29,7 +29,7 @@ export const localWorkspaceRepo: WorkspaceRepo = {
       participants,
       pools,
       poolMembers,
-      expenses: expenses.filter((e) => !e.voided),
+      expenses: expenses.filter((e) => !e.removed),
       expenseSplits,
       adjustments,
       myRole: "owner" as const,
@@ -183,10 +183,10 @@ export const localWorkspaceRepo: WorkspaceRepo = {
     });
   },
 
-  async voidExpense(expenseId, _tripIdOrVoidId) {
+  async removeExpense(expenseId, _tripIdOrVoidId) {
     await db.transaction("rw", [db.expenses, db.expenseSplits], async () => {
       await db.expenses.update(expenseId, {
-        voided: true,
+        removed: true,
         supersededById: null,
       });
       await db.expenseSplits.where("expenseId").equals(expenseId).delete();

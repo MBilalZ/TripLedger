@@ -175,8 +175,8 @@ export const cloudWorkspaceRepo: WorkspaceRepo = {
     );
   },
 
-  async voidExpense(expenseId, tripId) {
-    await expensesApi.voidExpenseRpc(expenseId, tripId);
+  async removeExpense(expenseId, tripId) {
+    await expensesApi.removeExpenseRpc(expenseId, tripId);
   },
 
   async addAdjustment(row) {

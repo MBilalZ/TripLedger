@@ -48,7 +48,7 @@ watch(
 
 function iconFor(kind: ActivityItem["kind"]) {
   if (kind === "payment") return "pi pi-wallet";
-  if (kind === "void") return "pi pi-trash";
+  if (kind === "removed") return "pi pi-trash";
   return "pi pi-receipt";
 }
 </script>
@@ -81,7 +81,7 @@ function iconFor(kind: ActivityItem["kind"]) {
           <div class="text-sm text-tl">{{ item.title }}</div>
           <div
             class="mt-0.5 text-sm"
-            :class="item.kind === 'void' ? 'line-through text-tl-muted' : 'money-neg'"
+            :class="item.kind === 'removed' ? 'line-through text-tl-muted' : 'money-neg'"
           >
             {{ item.detail }}
           </div>

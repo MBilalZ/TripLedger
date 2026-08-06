@@ -741,6 +741,12 @@ input.p-inputtext.tl-control,
   padding-right: var(--tl-space-5) !important;
 }
 
+.p-dialog-content {
+  line-height: 1.5;
+  padding-top: var(--tl-space-3) !important;
+  padding-bottom: var(--tl-space-4) !important;
+}
+
 .p-dialog-footer {
   display: flex;
   justify-content: flex-end;

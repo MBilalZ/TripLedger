@@ -226,16 +226,14 @@ export function useExpenseForm(options: ExpenseFormOptions = {}) {
     }
   }
 
-  function confirmVoidExpense(id: string, description: string) {
+  function confirmRemoveExpense(id: string, description: string) {
     confirmDanger({
-      message: `Void expense “${description || "Untitled"}”? It will no longer count in settlement.`,
-      header: "Void expense",
-      acceptLabel: "Void",
-      rejectLabel: "Keep",
+      header: "Remove expense?",
+      message: `“${description || "Untitled"}” will be removed from this group’s totals. This can’t be undone.`,
       onAccept: async () => {
-        await store.voidExpense(id);
+        await store.removeExpense(id);
         if (editingExpenseId.value === id) finish();
-        success("Expense voided");
+        success("Expense removed");
       },
     });
   }
@@ -270,7 +268,7 @@ export function useExpenseForm(options: ExpenseFormOptions = {}) {
     clearExpenseForm,
     startEditExpense,
     onSaveExpense,
-    confirmVoidExpense,
+    confirmRemoveExpense,
     onCustomSplitChange,
   };
 }

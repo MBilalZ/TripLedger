@@ -62,7 +62,7 @@ export function useTripWorkspace(tripId: () => string) {
     poolMember: store.poolMember,
     addExpense: store.addExpense,
     reviseExpense: store.reviseExpense,
-    voidExpense: store.voidExpense,
+    removeExpense: store.removeExpense,
     addAdjustment: store.addAdjustment,
     addSplitAdjustments: store.addSplitAdjustments,
     updateAdjustment: store.updateAdjustment,

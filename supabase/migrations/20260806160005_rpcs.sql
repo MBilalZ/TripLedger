@@ -291,7 +291,7 @@ begin
 
   insert into public.expenses (
     id, trip_id, pool_id, description, category, amount_paisa,
-    paid_by_id, date, notes, superseded_by_id, split_mode, voided, created_by
+    paid_by_id, date, notes, superseded_by_id, split_mode, removed, created_by
   ) values (
     p_expense->>'id',
     v_trip_id,
@@ -304,7 +304,7 @@ begin
     coalesce(p_expense->>'notes', ''),
     p_expense->>'superseded_by_id',
     nullif(p_expense->>'split_mode', ''),
-    coalesce((p_expense->>'voided')::boolean, false),
+    coalesce((p_expense->>'removed')::boolean, false),
     auth.uid()
   );
 
@@ -356,7 +356,7 @@ begin
 
   insert into public.expenses (
     id, trip_id, pool_id, description, category, amount_paisa,
-    paid_by_id, date, notes, superseded_by_id, split_mode, voided, created_by
+    paid_by_id, date, notes, superseded_by_id, split_mode, removed, created_by
   ) values (
     p_expense->>'id',
     v_trip_id,
@@ -399,7 +399,7 @@ begin
 end;
 $$;
 
-create or replace function public.void_expense(
+create or replace function public.remove_expense(
   p_expense_id text,
   p_trip_id text
 )
@@ -417,7 +417,7 @@ begin
   end if;
 
   update public.expenses
-  set voided = true,
+  set removed = true,
       superseded_by_id = null,
       updated_by = auth.uid(),
       updated_at = now()

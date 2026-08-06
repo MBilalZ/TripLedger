@@ -13,7 +13,7 @@ grant execute on function public.delete_trip_as_owner(text) to authenticated;
 grant execute on function public.leave_trip(text) to authenticated;
 grant execute on function public.create_expense_with_splits(jsonb, jsonb) to authenticated;
 grant execute on function public.revise_expense_with_splits(text, jsonb, jsonb) to authenticated;
-grant execute on function public.void_expense(text, text) to authenticated;
+grant execute on function public.remove_expense(text, text) to authenticated;
 grant execute on function public.add_participant_with_pool_members(jsonb, jsonb) to authenticated;
 grant execute on function public.add_pool_with_members(jsonb, jsonb) to authenticated;
 grant execute on function public.remove_participant(text) to authenticated;

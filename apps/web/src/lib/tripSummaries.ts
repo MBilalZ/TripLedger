@@ -37,7 +37,7 @@ async function loadTripRows(tripId: string) {
       db.expenses
         .where("tripId")
         .equals(tripId)
-        .filter((e) => !e.supersededById && !e.voided)
+        .filter((e) => !e.supersededById && !e.removed)
         .toArray(),
       db.expenseSplits.where("tripId").equals(tripId).toArray(),
       db.adjustments.where("tripId").equals(tripId).toArray(),

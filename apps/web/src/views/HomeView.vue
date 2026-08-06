@@ -176,9 +176,9 @@ function togglePickGroup(event: Event) {
 
 function leaveConfirmCopy(tripName: string, role: "owner" | "member" | null) {
   if (role === "owner") {
-    return `Leave “${tripName}”? If you’re the last member the group is deleted for everyone. Otherwise another member becomes the owner.`;
+    return `Leave “${tripName}”? If you’re the last member, the group is deleted for everyone. Otherwise another member becomes the owner.`;
   }
-  return `Leave “${tripName}”? You will lose access until invited again.`;
+  return `Leave “${tripName}”? You’ll lose access until you’re invited again.`;
 }
 
 function confirmRemoveTrip(tripId: string, tripName: string, event: Event) {
@@ -187,12 +187,10 @@ function confirmRemoveTrip(tripId: string, tripName: string, event: Event) {
   const isCloudLeave = store.cloud;
   const role = store.roleFor(tripId);
   confirmDanger({
+    header: isCloudLeave ? "Leave group?" : "Delete group?",
     message: isCloudLeave
       ? leaveConfirmCopy(tripName, role)
-      : `Delete “${tripName}” from this device? This cannot be undone.`,
-    header: isCloudLeave ? "Leave group" : "Delete group",
-    acceptLabel: isCloudLeave ? "Leave" : "Delete",
-    rejectLabel: isCloudLeave ? "Stay" : "Keep",
+      : `“${tripName}” will be deleted from this device. This can’t be undone.`,
     onAccept: async () => {
       try {
         if (isCloudLeave) {

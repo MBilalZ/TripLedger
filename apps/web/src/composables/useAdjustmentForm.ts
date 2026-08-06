@@ -254,14 +254,12 @@ export function useAdjustmentForm(options: AdjustmentFormOptions = {}) {
 
   function confirmRemoveAdjustment(id: string) {
     confirmDanger({
-      message: "Delete this payment? Grouped shares are removed together.",
-      header: "Delete payment",
-      acceptLabel: "Delete",
-      rejectLabel: "Keep",
+      header: "Remove payment?",
+      message: "This payment will be removed from the group.",
       onAccept: async () => {
         await store.removeAdjustment(id);
         if (editingAdjustmentId.value === id) clearAdjForm();
-        success("Payment deleted");
+        success("Payment removed");
       },
     });
   }

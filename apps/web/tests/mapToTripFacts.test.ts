@@ -52,7 +52,7 @@ const poolMembers: PoolMemberRow[] = [
 ];
 
 describe("mapToTripFacts", () => {
-  it("excludes voided and superseded expenses", () => {
+  it("excludes removed and superseded expenses", () => {
     const expenses: ExpenseRow[] = [
       {
         id: "e1",
@@ -64,7 +64,7 @@ describe("mapToTripFacts", () => {
         paidById: "p1",
         date: "2026-01-01",
         notes: "",
-        voided: false,
+        removed: false,
         supersededById: null,
         splitMode: null,
         createdAt: trip.createdAt,
@@ -73,13 +73,13 @@ describe("mapToTripFacts", () => {
         id: "e2",
         tripId: "t1",
         poolId: "pool1",
-        description: "Voided",
+        description: "Removed",
         category: "Food",
         amountPaisa: 5000,
         paidById: "p1",
         date: "2026-01-01",
         notes: "",
-        voided: true,
+        removed: true,
         supersededById: null,
         splitMode: null,
         createdAt: trip.createdAt,
@@ -94,7 +94,7 @@ describe("mapToTripFacts", () => {
         paidById: "p2",
         date: "2026-01-01",
         notes: "",
-        voided: false,
+        removed: false,
         supersededById: "e1",
         splitMode: null,
         createdAt: trip.createdAt,

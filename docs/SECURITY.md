@@ -36,7 +36,7 @@ Tighten these in the Supabase dashboard if you need a stricter posture.
 ## Data access (RLS)
 
 - Trip members can **read** workspace tables for their trips.
-- **Expense and expense_split writes** are not open to direct client `INSERT`/`UPDATE`/`DELETE`; they go through security-definer RPCs (`create_expense_with_splits`, `revise_expense_with_splits`, `void_expense`, `remove_participant`, …) that check membership.
+- **Expense and expense_split writes** are not open to direct client `INSERT`/`UPDATE`/`DELETE`; they go through security-definer RPCs (`create_expense_with_splits`, `revise_expense_with_splits`, `remove_expense`, `remove_participant`, …) that check membership.
 - Pool / pool_member editing remains member-writable (pool configuration), with membership checks.
 - Invite join uses `join_trip_with_token` (rate-limited / capped in prod hardening).
 - Soft-delete and void semantics are enforced in app + RPCs; do not rely on the client alone.

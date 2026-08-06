@@ -12,7 +12,7 @@ const emit = defineEmits<{ openFriends: [] }>();
 const route = useRoute();
 const router = useRouter();
 const store = useWorkspaceStore();
-const { canAddExpenses, reversedExpenses, confirmVoidExpense } = useExpenseForm();
+const { canAddExpenses, reversedExpenses, confirmRemoveExpense } = useExpenseForm();
 
 type ExpenseGroup = { date: string; items: typeof reversedExpenses.value };
 
@@ -102,8 +102,9 @@ function goEdit(expenseId: string) {
                     severity="danger"
                     rounded
                     size="small"
-                    aria-label="Void expense"
-                    @click="confirmVoidExpense(e.id, e.description)"
+                    aria-label="Remove expense"
+                    v-tooltip="'Remove expense'"
+                    @click="confirmRemoveExpense(e.id, e.description)"
                   />
                 </div>
               </div>

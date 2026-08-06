@@ -107,7 +107,7 @@ curl -X POST "$SUPABASE_URL/functions/v1/send-push" \
 
 ## Incident: settlement wrong for a trip
 
-1. Confirm facts in DB (expenses not voided/superseded incorrectly).
+1. Confirm facts in DB (expenses not removed/superseded incorrectly).
 2. Reload the trip in the app (client re-runs `settleTrip` and upserts the snapshot).
 3. Compare `trip_settlement_snapshots.facts_hash` / `result` to a local `settleTrip` of the same facts.
 

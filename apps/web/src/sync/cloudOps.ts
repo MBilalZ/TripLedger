@@ -112,8 +112,9 @@ async function applyOutboxRow(row: OutboxRow): Promise<void> {
         (p.splits as ExpenseSplitRow[]) ?? [],
       );
       break;
-    case "voidExpense":
-      await cloudWorkspaceRepo.voidExpense(
+    case "removeExpense":
+    case "voidExpense": // legacy outbox op name
+      await cloudWorkspaceRepo.removeExpense(
         String(p.expenseId),
         String(p.tripId ?? row.tripId),
       );

@@ -178,10 +178,10 @@ export const syncCloudWorkspaceRepo: WorkspaceRepo = {
     await tryFlush(row.tripId);
   },
 
-  async voidExpense(expenseId, tripIdOrVoidId) {
-    await localWorkspaceRepo.voidExpense(expenseId, tripIdOrVoidId);
+  async removeExpense(expenseId, tripIdOrVoidId) {
+    await localWorkspaceRepo.removeExpense(expenseId, tripIdOrVoidId);
     const tripId = tripIdOrVoidId;
-    await enqueueOutbox(tripId, "voidExpense", { expenseId, tripId });
+    await enqueueOutbox(tripId, "removeExpense", { expenseId, tripId });
     await tryFlush(tripId);
   },
 

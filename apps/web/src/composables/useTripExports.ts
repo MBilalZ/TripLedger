@@ -101,10 +101,8 @@ export function useTripExports(opts: {
 
   function deleteTrip() {
     confirmDanger({
-      message: "Delete this group from this device?",
-      header: "Delete group",
-      acceptLabel: "Delete",
-      rejectLabel: "Keep",
+      header: "Delete group?",
+      message: "This group will be deleted from this device. This can’t be undone.",
       onAccept: async () => {
         await trips.deleteTrip(opts.tripId());
         router.push("/");

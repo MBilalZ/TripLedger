@@ -27,9 +27,9 @@ export async function reviseExpenseWithSplits(
   );
 }
 
-export async function voidExpenseRpc(expenseId: string, tripId: string): Promise<void> {
+export async function removeExpenseRpc(expenseId: string, tripId: string): Promise<void> {
   await apiMutate((sb) =>
-    sb.rpc("void_expense", {
+    sb.rpc("remove_expense", {
       p_expense_id: expenseId,
       p_trip_id: tripId,
     }),
