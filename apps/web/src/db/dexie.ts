@@ -157,7 +157,7 @@ export class TripLedgerDB extends Dexie {
           .toCollection()
           .modify((t: TripRow) => {
             t.transferMode = t.transferMode ?? "minimize";
-            t.settlementRounding = t.settlementRounding ?? "rupee";
+            t.settlementRounding = t.settlementRounding ?? "none";
             t.settlementHubId = t.settlementHubId ?? null;
           });
         await tx

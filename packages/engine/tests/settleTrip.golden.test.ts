@@ -34,7 +34,7 @@ describe("settleTrip golden sample", () => {
     expect(paisaToRupees(byName.Farhan!.sharePaisa)).toBeCloseTo(3_717.65, 2);
   });
 
-  it("produces expected rounded settlements", () => {
+  it("produces expected exact settlements", () => {
     const transfers = result.settlements
       .map((t) => ({
         from: t.fromName,
@@ -44,9 +44,14 @@ describe("settleTrip golden sample", () => {
       .sort((a, b) => a.from.localeCompare(b.from));
 
     expect(transfers).toEqual([
-      { from: "Farhan", to: "Bilal", rs: 718 },
-      { from: "Mamo", to: "Bilal", rs: 19_488 },
-      { from: "Salman", to: "Bilal", rs: 656 },
+      { from: "Farhan", to: "Bilal", rs: 717.65 },
+      { from: "Mamo", to: "Bilal", rs: 19_487.94 },
+      { from: "Salman", to: "Bilal", rs: 656.47 },
     ]);
+    for (const p of result.participants) {
+      expect(p.balanceRupeesPaisa).toBe(p.balancePaisa);
+    }
+    expect(result.summary.transferMode).toBe("minimize");
+    expect(result.summary.settlementRounding).toBe("none");
   });
 });

@@ -230,6 +230,8 @@ export function useExpenseForm(options: ExpenseFormOptions = {}) {
     confirmDanger({
       message: `Void expense “${description || "Untitled"}”? It will no longer count in settlement.`,
       header: "Void expense",
+      acceptLabel: "Void",
+      rejectLabel: "Keep",
       onAccept: async () => {
         await store.voidExpense(id);
         if (editingExpenseId.value === id) finish();

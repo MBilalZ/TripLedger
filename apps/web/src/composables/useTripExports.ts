@@ -31,11 +31,7 @@ export function useTripExports(opts: {
     if (!assertBalancedForExport()) return;
     try {
       const { copyWhatsAppSummary } = await import("@/lib/whatsapp");
-      await copyWhatsAppSummary(
-        opts.trip.value.name,
-        opts.settlement.value,
-        opts.trip.value.settlementRounding,
-      );
+      await copyWhatsAppSummary(opts.trip.value.name, opts.settlement.value);
       success("Copied for WhatsApp");
     } catch (e) {
       error("Copy failed", e, 4000);
@@ -107,6 +103,8 @@ export function useTripExports(opts: {
     confirmDanger({
       message: "Delete this group from this device?",
       header: "Delete group",
+      acceptLabel: "Delete",
+      rejectLabel: "Keep",
       onAccept: async () => {
         await trips.deleteTrip(opts.tripId());
         router.push("/");
@@ -114,19 +112,8 @@ export function useTripExports(opts: {
     });
   }
 
-  function formatTransferAmount(amountRupees: number) {
-    if (!opts.trip.value) return "";
-    return opts.trip.value.settlementRounding === "none"
-      ? amountRupees.toLocaleString("en-PK", {
-          minimumFractionDigits: 2,
-          maximumFractionDigits: 2,
-        })
-      : Math.round(amountRupees).toLocaleString("en-PK");
-  }
-
   return {
     exportItems,
     deleteTrip,
-    formatTransferAmount,
   };
 }

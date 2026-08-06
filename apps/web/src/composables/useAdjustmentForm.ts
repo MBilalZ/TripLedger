@@ -256,6 +256,8 @@ export function useAdjustmentForm(options: AdjustmentFormOptions = {}) {
     confirmDanger({
       message: "Delete this payment? Grouped shares are removed together.",
       header: "Delete payment",
+      acceptLabel: "Delete",
+      rejectLabel: "Keep",
       onAccept: async () => {
         await store.removeAdjustment(id);
         if (editingAdjustmentId.value === id) clearAdjForm();

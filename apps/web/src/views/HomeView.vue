@@ -2,11 +2,11 @@
 import { computed, onMounted, ref, watch } from "vue";
 import { useRouter } from "vue-router";
 import { useToast } from "primevue/usetoast";
-import { useConfirm } from "primevue/useconfirm";
 import Button from "primevue/button";
 import Menu from "primevue/menu";
 import type { MenuItem } from "primevue/menuitem";
 import { formatPkr } from "@tripledger/engine";
+import { useFeedback } from "@/composables/useFeedback";
 import { useAuthStore } from "@/stores/auth";
 import { useTripsStore } from "@/stores/trips";
 import { downloadFullBackup, importBackupFile } from "@/lib/backup";
@@ -17,7 +17,6 @@ import {
   buildTripSummaries,
   filterSummaries,
   overallBalancePaisa,
-  overallUsesRounding,
   type GroupBalanceFilter,
   type TripSummary,
 } from "@/lib/tripSummaries";
@@ -26,7 +25,7 @@ const store = useTripsStore();
 const auth = useAuthStore();
 const router = useRouter();
 const toast = useToast();
-const confirm = useConfirm();
+const { confirmDanger } = useFeedback();
 const fileInput = ref<HTMLInputElement | null>(null);
 const toolsMenu = ref<InstanceType<typeof Menu> | null>(null);
 const pickGroupMenu = ref<InstanceType<typeof Menu> | null>(null);
@@ -71,7 +70,6 @@ const visibleSummaries = computed(() =>
 );
 
 const overall = computed(() => overallBalancePaisa(summaries.value));
-const overallRounded = computed(() => overallUsesRounding(summaries.value));
 
 const overallLabel = computed(() => {
   const b = overall.value;
@@ -92,7 +90,7 @@ async function seed() {
   toast.add({
     severity: "success",
     summary: "Sample group ready",
-    detail: "Expected: Mamo→Bilal 19488, Salman→Bilal 656, Farhan→Bilal 718",
+    detail: "Expected: Mamo→Bilal 19487.94, Salman→Bilal 656.47, Farhan→Bilal 717.65",
     life: 5000,
   });
   router.push(`/trips/${id}`);
@@ -188,14 +186,14 @@ function confirmRemoveTrip(tripId: string, tripName: string, event: Event) {
   event.stopPropagation();
   const isCloudLeave = store.cloud;
   const role = store.roleFor(tripId);
-  confirm.require({
+  confirmDanger({
     message: isCloudLeave
       ? leaveConfirmCopy(tripName, role)
       : `Delete “${tripName}” from this device? This cannot be undone.`,
     header: isCloudLeave ? "Leave group" : "Delete group",
-    icon: "pi pi-exclamation-triangle",
-    acceptClass: "p-button-danger",
-    accept: async () => {
+    acceptLabel: isCloudLeave ? "Leave" : "Delete",
+    rejectLabel: isCloudLeave ? "Stay" : "Keep",
+    onAccept: async () => {
       try {
         if (isCloudLeave) {
           const result = await store.leaveTrip(tripId);
@@ -250,7 +248,7 @@ function balanceClass(paisa: number | null) {
               class="ml-1 font-semibold"
               :class="balanceClass(overall)"
             >
-              {{ formatPkr(Math.abs(overall), overallRounded ? 0 : undefined) }}
+              {{ formatPkr(Math.abs(overall)) }}
             </span>
           </p>
         </div>
@@ -345,11 +343,11 @@ function balanceClass(paisa: number | null) {
             >
               <template v-if="s.topCounterparty.paisa < 0">
                 You owe {{ s.topCounterparty.name }}
-                {{ formatPkr(-s.topCounterparty.paisa, s.rounded ? 0 : undefined) }}
+                {{ formatPkr(-s.topCounterparty.paisa) }}
               </template>
               <template v-else>
                 {{ s.topCounterparty.name }} owes you
-                {{ formatPkr(s.topCounterparty.paisa, s.rounded ? 0 : undefined) }}
+                {{ formatPkr(s.topCounterparty.paisa) }}
               </template>
             </div>
           </div>

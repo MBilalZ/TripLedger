@@ -748,6 +748,10 @@ input.p-inputtext.tl-control,
   flex-wrap: wrap;
 }
 
+.p-confirmdialog .p-dialog-footer .p-button {
+  min-height: var(--tl-tap) !important;
+}
+
 .p-toast {
   max-width: calc(100vw - 2rem);
 }

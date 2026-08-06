@@ -11,11 +11,5 @@ export {
   paisaToRupees,
   rupeesToPaisa,
 } from "./money.js";
-export { roundBalancesToRupees } from "./rounding.js";
-export {
-  buildTransfers,
-  optimizeTransfers,
-  pairwiseTransfers,
-  settleToOne,
-} from "./settlement.js";
+export { buildTransfers, optimizeTransfers } from "./settlement.js";
 export { settleTrip } from "./settleTrip.js";

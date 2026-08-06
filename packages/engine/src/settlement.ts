@@ -1,5 +1,4 @@
-import type { Id, Transfer, TransferMode } from "@tripledger/types";
-import { allocateByWeights } from "./allocation.js";
+import type { Id, Transfer } from "@tripledger/types";
 
 interface Party {
   id: Id;
@@ -74,103 +73,13 @@ export function optimizeTransfers(
   return transfers;
 }
 
-/** Every debtor pays the hub; hub pays every other creditor. */
-export function settleToOne(
-  balances: Array<{
-    participantId: Id;
-    displayName: string;
-    balancePaisa: number;
-  }>,
-  hubId: Id | null,
-): Transfer[] {
-  const { debtors, creditors } = toParties(balances);
-  if (debtors.length === 0 && creditors.length === 0) return [];
-
-  let hub = (hubId && [...debtors, ...creditors].find((p) => p.id === hubId)) || null;
-  if (!hub) {
-    hub = creditors[0] ?? debtors[0] ?? null;
-  }
-  if (!hub) return [];
-
-  const transfers: Transfer[] = [];
-  const nameById = new Map(
-    balances.map((b) => [b.participantId, b.displayName] as const),
-  );
-
-  for (const d of debtors) {
-    if (d.id === hub.id) continue;
-    const t = transfer(d, { id: hub.id, name: hub.name, amount: 0 }, d.amount);
-    if (t) {
-      t.toName = nameById.get(hub.id) ?? hub.name;
-      transfers.push(t);
-    }
-  }
-
-  for (const c of creditors) {
-    if (c.id === hub.id) continue;
-    const t = transfer(
-      { id: hub.id, name: nameById.get(hub.id) ?? hub.name, amount: 0 },
-      c,
-      c.amount,
-    );
-    if (t) transfers.push(t);
-  }
-
-  return transfers;
-}
-
-/**
- * Each debtor pays each creditor proportionally to that creditor's share of
- * total credit (largest-remainder so amounts sum exactly).
- */
-export function pairwiseTransfers(
-  balances: Array<{
-    participantId: Id;
-    displayName: string;
-    balancePaisa: number;
-  }>,
-): Transfer[] {
-  const { debtors, creditors } = toParties(balances);
-  if (debtors.length === 0 || creditors.length === 0) return [];
-
-  const transfers: Transfer[] = [];
-  for (const d of debtors) {
-    const alloc = allocateByWeights(
-      d.amount,
-      creditors.map((c) => ({ participantId: c.id, weight: c.amount })),
-    );
-    if (alloc.error) continue;
-    for (const slice of alloc.slices) {
-      if (slice.sharePaisa <= 0) continue;
-      const c = creditors.find((x) => x.id === slice.participantId)!;
-      transfers.push({
-        fromId: d.id,
-        fromName: d.name,
-        toId: c.id,
-        toName: c.name,
-        amountPaisa: slice.sharePaisa,
-        amountRupees: slice.sharePaisa / 100,
-      });
-    }
-  }
-  return transfers;
-}
-
+/** Always minimize transfers. */
 export function buildTransfers(
   balances: Array<{
     participantId: Id;
     displayName: string;
     balancePaisa: number;
   }>,
-  mode: TransferMode,
-  hubId: Id | null,
 ): Transfer[] {
-  switch (mode) {
-    case "settle_to_one":
-      return settleToOne(balances, hubId);
-    case "pairwise":
-      return pairwiseTransfers(balances);
-    default:
-      return optimizeTransfers(balances);
-  }
+  return optimizeTransfers(balances);
 }

@@ -1,5 +1,4 @@
 import type { TripFacts } from "@tripledger/types";
-import { DEFAULT_TRIP_SETTINGS } from "@tripledger/types";
 import type {
   AdjustmentRow,
   ExpenseRow,
@@ -68,12 +67,11 @@ export function mapToTripFacts(args: TripFactsSource): TripFacts {
       amountPaisa: a.amountPaisa,
       reason: a.reason,
     })),
+    // Force product locks: exact paisa + minimize (ignore stored trip settings).
     settings: {
-      transferMode: args.trip?.transferMode ?? DEFAULT_TRIP_SETTINGS.transferMode,
-      settlementRounding:
-        args.trip?.settlementRounding ?? DEFAULT_TRIP_SETTINGS.settlementRounding,
-      settlementHubId:
-        args.trip?.settlementHubId ?? DEFAULT_TRIP_SETTINGS.settlementHubId,
+      transferMode: "minimize",
+      settlementRounding: "none",
+      settlementHubId: null,
     },
   };
 }

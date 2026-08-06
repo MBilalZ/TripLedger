@@ -9,7 +9,6 @@ import type {
 import { DEFAULT_TRIP_SETTINGS } from "@tripledger/types";
 import { allocateSplit } from "./allocation.js";
 import { checkInvariants } from "./consistency.js";
-import { roundBalancesToRupees } from "./rounding.js";
 import { buildTransfers } from "./settlement.js";
 import { asSplitLine, resolveExpenseSplit, validateInput } from "./settleTripValidate.js";
 
@@ -34,7 +33,6 @@ export function settleTrip(raw: TripFacts): SettleTripResult {
       splitMode: p.splitMode ?? "shares",
     })),
   };
-  const settings = facts.settings;
   const inputViolations = validateInput(facts);
   const nameById = new Map(facts.participants.map((p) => [p.id, p.displayName] as const));
 
@@ -177,42 +175,21 @@ export function settleTrip(raw: TripFacts): SettleTripResult {
       }))
     : exactParticipants;
 
-  const useRounding = settings.settlementRounding === "rupee";
-  const rounded = failClosed
-    ? participantsForSettle.map((p) => ({
-        participantId: p.participantId,
-        exactPaisa: 0,
-        roundedPaisa: 0,
-      }))
-    : useRounding
-      ? roundBalancesToRupees(
-          participantsForSettle.map((p) => ({
-            participantId: p.participantId,
-            balancePaisa: p.balancePaisa,
-          })),
-        )
-      : participantsForSettle.map((p) => ({
-          participantId: p.participantId,
-          exactPaisa: p.balancePaisa,
-          roundedPaisa: p.balancePaisa,
-        }));
-  const roundedById = new Map(rounded.map((r) => [r.participantId, r]));
-
+  // Always exact paisa; balanceRupeesPaisa kept as an alias for API compatibility.
   const participants: ParticipantMoney[] = participantsForSettle.map((p) => ({
     ...p,
-    balanceRupeesPaisa: roundedById.get(p.participantId)?.roundedPaisa ?? 0,
+    balanceRupeesPaisa: p.balancePaisa,
   }));
 
+  // Always minimize transfers (ignore stored transferMode / hub).
   const settlements = failClosed
     ? []
     : buildTransfers(
         participants.map((p) => ({
           participantId: p.participantId,
           displayName: p.displayName,
-          balancePaisa: p.balanceRupeesPaisa,
+          balancePaisa: p.balancePaisa,
         })),
-        settings.transferMode,
-        settings.settlementHubId,
       );
 
   for (const t of settlements) {
@@ -243,8 +220,8 @@ export function settleTrip(raw: TripFacts): SettleTripResult {
       poolCount: facts.pools.length,
       expenseCount: activeExpenses.length,
       adjustmentCount: facts.adjustments.length,
-      transferMode: settings.transferMode,
-      settlementRounding: settings.settlementRounding,
+      transferMode: "minimize",
+      settlementRounding: "none",
     },
     pools: poolSummaries,
     participants,

@@ -42,7 +42,7 @@ export async function seedSampleTrip(): Promise<string> {
         createdAt: now,
         updatedAt: now,
         transferMode: "minimize",
-        settlementRounding: "rupee",
+        settlementRounding: "none",
         settlementHubId: null,
       });
 

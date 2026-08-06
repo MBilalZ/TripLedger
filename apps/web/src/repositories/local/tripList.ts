@@ -19,7 +19,7 @@ export const localTripListRepo: TripListRepo = {
       createdAt: now,
       updatedAt: now,
       transferMode: options.transferMode ?? "minimize",
-      settlementRounding: options.settlementRounding ?? "rupee",
+      settlementRounding: options.settlementRounding ?? "none",
       settlementHubId: null,
     };
     await db.trips.add(trip);

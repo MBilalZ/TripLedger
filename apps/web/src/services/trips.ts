@@ -55,7 +55,7 @@ export async function createTripWithIds(
       p_participant_id: participantId,
       p_owner_display_name: ownerName,
       p_transfer_mode: options.transferMode ?? "minimize",
-      p_settlement_rounding: options.settlementRounding ?? "rupee",
+      p_settlement_rounding: options.settlementRounding ?? "none",
     }),
   );
 

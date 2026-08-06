@@ -44,12 +44,18 @@ export function useFeedback() {
     message: string;
     header: string;
     onAccept: () => void | Promise<void>;
+    acceptLabel?: string;
+    rejectLabel?: string;
   }) {
     confirm.require({
       message: opts.message,
       header: opts.header,
       icon: "pi pi-exclamation-triangle",
+      acceptLabel: opts.acceptLabel ?? "Confirm",
+      rejectLabel: opts.rejectLabel ?? "Keep",
       acceptClass: "p-button-danger",
+      rejectClass: "p-button-secondary p-button-outlined",
+      defaultFocus: "reject",
       accept: () => {
         void opts.onAccept();
       },

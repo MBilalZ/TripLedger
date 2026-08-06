@@ -29,7 +29,7 @@ export function tripFromDb(r: DbTrip): TripRow {
     createdAt: r.created_at,
     updatedAt: r.updated_at,
     transferMode: (r.transfer_mode as TransferMode) || "minimize",
-    settlementRounding: (r.settlement_rounding as SettlementRounding) || "rupee",
+    settlementRounding: (r.settlement_rounding as SettlementRounding) || "none",
     settlementHubId: r.settlement_hub_id,
   };
 }

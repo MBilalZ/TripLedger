@@ -292,7 +292,7 @@ describe("transfer modes", () => {
     expect(r.settlements.length).toBeGreaterThan(0);
   });
 
-  it("settle_to_one routes via hub", () => {
+  it("ignores stored settle_to_one and always minimizes with exact paisa", () => {
     const r = settleTrip({
       ...base,
       settings: {
@@ -302,33 +302,8 @@ describe("transfer modes", () => {
       },
     });
     expect(r.consistency.ok).toBe(true);
-    for (const t of r.settlements) {
-      expect(t.fromId === "a" || t.toId === "a").toBe(true);
-    }
-  });
-
-  it("pairwise keeps net balances", () => {
-    const r = settleTrip({
-      ...base,
-      settings: {
-        transferMode: "pairwise",
-        settlementRounding: "rupee",
-        settlementHubId: null,
-      },
-    });
-    expect(r.consistency.ok).toBe(true);
-  });
-
-  it("none rounding uses exact paisa", () => {
-    const r = settleTrip({
-      ...base,
-      settings: {
-        transferMode: "minimize",
-        settlementRounding: "none",
-        settlementHubId: null,
-      },
-    });
-    expect(r.consistency.ok).toBe(true);
+    expect(r.summary.transferMode).toBe("minimize");
+    expect(r.summary.settlementRounding).toBe("none");
     for (const p of r.participants) {
       expect(p.balanceRupeesPaisa).toBe(p.balancePaisa);
     }

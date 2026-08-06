@@ -86,7 +86,7 @@ export const syncCloudTripListRepo: TripListRepo = {
       createdAt: now,
       updatedAt: now,
       transferMode: options.transferMode ?? "minimize",
-      settlementRounding: options.settlementRounding ?? "rupee",
+      settlementRounding: options.settlementRounding ?? "none",
       settlementHubId: null,
       cloudUserId: user,
     };

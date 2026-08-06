@@ -8,8 +8,6 @@ export type TripSummary = {
   trip: TripRow;
   expenseCount: number;
   myBalancePaisa: number | null;
-  /** True when this trip settles in whole rupees. */
-  rounded: boolean;
   /** Largest counterparty transfer involving me, if any. */
   topCounterparty: { name: string; paisa: number } | null;
   label: string;
@@ -55,10 +53,6 @@ async function loadTripRows(tripId: string) {
   };
 }
 
-function formatBalanceLabel(paisa: number, rounded: boolean): string {
-  return formatPkr(paisa, rounded ? 0 : undefined);
-}
-
 export async function buildTripSummaries(
   trips: TripRow[],
   myDisplayNames: string[],
@@ -66,13 +60,11 @@ export async function buildTripSummaries(
   const out: TripSummary[] = [];
   for (const trip of trips) {
     const rows = await loadTripRows(trip.id);
-    const rounded = (trip.settlementRounding ?? "rupee") === "rupee";
     if (!rows) {
       out.push({
         trip,
         expenseCount: 0,
         myBalancePaisa: null,
-        rounded,
         topCounterparty: null,
         label: "no expenses",
       });
@@ -81,15 +73,11 @@ export async function buildTripSummaries(
     const facts = mapToTripFacts(rows);
     const settlement = settleTrip(facts);
     const myId = pickMyParticipantId(rows.participants, myDisplayNames);
-    const me = myId
-      ? settlement.participants.find((p) => p.participantId === myId)
-      : undefined;
     const myBalance =
       myId == null
         ? null
-        : rounded
-          ? (me?.balanceRupeesPaisa ?? 0)
-          : (me?.balancePaisa ?? 0);
+        : (settlement.participants.find((p) => p.participantId === myId)?.balancePaisa ??
+          0);
 
     let topCounterparty: TripSummary["topCounterparty"] = null;
     if (myId && settlement.settlements.length) {
@@ -114,16 +102,15 @@ export async function buildTripSummaries(
     } else if (Math.abs(myBalance) < 1) {
       label = "settled up";
     } else if (myBalance < 0) {
-      label = `you owe ${formatBalanceLabel(-myBalance, rounded)}`;
+      label = `you owe ${formatPkr(-myBalance)}`;
     } else {
-      label = `you are owed ${formatBalanceLabel(myBalance, rounded)}`;
+      label = `you are owed ${formatPkr(myBalance)}`;
     }
 
     out.push({
       trip,
       expenseCount: rows.expenses.length,
       myBalancePaisa: myBalance,
-      rounded,
       topCounterparty,
       label,
     });
@@ -148,11 +135,4 @@ export function filterSummaries(
 
 export function overallBalancePaisa(summaries: TripSummary[]): number {
   return summaries.reduce((sum, s) => sum + (s.myBalancePaisa ?? 0), 0);
-}
-
-/** True when every summary with a balance uses whole-rupee rounding. */
-export function overallUsesRounding(summaries: TripSummary[]): boolean {
-  const withBalance = summaries.filter((s) => s.myBalancePaisa != null);
-  if (!withBalance.length) return true;
-  return withBalance.every((s) => s.rounded);
 }

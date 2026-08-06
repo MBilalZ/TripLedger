@@ -155,6 +155,6 @@ export interface SettleTripResult {
 
 export const DEFAULT_TRIP_SETTINGS: TripSettings = {
   transferMode: "minimize",
-  settlementRounding: "rupee",
+  settlementRounding: "none",
   settlementHubId: null,
 };

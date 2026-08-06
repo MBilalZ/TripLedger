@@ -70,6 +70,8 @@ export function usePeoplePoolsUi() {
     confirmDanger({
       message: `Remove ${displayName} from this group?`,
       header: "Remove friend",
+      acceptLabel: "Remove",
+      rejectLabel: "Keep",
       onAccept: async () => {
         try {
           await store.removeParticipant(id);
@@ -125,6 +127,8 @@ export function usePeoplePoolsUi() {
     confirmDanger({
       message: `Delete pool “${poolLabel}”?`,
       header: "Delete pool",
+      acceptLabel: "Delete",
+      rejectLabel: "Keep",
       onAccept: async () => {
         try {
           await store.removePool(id);

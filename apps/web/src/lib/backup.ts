@@ -33,7 +33,7 @@ function normalizeTrip(trip: TripRow): TripRow {
   return {
     ...trip,
     transferMode: trip.transferMode ?? "minimize",
-    settlementRounding: trip.settlementRounding ?? "rupee",
+    settlementRounding: trip.settlementRounding ?? "none",
     settlementHubId: trip.settlementHubId ?? null,
   };
 }

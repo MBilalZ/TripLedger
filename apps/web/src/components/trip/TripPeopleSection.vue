@@ -95,6 +95,8 @@ function confirmLeave() {
   confirmDanger({
     message: ownerLeave,
     header: "Leave group",
+    acceptLabel: "Leave",
+    rejectLabel: "Stay",
     onAccept: async () => {
       try {
         const result = await trips.leaveTrip(store.tripId);

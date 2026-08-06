@@ -11,16 +11,13 @@ defineProps<{
 }>();
 
 const store = useWorkspaceStore();
-const { trip, expenses, pools, settlement } = storeToRefs(store);
+const { expenses, pools, settlement } = storeToRefs(store);
 const {
   chartByCategory,
   chartByPool,
   chartByPersonPaid,
   chartByPersonShare,
 } = useTripCharts(expenses, pools, settlement);
-const useRoundedBalance = computed(
-  () => (trip.value?.settlementRounding ?? "rupee") === "rupee",
-);
 const sortedParticipants = computed(() => {
   const list = settlement.value?.participants ?? [];
   return [...list].sort((a, b) => {
@@ -31,13 +28,6 @@ const sortedParticipants = computed(() => {
     return a.participantId.localeCompare(b.participantId);
   });
 });
-
-function displayBalancePaisa(p: {
-  balancePaisa: number;
-  balanceRupeesPaisa: number;
-}) {
-  return useRoundedBalance.value ? p.balanceRupeesPaisa : p.balancePaisa;
-}
 </script>
 
 <template>
@@ -61,9 +51,9 @@ function displayBalancePaisa(p: {
         </div>
         <div
           class="font-semibold"
-          :class="displayBalancePaisa(p) >= 0 ? 'money-pos' : 'money-neg'"
+          :class="p.balancePaisa >= 0 ? 'money-pos' : 'money-neg'"
         >
-          {{ formatPkr(displayBalancePaisa(p), useRoundedBalance ? 0 : undefined) }}
+          {{ formatPkr(p.balancePaisa) }}
         </div>
       </div>
       <p v-if="!(settlement?.participants.length)" class="text-sm text-tl-muted">
