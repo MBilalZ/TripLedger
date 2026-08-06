@@ -20,7 +20,6 @@ git push origin prod
 ```bash
 pnpm install
 pnpm lint
-pnpm check:edge-engine
 pnpm check:rls
 pnpm test:engine
 pnpm --filter @tripledger/validation test
@@ -35,16 +34,6 @@ Optional e2e (builds/previews the web app):
 pnpm --filter @tripledger/web build
 pnpm test:e2e
 ```
-
-## Edge engine sync
-
-After changing `packages/engine` or `packages/types`, regenerate the Deno copy:
-
-```bash
-pnpm sync:edge-engine
-```
-
-CI fails if `supabase/functions/_shared` drifts.
 
 ## Pull requests
 

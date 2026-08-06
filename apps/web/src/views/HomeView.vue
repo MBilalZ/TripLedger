@@ -10,8 +10,8 @@ import { formatPkr } from "@tripledger/engine";
 import { useAuthStore } from "@/stores/auth";
 import { useTripsStore } from "@/stores/trips";
 import { downloadFullBackup, importBackupFile } from "@/lib/backup";
-import { isSupabaseConfigured } from "@/api/supabase";
-import { toApiError } from "@/api/errors";
+import { isSupabaseConfigured } from "@/services/supabase";
+import { toApiError } from "@/services/errors";
 import {
   buildTripSummaries,
   filterSummaries,

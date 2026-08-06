@@ -1,6 +1,11 @@
 import { ref } from "vue";
-import { createInvite, type InviteRow, listInvites, revokeInvite } from "@/api/invites";
-import { isSupabaseConfigured } from "@/api/supabase";
+import {
+  createInvite,
+  type InviteRow,
+  listInvites,
+  revokeInvite,
+} from "@/services/invites";
+import { isSupabaseConfigured } from "@/services/supabase";
 import { useAuthStore } from "@/stores/auth";
 import { useWorkspaceStore } from "@/stores/workspace";
 import { useFeedback } from "./useFeedback";

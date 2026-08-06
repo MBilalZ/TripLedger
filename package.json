@@ -11,8 +11,6 @@
     "test:e2e": "pnpm --filter @tripledger/web test:e2e",
     "lint": "biome check .",
     "lint:fix": "biome check --write .",
-    "sync:edge-engine": "node scripts/sync-edge-engine.mjs",
-    "check:edge-engine": "node scripts/sync-edge-engine.mjs --check",
     "check:rls": "node scripts/check-rls-policies.mjs",
     "setup:supabase": "node scripts/setup-supabase.mjs"
   },

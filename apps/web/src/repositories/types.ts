@@ -1,6 +1,4 @@
 import type { SettlementRounding, SplitMode, TransferMode } from "@tripledger/types";
-import type { CreateTripOptions } from "@/api/trips";
-import type { WorkspaceSnapshot } from "@/api/workspace";
 import type {
   AdjustmentRow,
   ExpenseRow,
@@ -10,6 +8,8 @@ import type {
   PoolRow,
   TripRow,
 } from "@/db/dexie";
+import type { CreateTripOptions } from "@/services/trips";
+import type { WorkspaceSnapshot } from "@/services/workspace";
 
 export type { CreateTripOptions, WorkspaceSnapshot };
 

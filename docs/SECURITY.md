@@ -43,7 +43,7 @@ Tighten these in the Supabase dashboard if you need a stricter posture.
 
 ## Edge Functions
 
-- `recompute-settlement` uses the caller’s JWT with the anon client (RLS applies to reads; upsert via RPC).
+- Settlement runs in the client (`@tripledger/engine`) and persists via `upsert_settlement_snapshot` RPC.
 - `send-push` accepts **only** `PUSH_DRAIN_SECRET` as `Authorization: Bearer …`. It does **not** trust unverified JWT payloads. Schedule drains with cron/ops (GitHub Actions); the web app does not drain the global queue.
 
 ## Browser hardening

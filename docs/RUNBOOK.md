@@ -2,11 +2,34 @@
 
 ## Apply migrations
 
+Schema lives in ordered chunks under `supabase/migrations/` (see that directory’s README).
+Add new changes as new timestamped files.
+
+### Stage (local testing)
+
+Use a dedicated Supabase project (not prod). Credentials: gitignored `.env.supabase.stage`.
+
 ```bash
-cp .env.example .env.supabase   # once
+# once: copy from .env.example and fill stage project values
+cp .env.example .env.supabase.stage
+
+SUPABASE_ENV=stage SKIP_GH_SECRETS=1 pnpm setup:supabase
+# writes apps/web/.env.local from the stage project
+```
+
+### Fresh / reset project
+
+1. In Supabase Dashboard: reset the database (or use a new project).
+2. If an old `receipts` Storage bucket still exists, **empty and delete it via the Storage UI or Storage API** — do not `DELETE FROM storage.objects` in SQL (blocked by Supabase).
+3. Clear remote `public.schema_migrations` if present after a partial wipe.
+4. Apply:
+
+```bash
+cp .env.example .env.supabase   # once (prod) or .env.supabase.stage (stage)
 # fill SUPABASE_PROJECT_REF, SUPABASE_ANON_KEY, SUPABASE_DB_PASSWORD, …
 
-pnpm setup:supabase
+SKIP_GH_SECRETS=1 pnpm setup:supabase
+# or: SUPABASE_ENV=stage SKIP_GH_SECRETS=1 pnpm setup:supabase
 ```
 
 If a migration fails with “already exists”, **do not** mark it applied blindly. Inspect the remote schema/policies, reconcile, then insert the filename into `public.schema_migrations` only when the migration is fully present.
@@ -26,17 +49,13 @@ Workflow: `.github/workflows/deploy-pages.yml`.
 
 ## Deploy Edge Functions
 
+Only `send-push` (VAPID secrets). Settlement and auth run in the client.
+
 Requires Supabase CLI + linked project (`supabase link`).
 
 ```bash
-pnpm sync:edge-engine
-supabase functions deploy recompute-settlement
 supabase functions deploy send-push
-supabase functions deploy auth-sign-in
 ```
-
-`auth-sign-in` uses the project’s service role (injected by Supabase) to distinguish
-unknown email (`USER_NOT_FOUND`) from wrong password (`BAD_PASSWORD`).
 
 Set VAPID secrets:
 
@@ -78,15 +97,14 @@ curl -X POST "$SUPABASE_URL/functions/v1/send-push" \
 ## Observability
 
 - Set `VITE_SENTRY_DSN` (local + GH secret) to enable browser error reporting via `reportError`.
-- Optional Edge: `supabase secrets set SENTRY_DSN=...` (used by `_shared/reportError.ts`).
+- Optional Edge: `supabase secrets set SENTRY_DSN=...` (used by `send-push/reportError.ts`).
 - Without DSN, failures still log with a tag (e.g. `settlement.persist`, `sync.outbox`, `send-push`).
 
 ## Incident: settlement wrong for a trip
 
 1. Confirm facts in DB (expenses not voided/superseded incorrectly).
-2. Call `recompute-settlement` with a member JWT, or reload the trip in the app.
-3. Compare `trip_settlement_snapshots.facts_hash` to a local `settleTrip` of the same facts.
-4. If Edge and client disagree, run `pnpm sync:edge-engine` / redeploy functions — `_shared` may be stale.
+2. Reload the trip in the app (client re-runs `settleTrip` and upserts the snapshot).
+3. Compare `trip_settlement_snapshots.facts_hash` / `result` to a local `settleTrip` of the same facts.
 
 ## Incident: push not delivering
 

@@ -10,7 +10,11 @@ function lastPoolKey(tripId: string) {
   return `tl:lastPool:${tripId}`;
 }
 
-export function useExpenseForm() {
+export type ExpenseFormOptions = {
+  onClose?: () => void;
+};
+
+export function useExpenseForm(options: ExpenseFormOptions = {}) {
   const store = useWorkspaceStore();
   const { tripId, participants, pools, expenses, expenseSplits } = storeToRefs(store);
   const { success, error, confirmDanger } = useFeedback();
@@ -110,7 +114,10 @@ export function useExpenseForm() {
 
   function startEditExpense(expenseId: string) {
     const e = expenses.value.find((x) => x.id === expenseId);
-    if (!e) return;
+    if (!e) {
+      editingExpenseId.value = null;
+      return;
+    }
     editingExpenseId.value = expenseId;
     showForm.value = true;
     expenseForm.description = e.description;
@@ -135,6 +142,8 @@ export function useExpenseForm() {
           exactPaisa: s?.exactPaisa ?? 0,
         };
       });
+    } else {
+      customSplits.value = [];
     }
   }
 
@@ -155,10 +164,55 @@ export function useExpenseForm() {
     };
   }
 
+  function isUnchangedEdit(expenseId: string): boolean {
+    const e = expenses.value.find((x) => x.id === expenseId);
+    if (!e) return false;
+    const payload = expensePayload();
+    const amountPaisa = Math.round(payload.amountRupees * 100);
+    if (
+      payload.description !== e.description ||
+      (payload.category || "Misc") !== (e.category || "Misc") ||
+      payload.poolId !== e.poolId ||
+      payload.paidById !== e.paidById ||
+      amountPaisa !== e.amountPaisa ||
+      payload.date !== e.date ||
+      (payload.notes || "") !== (e.notes || "") ||
+      (payload.splitMode ?? null) !== (e.splitMode ?? null)
+    ) {
+      return false;
+    }
+    if (!payload.splitMode) return true;
+    const existing = expenseSplits.value.filter((s) => s.expenseId === e.id);
+    const next = payload.splits ?? [];
+    if (existing.length !== next.length) return false;
+    for (const row of next) {
+      const s = existing.find((x) => x.participantId === row.participantId);
+      if (
+        !s ||
+        s.included !== row.included ||
+        s.shares !== row.shares ||
+        s.percentBps !== row.percentBps ||
+        s.exactPaisa !== row.exactPaisa
+      ) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  function finish() {
+    clearExpenseForm();
+    options.onClose?.();
+  }
+
   async function onSaveExpense() {
     try {
       const payload = expensePayload();
       if (editingExpenseId.value) {
+        if (isUnchangedEdit(editingExpenseId.value)) {
+          finish();
+          return;
+        }
         await store.reviseExpense(editingExpenseId.value, payload);
         success("Expense updated");
       } else {
@@ -166,7 +220,7 @@ export function useExpenseForm() {
         success("Expense added");
       }
       if (payload.poolId) rememberPool(payload.poolId);
-      clearExpenseForm();
+      finish();
     } catch (e) {
       error("Failed", e);
     }
@@ -178,7 +232,7 @@ export function useExpenseForm() {
       header: "Void expense",
       onAccept: async () => {
         await store.voidExpense(id);
-        if (editingExpenseId.value === id) clearExpenseForm();
+        if (editingExpenseId.value === id) finish();
         success("Expense voided");
       },
     });
@@ -189,7 +243,6 @@ export function useExpenseForm() {
     if (row) Object.assign(row, patch);
   }
 
-  // Keep default pool when pools load/change and form is empty.
   watch(
     pools,
     () => {

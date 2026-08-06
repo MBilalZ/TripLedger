@@ -1,4 +1,3 @@
-import type { WorkspaceSnapshot } from "@/api/workspace";
 import {
   type AdjustmentRow,
   db,
@@ -9,6 +8,7 @@ import {
   type PoolRow,
   type TripRow,
 } from "@/db/dexie";
+import type { WorkspaceSnapshot } from "@/services/workspace";
 
 export async function readCachedWorkspace(
   tripId: string,

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted } from "vue";
+import { onMounted, ref } from "vue";
 import { storeToRefs } from "pinia";
 import Button from "primevue/button";
 import InputText from "primevue/inputtext";
@@ -35,6 +35,10 @@ const {
   confirmRemoveParticipant,
 } = usePeoplePoolsUi();
 
+/** Only one friend row expanded for edit at a time. */
+const expandedId = ref<string | null>(null);
+const showAdd = ref(false);
+
 onMounted(() => {
   if (auth.cloud && isOwner.value) void refreshInvites();
 });
@@ -43,6 +47,44 @@ function formatExpiry(iso: string | null) {
   if (!iso) return "No expiry";
   const d = new Date(iso);
   return `Expires ${d.toLocaleDateString()}`;
+}
+
+function toggleExpand(id: string, name: string) {
+  if (expandedId.value === id) {
+    expandedId.value = null;
+    cancelEditParticipant();
+    return;
+  }
+  expandedId.value = id;
+  showAdd.value = false;
+  startEditParticipant(id, name);
+}
+
+function cancelExpand() {
+  expandedId.value = null;
+  cancelEditParticipant();
+}
+
+async function saveExpanded() {
+  await saveParticipant();
+  expandedId.value = null;
+}
+
+function openAdd() {
+  showAdd.value = true;
+  expandedId.value = null;
+  cancelEditParticipant();
+  newParticipant.value = "";
+}
+
+function cancelAdd() {
+  showAdd.value = false;
+  newParticipant.value = "";
+}
+
+async function saveAdd() {
+  await saveParticipant();
+  showAdd.value = false;
 }
 
 function confirmLeave() {
@@ -121,58 +163,48 @@ function confirmLeave() {
     <p v-else-if="auth.cloud" class="text-xs text-tl-muted">
       Ask the group owner for an invite link to add more members.
     </p>
-    <p class="text-xs text-tl-muted">
-      {{
-        auth.cloud
-          ? "Or add a placeholder name (secondary)."
-          : "Add everyone who paid or shares costs."
-      }}
-    </p>
-    <form
-      class="flex flex-col gap-2 sm:flex-row"
-      @submit.prevent="saveParticipant"
-    >
-      <InputText
-        v-model="newParticipant"
-        :placeholder="editingParticipantId ? 'Edit name' : 'Name'"
-        class="w-full"
-        aria-label="Friend name"
-        maxlength="80"
-      />
-      <div class="flex gap-2">
-        <Button
-          type="submit"
-          :label="editingParticipantId ? 'Save' : 'Add'"
-          :icon="editingParticipantId ? 'pi pi-check' : 'pi pi-plus'"
-        />
-        <Button
-          v-if="editingParticipantId"
-          type="button"
-          label="Cancel"
-          severity="secondary"
-          outlined
-          @click="cancelEditParticipant"
-        />
-      </div>
-    </form>
+
     <ul class="m-0 list-none divide-y p-0" aria-label="Friends in this group">
-      <li v-for="p in participants" :key="p.id" class="tl-list-row">
-        <span>{{ p.displayName }}</span>
-        <div class="flex gap-1">
-          <Button
-            icon="pi pi-pencil"
-            text
-            rounded
-            :aria-label="`Edit ${p.displayName}`"
-            @click="startEditParticipant(p.id, p.displayName)"
+      <li v-for="p in participants" :key="p.id" class="py-2">
+        <button
+          type="button"
+          class="tl-list-row w-full text-left"
+          :aria-expanded="expandedId === p.id"
+          @click="toggleExpand(p.id, p.displayName)"
+        >
+          <span>{{ p.displayName }}</span>
+          <i
+            class="pi text-tl-muted"
+            :class="expandedId === p.id ? 'pi-chevron-up' : 'pi-chevron-down'"
+            aria-hidden="true"
           />
+        </button>
+        <div v-if="expandedId === p.id" class="mt-2 space-y-2 pl-1">
+          <form class="flex flex-col gap-2 sm:flex-row" @submit.prevent="saveExpanded">
+            <InputText
+              v-model="newParticipant"
+              class="w-full"
+              aria-label="Friend name"
+              maxlength="80"
+            />
+            <div class="flex gap-2">
+              <Button type="submit" label="Save" icon="pi pi-check" />
+              <Button
+                type="button"
+                label="Cancel"
+                severity="secondary"
+                outlined
+                @click="cancelExpand"
+              />
+            </div>
+          </form>
           <Button
             v-if="isOwner"
+            label="Remove"
             icon="pi pi-times"
             severity="danger"
+            size="small"
             text
-            rounded
-            :aria-label="`Remove ${p.displayName}`"
             @click="confirmRemoveParticipant(p.id, p.displayName)"
           />
         </div>
@@ -181,14 +213,46 @@ function confirmLeave() {
         No friends yet.
       </li>
     </ul>
+
+    <div v-if="showAdd" class="space-y-2 border-t border-tl-hairline pt-3">
+      <form class="flex flex-col gap-2 sm:flex-row" @submit.prevent="saveAdd">
+        <InputText
+          v-model="newParticipant"
+          placeholder="Name"
+          class="w-full"
+          aria-label="Friend name"
+          maxlength="80"
+        />
+        <div class="flex gap-2">
+          <Button type="submit" label="Add" icon="pi pi-plus" />
+          <Button
+            type="button"
+            label="Cancel"
+            severity="secondary"
+            outlined
+            @click="cancelAdd"
+          />
+        </div>
+      </form>
+    </div>
     <Button
-      v-if="auth.cloud"
-      label="Leave group"
-      icon="pi pi-sign-out"
-      severity="secondary"
-      outlined
+      v-else
+      label="Add friend"
+      icon="pi pi-plus"
       size="small"
-      @click="confirmLeave"
+      outlined
+      @click="openAdd"
     />
+
+    <div v-if="auth.cloud && myRole" class="border-t border-tl-hairline pt-3">
+      <Button
+        label="Leave group"
+        icon="pi pi-sign-out"
+        severity="danger"
+        size="small"
+        text
+        @click="confirmLeave"
+      />
+    </div>
   </div>
 </template>

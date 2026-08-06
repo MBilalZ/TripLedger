@@ -3,7 +3,7 @@ import { computed, onMounted } from "vue";
 import { useRoute } from "vue-router";
 import Toast from "primevue/toast";
 import ConfirmDialog from "primevue/confirmdialog";
-import { isSupabaseConfigured } from "@/api/supabase";
+import { isSupabaseConfigured } from "@/services/supabase";
 import AppBottomNav from "@/components/AppBottomNav.vue";
 import PwaInstallBanner from "@/components/PwaInstallBanner.vue";
 import { useAuthStore } from "@/stores/auth";

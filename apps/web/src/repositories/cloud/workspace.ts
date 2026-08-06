@@ -1,6 +1,7 @@
-import * as adjustmentsApi from "@/api/adjustments";
-import { apiMutate } from "@/api/client";
-import * as expensesApi from "@/api/expenses";
+import { newId, type PoolMemberRow, type TripRow } from "@/db/dexie";
+import * as adjustmentsApi from "@/services/adjustments";
+import { apiMutate } from "@/services/client";
+import * as expensesApi from "@/services/expenses";
 import {
   adjustmentToDb,
   expenseSplitToDb,
@@ -8,12 +9,11 @@ import {
   participantToDb,
   poolMemberToDb,
   poolToDb,
-} from "@/api/mappers";
-import * as participantsApi from "@/api/participants";
-import * as poolsApi from "@/api/pools";
-import * as tripsApi from "@/api/trips";
-import { loadWorkspace } from "@/api/workspace";
-import { newId, type PoolMemberRow, type TripRow } from "@/db/dexie";
+} from "@/services/mappers";
+import * as participantsApi from "@/services/participants";
+import * as poolsApi from "@/services/pools";
+import * as tripsApi from "@/services/trips";
+import { loadWorkspace } from "@/services/workspace";
 import type { WorkspaceRepo } from "../types";
 
 export const cloudWorkspaceRepo: WorkspaceRepo = {

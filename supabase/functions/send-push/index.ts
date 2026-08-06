@@ -14,7 +14,7 @@
  */
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 import webpush from "npm:web-push@3.6.7";
-import { reportError } from "../_shared/reportError.ts";
+import { reportError } from "./reportError.ts";
 
 type PushEvent = {
   id: number;

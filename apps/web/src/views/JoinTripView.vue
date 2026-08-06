@@ -4,9 +4,9 @@ import { useRoute, useRouter } from "vue-router";
 import { useToast } from "primevue/usetoast";
 import Button from "primevue/button";
 import InputText from "primevue/inputtext";
-import { toApiError } from "@/api/errors";
-import { joinWithToken } from "@/api/invites";
-import { isSupabaseConfigured } from "@/api/supabase";
+import { toApiError } from "@/services/errors";
+import { joinWithToken } from "@/services/invites";
+import { isSupabaseConfigured } from "@/services/supabase";
 import { useAuthStore } from "@/stores/auth";
 import { useTripsStore } from "@/stores/trips";
 

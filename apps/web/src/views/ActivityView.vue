@@ -7,7 +7,7 @@ import {
   type ActivityItem,
 } from "@/lib/activityFeed";
 import { isEnabled } from "@/lib/features";
-import { isSupabaseConfigured } from "@/api/supabase";
+import { isSupabaseConfigured } from "@/services/supabase";
 import { useAuthStore } from "@/stores/auth";
 import { useTripsStore } from "@/stores/trips";
 

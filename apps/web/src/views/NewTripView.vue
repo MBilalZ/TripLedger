@@ -7,7 +7,7 @@ import InputText from "primevue/inputtext";
 import Select from "primevue/select";
 import type { SettlementRounding, TransferMode } from "@tripledger/types";
 import { ROUNDING_MODES, TRANSFER_MODES } from "@/constants/tripOptions";
-import { toApiError } from "@/api/errors";
+import { toApiError } from "@/services/errors";
 import { useTripsStore } from "@/stores/trips";
 
 const store = useTripsStore();

@@ -1,13 +1,9 @@
 <script setup lang="ts">
-import type { PaymentPrefill } from "@/composables/useTripTabs";
 import TripAdjustmentsSection from "./TripAdjustmentsSection.vue";
 
 defineProps<{
   visible: boolean;
-  prefill: PaymentPrefill | null;
 }>();
-
-const emit = defineEmits<{ consumedPrefill: [] }>();
 </script>
 
 <template>
@@ -19,9 +15,6 @@ const emit = defineEmits<{ consumedPrefill: [] }>();
         payer; only others get transfer rows. Shared bills belong under Expenses.
       </p>
     </div>
-    <TripAdjustmentsSection
-      :prefill="prefill"
-      @consumed-prefill="emit('consumedPrefill')"
-    />
+    <TripAdjustmentsSection />
   </div>
 </template>

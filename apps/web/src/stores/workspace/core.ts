@@ -2,16 +2,11 @@ import type { RealtimeChannel } from "@supabase/supabase-js";
 import { settleTrip } from "@tripledger/engine";
 import type { SettlementRounding, TransferMode } from "@tripledger/types";
 import { computed } from "vue";
-import { subscribeTripChanges, unsubscribeChannel } from "@/api/realtime";
-import {
-  fetchSettlementSnapshot,
-  hashTripFacts,
-  recomputeSettlementRemote,
-  upsertSettlementSnapshot,
-} from "@/api/settlement";
 import { mapToTripFacts } from "@/lib/mapToTripFacts";
 import { reportError } from "@/lib/reportError";
 import { getWorkspaceRepo } from "@/repositories";
+import { subscribeTripChanges, unsubscribeChannel } from "@/services/realtime";
+import { hashTripFacts, upsertSettlementSnapshot } from "@/services/settlement";
 import { useAuthStore } from "@/stores/auth";
 import type { WorkspaceState } from "./state";
 
@@ -59,22 +54,6 @@ export function createCoreActions(state: WorkspaceState) {
       const facts = currentFacts();
       const hash = await hashTripFacts(facts);
       if (hash === lastPersistedHash) return;
-
-      const remote = await recomputeSettlementRemote(state.tripId.value);
-      if (remote) {
-        const snap = await fetchSettlementSnapshot(state.tripId.value);
-        const remoteHash = snap?.facts_hash ?? null;
-        if (remoteHash && remoteHash !== hash) {
-          // Server facts differ — adopt remote settlement.
-          state.settlement.value = remote;
-          lastPersistedHash = remoteHash;
-        } else {
-          // Same facts; keep local result (stable order) and mark persisted.
-          lastPersistedHash = hash;
-        }
-        return;
-      }
-
       await upsertSettlementSnapshot(state.tripId.value, hash, state.settlement.value);
       lastPersistedHash = hash;
     } catch (e) {

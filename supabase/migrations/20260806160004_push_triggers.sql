@@ -1,67 +1,9 @@
--- Web Push subscriptions + event outbox for trip activity notifications
+-- Push enqueue helpers and triggers
+-- Apply in timestamp order on an empty public schema.
 
-create table if not exists public.push_subscriptions (
-  id uuid primary key default gen_random_uuid(),
-  user_id uuid not null references auth.users (id) on delete cascade,
-  endpoint text not null,
-  p256dh text not null,
-  auth text not null,
-  user_agent text,
-  created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now(),
-  unique (user_id, endpoint)
-);
-
-create index if not exists push_subscriptions_user_id_idx
-  on public.push_subscriptions (user_id);
-
-alter table public.push_subscriptions enable row level security;
-
-drop policy if exists push_subscriptions_select_own on public.push_subscriptions;
-create policy push_subscriptions_select_own on public.push_subscriptions
-  for select to authenticated
-  using (user_id = auth.uid());
-
-drop policy if exists push_subscriptions_insert_own on public.push_subscriptions;
-create policy push_subscriptions_insert_own on public.push_subscriptions
-  for insert to authenticated
-  with check (user_id = auth.uid());
-
-drop policy if exists push_subscriptions_update_own on public.push_subscriptions;
-create policy push_subscriptions_update_own on public.push_subscriptions
-  for update to authenticated
-  using (user_id = auth.uid())
-  with check (user_id = auth.uid());
-
-drop policy if exists push_subscriptions_delete_own on public.push_subscriptions;
-create policy push_subscriptions_delete_own on public.push_subscriptions
-  for delete to authenticated
-  using (user_id = auth.uid());
-
-create table if not exists public.push_events (
-  id bigint generated always as identity primary key,
-  trip_id text not null references public.trips (id) on delete cascade,
-  event_type text not null check (
-    event_type in (
-      'expense',
-      'member',
-      'adjustment',
-      'settlement'
-    )
-  ),
-  actor_user_id uuid,
-  title text not null,
-  body text not null,
-  created_at timestamptz not null default now(),
-  processed_at timestamptz
-);
-
-create index if not exists push_events_unprocessed_idx
-  on public.push_events (created_at)
-  where processed_at is null;
-
-alter table public.push_events enable row level security;
--- No client policies: only security definer / service role.
+-- ---------------------------------------------------------------------------
+-- Push enqueue helpers + triggers
+-- ---------------------------------------------------------------------------
 
 create or replace function public.enqueue_trip_push_event(
   p_trip_id text,
@@ -196,29 +138,3 @@ create trigger settlement_push_notify
   for each row
   execute function public.trg_push_settlement();
 
--- Drain helper for edge function (service role)
-create or replace function public.claim_push_events(p_limit integer default 50)
-returns setof public.push_events
-language plpgsql
-security definer
-set search_path = public
-as $$
-begin
-  return query
-  with claimed as (
-    select e.id
-    from public.push_events e
-    where e.processed_at is null
-    order by e.created_at
-    limit greatest(1, least(p_limit, 200))
-    for update skip locked
-  )
-  update public.push_events e
-  set processed_at = now()
-  from claimed
-  where e.id = claimed.id
-  returning e.*;
-end;
-$$;
-
-grant execute on function public.claim_push_events(integer) to service_role;

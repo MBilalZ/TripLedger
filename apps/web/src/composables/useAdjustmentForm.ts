@@ -31,7 +31,11 @@ function syncSplitPeople(people: SplitPerson[], list: ParticipantRow[]): SplitPe
   });
 }
 
-export function useAdjustmentForm() {
+export type AdjustmentFormOptions = {
+  onClose?: () => void;
+};
+
+export function useAdjustmentForm(options: AdjustmentFormOptions = {}) {
   const store = useWorkspaceStore();
   const { participants, adjustments } = storeToRefs(store);
   const { success, error, confirmDanger } = useFeedback();
@@ -171,6 +175,23 @@ export function useAdjustmentForm() {
     splitMode.value = "equal";
   }
 
+  function finish() {
+    clearAdjForm();
+    options.onClose?.();
+  }
+
+  function isUnchangedEdit(id: string): boolean {
+    const a = adjustments.value.find((x) => x.id === id);
+    if (!a) return false;
+    const amountPaisa = Math.round(Number(amountRupees.value ?? 0) * 100);
+    return (
+      paidById.value === a.toId &&
+      editReceivedById.value === a.fromId &&
+      amountPaisa === a.amountPaisa &&
+      (reason.value || "") === (a.reason || "")
+    );
+  }
+
   async function onSaveAdj() {
     try {
       const amount = Number(amountRupees.value ?? 0);
@@ -179,6 +200,10 @@ export function useAdjustmentForm() {
 
       if (editingAdjustmentId.value) {
         if (!editReceivedById.value) throw new Error("Select who received");
+        if (isUnchangedEdit(editingAdjustmentId.value)) {
+          finish();
+          return;
+        }
         await store.updateAdjustment(editingAdjustmentId.value, {
           paidById: paidById.value,
           receivedById: editReceivedById.value,
@@ -186,7 +211,7 @@ export function useAdjustmentForm() {
           reason: reason.value,
         });
         success("Payment updated");
-        clearAdjForm();
+        finish();
         return;
       }
 
@@ -203,7 +228,7 @@ export function useAdjustmentForm() {
           reason: reason.value,
         });
         success("Payment recorded");
-        clearAdjForm();
+        finish();
         return;
       }
 
@@ -221,7 +246,7 @@ export function useAdjustmentForm() {
         })),
       });
       success("Payment recorded");
-      clearAdjForm();
+      finish();
     } catch (e) {
       error("Failed", e);
     }

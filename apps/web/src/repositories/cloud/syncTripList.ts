@@ -1,6 +1,6 @@
-import { requireUser } from "@/api/supabase";
-import * as tripsApi from "@/api/trips";
 import { db, newId, type ParticipantRow, type TripRow } from "@/db/dexie";
+import { requireUser } from "@/services/supabase";
+import * as tripsApi from "@/services/trips";
 import {
   deleteCachedTrip,
   listCachedCloudTrips,

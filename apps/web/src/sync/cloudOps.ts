@@ -1,13 +1,8 @@
 /**
  * Cloud-only sync helpers. Loaded via dynamic import from `engine.ts`
- * so the sync entrypoint does not mix static/dynamic imports of api modules.
+ * so the sync entrypoint does not mix static/dynamic imports of service modules.
  */
-import { apiMutate } from "@/api/client";
-import { participantToDb, poolMemberToDb, poolToDb } from "@/api/mappers";
-import * as poolsApi from "@/api/pools";
-import { getSession, isSupabaseConfigured, requireUser } from "@/api/supabase";
-import * as tripsApi from "@/api/trips";
-import { loadWorkspace } from "@/api/workspace";
+
 import {
   type AdjustmentRow,
   type ExpenseRow,
@@ -18,6 +13,12 @@ import {
   type TripRow,
 } from "@/db/dexie";
 import { cloudWorkspaceRepo } from "@/repositories/cloud/workspace";
+import { apiMutate } from "@/services/client";
+import { participantToDb, poolMemberToDb, poolToDb } from "@/services/mappers";
+import * as poolsApi from "@/services/pools";
+import { getSession, isSupabaseConfigured, requireUser } from "@/services/supabase";
+import * as tripsApi from "@/services/trips";
+import { loadWorkspace } from "@/services/workspace";
 import {
   deleteCachedTrip,
   listCachedCloudTrips,

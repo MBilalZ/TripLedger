@@ -4,7 +4,7 @@ import {
   type SupabaseClient,
   type User,
 } from "@supabase/supabase-js";
-import { ApiError, toApiError } from "./errors";
+import { toApiError } from "./errors";
 
 const url = import.meta.env.VITE_SUPABASE_URL as string | undefined;
 const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined;
@@ -53,9 +53,6 @@ export async function requireUser(): Promise<string> {
   return id;
 }
 
-/** @deprecated Use requireUser — no longer signs in anonymously. */
-export const ensureAuthSession = requireUser;
-
 export async function getSession(): Promise<Session | null> {
   if (!isSupabaseConfigured()) return null;
   const sb = getSupabase();
@@ -97,58 +94,13 @@ export async function signInWithPassword(email: string, password: string): Promi
   const sb = getSupabase();
   const trimmedEmail = email.trim().toLowerCase();
 
-  const { data, error } = await sb.functions.invoke("auth-sign-in", {
-    body: { email: trimmedEmail, password },
+  const { data, error } = await sb.auth.signInWithPassword({
+    email: trimmedEmail,
+    password,
   });
-
-  const payload = data as {
-    access_token?: string;
-    refresh_token?: string;
-    user?: User;
-    code?: string;
-    message?: string;
-  } | null;
-
-  if (error || (payload?.code && !payload.access_token)) {
-    let body: { code?: string; message?: string } | null =
-      payload?.code || payload?.message ? payload : null;
-    if (!body) {
-      try {
-        const ctx = error as { context?: Response } | null;
-        if (ctx?.context && typeof ctx.context.json === "function") {
-          body = (await ctx.context.json()) as {
-            code?: string;
-            message?: string;
-          };
-        }
-      } catch {
-        /* ignore parse errors */
-      }
-    }
-    if (body?.code || body?.message) {
-      throw toApiError(
-        new ApiError(body.message ?? "Sign in failed", {
-          code: body.code ?? "SIGN_IN_FAILED",
-        }),
-      );
-    }
-    throw toApiError(error ?? new Error("Sign in failed"));
-  }
-
-  const session = payload;
-
-  if (!session?.access_token || !session.refresh_token) {
-    throw toApiError(new Error("Sign in failed"));
-  }
-
-  const { data: setData, error: setError } = await sb.auth.setSession({
-    access_token: session.access_token,
-    refresh_token: session.refresh_token,
-  });
-  if (setError) throw toApiError(setError);
-  const user = setData.user ?? session.user;
-  if (!user) throw toApiError(new Error("Sign in failed"));
-  return user;
+  if (error) throw toApiError(error);
+  if (!data.user) throw toApiError(new Error("Sign in failed"));
+  return data.user;
 }
 
 export async function signOut(): Promise<void> {

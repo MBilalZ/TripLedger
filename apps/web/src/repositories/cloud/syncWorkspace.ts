@@ -1,5 +1,5 @@
-import { requireUser } from "@/api/supabase";
 import { db } from "@/db/dexie";
+import { requireUser } from "@/services/supabase";
 import { readCachedWorkspace, writeCachedWorkspace } from "@/sync/cache";
 import { flushOutbox, syncTrip } from "@/sync/engine";
 import { enqueueOutbox, listOutbox } from "@/sync/outbox";

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed } from "vue";
+import { useRouter } from "vue-router";
 import { useTripWorkspace } from "@/composables/useTripWorkspace";
 import { useInviteLink } from "@/composables/useInviteLink";
 import { usePeoplePoolsUi } from "@/composables/usePeoplePoolsUi";
@@ -17,6 +18,7 @@ import TripSettlePanel from "@/components/trip/TripSettlePanel.vue";
 
 const props = defineProps<{ tripId: string }>();
 const auth = useAuthStore();
+const router = useRouter();
 
 const { trip, settlement, loading, statusMessage, isOwner } = useTripWorkspace(
   () => props.tripId,
@@ -26,11 +28,8 @@ const {
   activeTab,
   moreSection,
   moreTitle,
-  paymentPrefill,
   setTab,
   openMore,
-  openPaymentsWithPrefill,
-  consumePaymentPrefill,
 } = useTripTabs();
 const {
   editingTrip,
@@ -56,9 +55,15 @@ function onRecordPayment(payload: {
   receivedById: string;
   amountRupees: number;
 }) {
-  openPaymentsWithPrefill({
-    ...payload,
-    reason: "Settle up",
+  void router.push({
+    name: "payment-new",
+    params: { tripId: props.tripId },
+    query: {
+      paidById: payload.paidById,
+      receivedById: payload.receivedById,
+      amountRupees: String(payload.amountRupees),
+      reason: "Settle up",
+    },
   });
 }
 </script>
@@ -106,11 +111,7 @@ function onRecordPayment(payload: {
       @record-payment="onRecordPayment"
     />
     <TripPoolsPanel :visible="activeTab === 'pools'" />
-    <TripPaymentsPanel
-      :visible="activeTab === 'payments'"
-      :prefill="paymentPrefill"
-      @consumed-prefill="consumePaymentPrefill"
-    />
+    <TripPaymentsPanel :visible="activeTab === 'payments'" />
     <TripMorePanel
       :visible="activeTab === 'more'"
       :more-section="moreSection"

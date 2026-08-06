@@ -4,7 +4,7 @@ import { useRoute, useRouter } from "vue-router";
 import Button from "primevue/button";
 import InputText from "primevue/inputtext";
 import Password from "primevue/password";
-import { toApiError } from "@/api/errors";
+import { toApiError } from "@/services/errors";
 import { useAuthStore } from "@/stores/auth";
 
 const auth = useAuthStore();

@@ -1,4 +1,4 @@
-import * as tripsApi from "@/api/trips";
+import * as tripsApi from "@/services/trips";
 import type { TripListRepo } from "../types";
 
 export const cloudTripListRepo: TripListRepo = {
