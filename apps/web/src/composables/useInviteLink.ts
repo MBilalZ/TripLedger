@@ -16,7 +16,6 @@ export function useInviteLink(tripId: () => string) {
   const { success, error, warn } = useFeedback();
   const inviting = ref(false);
   const invites = ref<InviteRow[]>([]);
-  const loadingInvites = ref(false);
 
   function inviteUrl(token: string) {
     return new URL(
@@ -30,13 +29,10 @@ export function useInviteLink(tripId: () => string) {
       invites.value = [];
       return;
     }
-    loadingInvites.value = true;
     try {
       invites.value = await listInvites(tripId());
     } catch (e) {
       error("Could not load invites", e, 4000);
-    } finally {
-      loadingInvites.value = false;
     }
   }
 
@@ -87,7 +83,6 @@ export function useInviteLink(tripId: () => string) {
   return {
     inviting,
     invites,
-    loadingInvites,
     copyInviteLink,
     copyExisting,
     revoke,

@@ -20,7 +20,6 @@ const { participants, isOwner, myRole } = storeToRefs(store);
 const {
   inviting,
   invites,
-  loadingInvites,
   copyInviteLink,
   copyExisting,
   revoke,
@@ -110,9 +109,8 @@ function confirmLeave() {
           :loading="inviting"
           @click="copyInviteLink"
         />
-        <div v-if="loadingInvites" class="text-xs text-tl-muted">Loading invites…</div>
         <ul
-          v-else-if="invites.length"
+          v-if="invites.length"
           class="m-0 list-none space-y-2 p-0"
           aria-label="Active invites"
         >
