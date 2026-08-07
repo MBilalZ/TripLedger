@@ -175,8 +175,9 @@ function confirmLeave() {
         </li>
       </ul>
 
-      <div v-if="auth.cloud && myRole" class="border-t border-tl-hairline pt-3">
+      <div v-if="auth.cloud && myRole" class="border-t border-tl-hairline p-0">
         <Button
+          class="pt-3"
           label="Leave group"
           icon="pi pi-sign-out"
           severity="danger"
