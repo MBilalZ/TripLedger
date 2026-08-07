@@ -92,7 +92,7 @@ function bump(
         <span class="field-label" :id="`shares-${p.participantId}`">Shares</span>
         <button
           type="button"
-          class="btn"
+          class="tl-icon-btn"
           :aria-label="`Decrease shares for ${p.displayName}`"
           @click="bump(p, 'shares', -1)"
         >
@@ -115,7 +115,7 @@ function bump(
         />
         <button
           type="button"
-          class="btn"
+          class="tl-icon-btn"
           :aria-label="`Increase shares for ${p.displayName}`"
           @click="bump(p, 'shares', 1)"
         >
@@ -125,7 +125,14 @@ function bump(
 
       <div v-else-if="p.included && mode === 'percent'" class="stepper">
         <span class="field-label">%</span>
-        <button type="button" class="btn" @click="bump(p, 'percentBps', -1)">−</button>
+        <button
+          type="button"
+          class="tl-icon-btn"
+          :aria-label="`Decrease percent for ${p.displayName}`"
+          @click="bump(p, 'percentBps', -1)"
+        >
+          −
+        </button>
         <input
           class="num"
           type="number"
@@ -141,12 +148,26 @@ function bump(
             })
           "
         />
-        <button type="button" class="btn" @click="bump(p, 'percentBps', 1)">+</button>
+        <button
+          type="button"
+          class="tl-icon-btn"
+          :aria-label="`Increase percent for ${p.displayName}`"
+          @click="bump(p, 'percentBps', 1)"
+        >
+          +
+        </button>
       </div>
 
       <div v-else-if="p.included && mode === 'exact'" class="stepper">
         <span class="field-label">Rs</span>
-        <button type="button" class="btn" @click="bump(p, 'exactPaisa', -1)">−</button>
+        <button
+          type="button"
+          class="tl-icon-btn"
+          :aria-label="`Decrease amount for ${p.displayName}`"
+          @click="bump(p, 'exactPaisa', -1)"
+        >
+          −
+        </button>
         <input
           class="num wide"
           type="number"
@@ -161,7 +182,14 @@ function bump(
             })
           "
         />
-        <button type="button" class="btn" @click="bump(p, 'exactPaisa', 1)">+</button>
+        <button
+          type="button"
+          class="tl-icon-btn"
+          :aria-label="`Increase amount for ${p.displayName}`"
+          @click="bump(p, 'exactPaisa', 1)"
+        >
+          +
+        </button>
       </div>
 
       <div v-else-if="p.included && mode === 'equal'" class="muted">1 share</div>
@@ -173,11 +201,11 @@ function bump(
 .split-matrix {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: var(--tl-space-2);
 }
 .hint {
-  margin: 0 0 0.25rem;
-  font-size: 0.75rem;
+  margin: 0 0 var(--tl-space-1);
+  font-size: var(--tl-text-xs);
   color: var(--tl-muted);
 }
 .row {
@@ -185,20 +213,20 @@ function bump(
   flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: 0.5rem;
-  min-height: 3rem;
-  padding: 0.65rem 0.75rem;
-  border-radius: 0.65rem;
+  gap: var(--tl-space-2);
+  min-height: var(--tl-control-h);
+  padding: var(--tl-control-pad-y) var(--tl-control-pad-x);
+  border-radius: var(--tl-control-radius);
   background: var(--tl-elevated);
   border: 1px solid var(--tl-hairline);
 }
 .check {
   display: flex;
   align-items: center;
-  gap: 0.65rem;
-  font-size: 0.9rem;
+  gap: var(--tl-space-2);
+  font-size: var(--tl-control-font);
   min-width: 7rem;
-  min-height: 2.75rem;
+  min-height: var(--tl-control-h);
 }
 .check input {
   width: 1.15rem;
@@ -208,51 +236,34 @@ function bump(
 .stepper {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: var(--tl-space-2);
 }
 .field-label {
-  font-size: 0.7rem;
+  font-size: var(--tl-text-xs);
   color: var(--tl-muted);
   width: 2.75rem;
   flex-shrink: 0;
   line-height: 1;
   display: flex;
   align-items: center;
-  min-height: 2.5rem;
-}
-.btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 2.5rem;
-  height: 2.5rem;
-  border: 1px solid var(--tl-border);
-  border-radius: 0.5rem;
-  background: var(--tl-panel);
-  color: var(--tl-text);
-  cursor: pointer;
-  font-size: 1.1rem;
-  line-height: 1;
-  padding: 0;
-}
-.btn:hover {
-  border-color: var(--tl-accent);
+  min-height: var(--tl-control-h);
 }
 .num {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   width: 3.75rem;
-  min-height: 2.5rem;
+  min-height: var(--tl-control-h);
   text-align: center;
   border: 1px solid var(--tl-border);
-  border-radius: 0.5rem;
+  border-radius: var(--tl-control-radius);
   background: var(--tl-panel);
   color: var(--tl-text);
-  padding: 0.35rem 0.5rem;
-  font-size: 0.95rem;
+  padding: 0 var(--tl-space-2);
+  font-size: var(--tl-control-font);
   appearance: textfield;
   -moz-appearance: textfield;
+  box-sizing: border-box;
 }
 .num::-webkit-outer-spin-button,
 .num::-webkit-inner-spin-button {
@@ -263,7 +274,7 @@ function bump(
   width: 5.75rem;
 }
 .muted {
-  font-size: 0.75rem;
+  font-size: var(--tl-text-xs);
   color: var(--tl-muted);
 }
 </style>

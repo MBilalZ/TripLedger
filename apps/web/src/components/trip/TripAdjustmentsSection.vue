@@ -1,11 +1,12 @@
 <script setup lang="ts">
 import { storeToRefs } from "pinia";
 import { useRoute, useRouter } from "vue-router";
-import Button from "primevue/button";
 import { formatPkr } from "@tripledger/engine";
 import { useAdjustmentForm } from "@/composables/useAdjustmentForm";
 import type { PaymentPrefill } from "@/composables/useTripTabs";
 import { useWorkspaceStore } from "@/stores/workspace";
+import TlIcon from "@/components/ui/TlIcon.vue";
+import TlIconButton from "@/components/ui/TlIconButton.vue";
 
 defineProps<{
   prefill?: PaymentPrefill | null;
@@ -55,17 +56,14 @@ function goEdit(adjustmentId: string) {
           <div v-if="a.groupId" class="text-xs text-tl-muted">Split payment</div>
         </div>
         <div class="flex gap-1">
-          <Button
-            icon="pi pi-pencil"
-            text
-            rounded
+          <TlIconButton
+            icon="pencil"
             aria-label="Edit payment"
             @click="goEdit(a.id)"
           />
-          <Button
-            icon="pi pi-times"
-            text
-            severity="danger"
+          <TlIconButton
+            icon="times"
+            variant="danger"
             aria-label="Delete payment"
             @click="confirmRemoveAdjustment(a.id)"
           />
@@ -77,7 +75,7 @@ function goEdit(adjustmentId: string) {
     </div>
 
     <button type="button" class="tl-fab" @click="goAdd">
-      <i class="pi pi-wallet" aria-hidden="true" />
+      <TlIcon name="wallet" />
       Record payment
     </button>
   </div>

@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import { storeToRefs } from "pinia";
-import Button from "primevue/button";
 import type { MenuItem } from "primevue/menuitem";
 import type { MoreSection } from "@/composables/useTripTabs";
 import { isEnabled } from "@/lib/features";
 import { useWorkspaceStore } from "@/stores/workspace";
+import TlIcon from "@/components/ui/TlIcon.vue";
+import TlIconButton from "@/components/ui/TlIconButton.vue";
 import TripPeopleSection from "./TripPeopleSection.vue";
 import TripPoolsSection from "./TripPoolsSection.vue";
 
@@ -55,7 +56,7 @@ function runExport(item: MenuItem) {
               {{ participants.length }} friend(s) in this group
             </div>
           </div>
-          <i class="pi pi-chevron-right text-tl-muted" />
+          <TlIcon name="chevron-right" class="text-tl-muted" />
         </button>
         <button
           type="button"
@@ -68,7 +69,7 @@ function runExport(item: MenuItem) {
               {{ pools.length }} pool(s) · sharing groups
             </div>
           </div>
-          <i class="pi pi-chevron-right text-tl-muted" />
+          <TlIcon name="chevron-right" class="text-tl-muted" />
         </button>
       </div>
 
@@ -86,10 +87,10 @@ function runExport(item: MenuItem) {
           @click="runExport(item)"
         >
           <div class="flex items-center gap-3">
-            <i v-if="item.icon" :class="item.icon" class="text-tl-muted" />
+            <i v-if="item.icon" :class="item.icon" class="tl-icon text-tl-muted" />
             <div class="font-medium">{{ item.label }}</div>
           </div>
-          <i class="pi pi-chevron-right text-tl-muted" />
+          <TlIcon name="chevron-right" class="text-tl-muted" />
         </button>
       </div>
 
@@ -106,7 +107,7 @@ function runExport(item: MenuItem) {
             <div class="font-medium">Copy invite link</div>
             <div class="text-xs text-tl-muted">Share so friends can join</div>
           </div>
-          <i class="pi pi-link text-tl-muted" />
+          <TlIcon name="link" class="text-tl-muted" />
         </button>
         <button
           v-if="canLeaveTrip"
@@ -118,7 +119,7 @@ function runExport(item: MenuItem) {
             <div class="font-medium money-neg">Leave group</div>
             <div class="text-xs text-tl-muted">You’ll lose access until invited again</div>
           </div>
-          <i class="pi pi-sign-out money-neg" />
+          <TlIcon name="sign-out" class="money-neg" />
         </button>
         <button
           v-if="canDeleteTrip"
@@ -130,17 +131,16 @@ function runExport(item: MenuItem) {
             <div class="font-medium money-neg">Delete group</div>
             <div class="text-xs text-tl-muted">Owner only · cannot be undone</div>
           </div>
-          <i class="pi pi-trash money-neg" />
+          <TlIcon name="trash" class="money-neg" />
         </button>
       </div>
     </template>
 
     <template v-else>
       <div class="flex items-center gap-2">
-        <Button
-          icon="pi pi-arrow-left"
-          text
-          rounded
+        <TlIconButton
+          icon="arrow-left"
+          aria-label="Back to more menu"
           @click="emit('update:moreSection', 'menu')"
         />
         <h2 class="text-lg font-semibold text-tl">{{ moreTitle }}</h2>

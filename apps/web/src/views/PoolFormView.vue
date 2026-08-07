@@ -1,12 +1,13 @@
 <script setup lang="ts">
 import { onMounted, watch } from "vue";
 import { useRouter } from "vue-router";
-import Button from "primevue/button";
-import InputText from "primevue/inputtext";
 import Select from "primevue/select";
 import type { SplitMode } from "@tripledger/types";
 import AppLoading from "@/components/AppLoading.vue";
 import SplitMatrix from "@/components/SplitMatrix.vue";
+import TlButton from "@/components/ui/TlButton.vue";
+import TlInput from "@/components/ui/TlInput.vue";
+import TlLabel from "@/components/ui/TlLabel.vue";
 import { SPLIT_MODES } from "@/constants/tripOptions";
 import { usePeoplePoolsUi } from "@/composables/usePeoplePoolsUi";
 import { useTripWorkspace } from "@/composables/useTripWorkspace";
@@ -76,42 +77,35 @@ watch(
     <p class="text-sm text-tl-muted">
       Add at least one friend before creating a pool.
     </p>
-    <Button label="Back" severity="secondary" @click="cancel" />
+    <TlButton label="Back" variant="secondary" @click="cancel" />
   </div>
   <div v-else class="space-y-4">
     <div class="tl-card grid gap-3">
       <div class="flex items-center justify-between gap-2">
         <h3 class="tl-section-title mb-0">{{ poolFormTitle }}</h3>
-        <Button
-          label="Cancel"
-          size="small"
-          severity="secondary"
-          text
-          @click="cancel"
-        />
+        <TlButton label="Cancel" variant="text" @click="cancel" />
       </div>
 
       <div>
-        <label class="tl-input-label">Name</label>
-        <InputText
+        <TlLabel>Name</TlLabel>
+        <TlInput
           v-model="poolName"
-          class="w-full tl-control"
           placeholder="Pool name (e.g. Part A)"
           aria-label="Pool name"
-          maxlength="80"
+          :maxlength="80"
           @keyup.enter="onSavePool"
         />
       </div>
 
       <template v-if="editingPoolId && editingPool">
         <div>
-          <label class="tl-input-label">Split mode</label>
+          <TlLabel>Split mode</TlLabel>
           <Select
             :model-value="editingPool.splitMode"
             :options="SPLIT_MODES"
             option-label="label"
             option-value="value"
-            class="w-full tl-control"
+            class="w-full"
             @update:model-value="
               (v) => store.setPoolSplitMode(editingPoolId!, v as SplitMode)
             "
@@ -126,13 +120,12 @@ watch(
       </template>
 
       <div class="flex flex-wrap gap-2">
-        <Button
+        <TlButton
           :label="editingPoolId ? 'Save pool' : 'Add pool'"
-          :icon="editingPoolId ? 'pi pi-check' : 'pi pi-plus'"
+          :icon="editingPoolId ? 'check' : 'plus'"
           type="button"
           @click="onSavePool"
         />
-        <Button label="Cancel" severity="secondary" outlined @click="cancel" />
       </div>
     </div>
   </div>

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { usePushNotifications } from "@/composables/usePushNotifications";
+import TlIconButton from "@/components/ui/TlIconButton.vue";
 
 const {
   available,
@@ -14,29 +15,25 @@ const {
 
 <template>
   <div v-if="available || iosNeedsInstall" class="tl-sync-wrap">
-    <button
+    <TlIconButton
       v-if="available"
-      type="button"
-      class="tl-icon-btn"
-      :class="{ 'is-active': enabled }"
+      variant="bordered"
+      :icon="enabled ? 'bell' : 'bell-slash'"
       :aria-label="enabled ? 'Alerts on' : 'Enable alerts'"
-      :aria-pressed="enabled"
+      :class="{ 'is-active': enabled }"
       :disabled="busy"
       :title="enabled ? 'Alerts on' : 'Alerts'"
+      :aria-pressed="enabled"
       @click="enabled ? disable() : enable()"
-    >
-      <i :class="enabled ? 'pi pi-bell' : 'pi pi-bell-slash'" />
-    </button>
-    <button
+    />
+    <TlIconButton
       v-else-if="iosNeedsInstall"
-      type="button"
-      class="tl-icon-btn"
-      title="Install the app to enable alerts on iOS"
+      variant="bordered"
+      icon="bell-slash"
       aria-label="Install for alerts"
+      title="Install the app to enable alerts on iOS"
       disabled
-    >
-      <i class="pi pi-bell-slash" />
-    </button>
+    />
     <span v-if="error" class="tl-push-error">{{ error }}</span>
   </div>
 </template>

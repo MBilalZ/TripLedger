@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { storeToRefs } from "pinia";
-import Button from "primevue/button";
 import { formatPkr, paisaToRupees } from "@tripledger/engine";
 import { useWorkspaceStore } from "@/stores/workspace";
+import TlButton from "@/components/ui/TlButton.vue";
 
 defineProps<{ visible: boolean }>();
 
@@ -54,10 +54,10 @@ function recordAsPayment(t: {
             {{ formatPkr(t.amountPaisa) }}
           </div>
         </div>
-        <Button
+        <TlButton
           label="Record"
-          icon="pi pi-wallet"
-          outlined
+          icon="wallet"
+          variant="outlined"
           @click="recordAsPayment(t)"
         />
       </div>

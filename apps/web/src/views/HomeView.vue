@@ -2,8 +2,6 @@
 import { computed, onMounted, ref, watch } from "vue";
 import { useRouter } from "vue-router";
 import { useToast } from "primevue/usetoast";
-import Button from "primevue/button";
-import Menu from "primevue/menu";
 import type { MenuItem } from "primevue/menuitem";
 import { formatPkr } from "@tripledger/engine";
 import { useFeedback } from "@/composables/useFeedback";
@@ -13,6 +11,11 @@ import { downloadFullBackup, importBackupFile } from "@/lib/backup";
 import { isSupabaseConfigured } from "@/services/supabase";
 import { toApiError } from "@/services/errors";
 import AppLoading from "@/components/AppLoading.vue";
+import TlButton from "@/components/ui/TlButton.vue";
+import TlChip from "@/components/ui/TlChip.vue";
+import TlIcon from "@/components/ui/TlIcon.vue";
+import TlIconButton from "@/components/ui/TlIconButton.vue";
+import TlPopupMenu from "@/components/ui/TlPopupMenu.vue";
 import {
   buildTripSummaries,
   filterSummaries,
@@ -27,8 +30,8 @@ const router = useRouter();
 const toast = useToast();
 const { confirmDanger } = useFeedback();
 const fileInput = ref<HTMLInputElement | null>(null);
-const toolsMenu = ref<InstanceType<typeof Menu> | null>(null);
-const pickGroupMenu = ref<InstanceType<typeof Menu> | null>(null);
+const toolsMenu = ref<InstanceType<typeof TlPopupMenu> | null>(null);
+const pickGroupMenu = ref<InstanceType<typeof TlPopupMenu> | null>(null);
 const isDev = import.meta.env.DEV;
 const filter = ref<GroupBalanceFilter>("all");
 const summaries = ref<TripSummary[]>([]);
@@ -250,17 +253,15 @@ function balanceClass(paisa: number | null) {
             </span>
           </p>
         </div>
-        <Button
-          icon="pi pi-ellipsis-h"
-          severity="secondary"
-          text
-          rounded
+        <TlIconButton
+          icon="ellipsis-h"
+          variant="secondary"
           aria-label="Tools"
           aria-haspopup="true"
           aria-controls="home_tools_menu"
           @click="toggleTools"
         />
-        <Menu id="home_tools_menu" ref="toolsMenu" :model="toolItems" popup />
+        <TlPopupMenu id="home_tools_menu" ref="toolsMenu" :model="toolItems" />
         <input
           ref="fileInput"
           type="file"
@@ -286,16 +287,14 @@ function balanceClass(paisa: number | null) {
       </p>
 
       <div class="tl-chip-bar">
-        <button
+        <TlChip
           v-for="chip in filterChips"
           :key="chip.id"
-          type="button"
-          class="tl-chip"
-          :class="{ 'is-active': filter === chip.id }"
+          :active="filter === chip.id"
           @click="filter = chip.id"
         >
           {{ chip.label }}
-        </button>
+        </TlChip>
       </div>
     </section>
 
@@ -328,7 +327,7 @@ function balanceClass(paisa: number | null) {
           :aria-label="`Open ${s.trip.name}`"
         >
           <div class="tl-group-icon" aria-hidden="true">
-            <i class="pi pi-users" />
+            <TlIcon name="users" />
           </div>
           <div class="min-w-0 flex-1">
             <div class="font-medium text-tl">{{ s.trip.name }}</div>
@@ -350,11 +349,9 @@ function balanceClass(paisa: number | null) {
             </div>
           </div>
         </router-link>
-        <Button
-          :icon="store.cloud ? 'pi pi-sign-out' : 'pi pi-trash'"
-          severity="danger"
-          text
-          rounded
+        <TlIconButton
+          :icon="store.cloud ? 'sign-out' : 'trash'"
+          variant="danger"
           class="shrink-0"
           :aria-label="store.cloud ? 'Leave group' : 'Delete group'"
           v-tooltip="store.cloud ? 'Leave group' : 'Delete group'"
@@ -363,18 +360,18 @@ function balanceClass(paisa: number | null) {
       </div>
 
       <div class="flex justify-center pt-2">
-        <Button
+        <TlButton
           v-if="isSupabaseConfigured() && !auth.isSignedIn"
           label="Sign in"
-          icon="pi pi-sign-in"
-          outlined
+          icon="sign-in"
+          variant="outlined"
           @click="router.push({ name: 'auth' })"
         />
-        <Button
+        <TlButton
           v-else
           label="Start a new group"
-          icon="pi pi-user-plus"
-          outlined
+          icon="user-plus"
+          variant="outlined"
           @click="router.push('/trips/new')"
         />
       </div>
@@ -387,14 +384,13 @@ function balanceClass(paisa: number | null) {
       aria-controls="pick_group_menu"
       @click="togglePickGroup"
     >
-      <i class="pi pi-receipt" aria-hidden="true" />
+      <TlIcon name="receipt" />
       Add expense
     </button>
-    <Menu
+    <TlPopupMenu
       id="pick_group_menu"
       ref="pickGroupMenu"
       :model="pickGroupItems"
-      popup
     />
   </div>
 </template>

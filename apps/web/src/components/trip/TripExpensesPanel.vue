@@ -1,10 +1,12 @@
 <script setup lang="ts">
 import { computed } from "vue";
 import { useRoute, useRouter } from "vue-router";
-import Button from "primevue/button";
 import { formatPkr } from "@tripledger/engine";
 import { useExpenseForm } from "@/composables/useExpenseForm";
 import { useWorkspaceStore } from "@/stores/workspace";
+import TlButton from "@/components/ui/TlButton.vue";
+import TlIcon from "@/components/ui/TlIcon.vue";
+import TlIconButton from "@/components/ui/TlIconButton.vue";
 
 defineProps<{ visible: boolean }>();
 const emit = defineEmits<{ openFriends: [] }>();
@@ -54,10 +56,9 @@ function goEdit(expenseId: string) {
         Add at least one friend before logging expenses. Pick a pool when you
         add an expense — that sets who shares by default.
       </p>
-      <Button
+      <TlButton
         label="Add friends"
-        icon="pi pi-users"
-        size="small"
+        icon="users"
         @click="emit('openFriends')"
       />
     </div>
@@ -88,20 +89,14 @@ function goEdit(expenseId: string) {
                   {{ formatPkr(e.amountPaisa) }}
                 </div>
                 <div class="mt-1 flex justify-end gap-1">
-                  <Button
-                    icon="pi pi-pencil"
-                    text
-                    rounded
-                    size="small"
+                  <TlIconButton
+                    icon="pencil"
                     aria-label="Edit expense"
                     @click="goEdit(e.id)"
                   />
-                  <Button
-                    icon="pi pi-trash"
-                    text
-                    severity="danger"
-                    rounded
-                    size="small"
+                  <TlIconButton
+                    icon="trash"
+                    variant="danger"
                     aria-label="Remove expense"
                     v-tooltip="'Remove expense'"
                     @click="confirmRemoveExpense(e.id, e.description)"
@@ -114,7 +109,7 @@ function goEdit(expenseId: string) {
       </div>
 
       <button type="button" class="tl-fab" @click="goAdd">
-        <i class="pi pi-receipt" aria-hidden="true" />
+        <TlIcon name="receipt" />
         Add expense
       </button>
     </template>

@@ -1,12 +1,13 @@
 <script setup lang="ts">
 import { onMounted, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
-import Button from "primevue/button";
 import InputNumber from "primevue/inputnumber";
-import InputText from "primevue/inputtext";
 import Select from "primevue/select";
 import AppLoading from "@/components/AppLoading.vue";
 import SplitMatrix from "@/components/SplitMatrix.vue";
+import TlButton from "@/components/ui/TlButton.vue";
+import TlInput from "@/components/ui/TlInput.vue";
+import TlLabel from "@/components/ui/TlLabel.vue";
 import { SPLIT_MODES } from "@/constants/tripOptions";
 import { useAdjustmentForm } from "@/composables/useAdjustmentForm";
 import { useTripWorkspace } from "@/composables/useTripWorkspace";
@@ -94,13 +95,7 @@ watch(
     <div class="tl-card grid gap-3">
       <div class="flex items-center justify-between gap-2">
         <h3 class="tl-section-title mb-0">{{ adjFormTitle }}</h3>
-        <Button
-          label="Cancel"
-          size="small"
-          severity="secondary"
-          text
-          @click="cancel"
-        />
+        <TlButton label="Cancel" variant="text" @click="cancel" />
       </div>
       <p class="text-sm text-tl-muted">
         Record settle-ups and cash moved outside expenses. Shared bills belong
@@ -108,41 +103,41 @@ watch(
       </p>
 
       <div>
-        <label class="tl-input-label">Paid by</label>
+        <TlLabel>Paid by</TlLabel>
         <Select
           v-model="paidById"
           :options="participants"
           option-label="displayName"
           option-value="id"
           placeholder="Who paid?"
-          class="w-full tl-control"
+          class="w-full"
         />
       </div>
 
       <div>
-        <label class="tl-input-label">Amount (Rs)</label>
+        <TlLabel>Amount (Rs)</TlLabel>
         <InputNumber
           v-model="amountRupees"
-          class="w-full tl-control"
+          class="w-full"
           :min-fraction-digits="0"
           :max-fraction-digits="2"
         />
       </div>
 
       <div v-if="editingAdjustmentId">
-        <label class="tl-input-label">Received by</label>
+        <TlLabel>Received by</TlLabel>
         <Select
           v-model="editReceivedById"
           :options="recipientOptions"
           option-label="displayName"
           option-value="id"
           placeholder="Who received?"
-          class="w-full tl-control"
+          class="w-full"
         />
       </div>
 
       <div v-else class="space-y-2">
-        <label class="tl-input-label">Split with</label>
+        <TlLabel>Split with</TlLabel>
         <ul class="split-with-list">
           <li v-for="p in splitPeople" :key="p.participantId">
             <label class="split-with-row">
@@ -178,13 +173,13 @@ watch(
 
       <template v-if="showSplitControls && isEnabled('advanced_splits')">
         <div>
-          <label class="tl-input-label">How to split</label>
+          <TlLabel>How to split</TlLabel>
           <Select
             v-model="splitMode"
             :options="SPLIT_MODES"
             option-label="label"
             option-value="value"
-            class="w-full tl-control"
+            class="w-full"
           />
           <p v-if="paymentPreview" class="mt-1 text-xs text-tl-muted">
             {{ paymentPreview }}
@@ -200,22 +195,17 @@ watch(
       </template>
 
       <div>
-        <label class="tl-input-label">Note</label>
-        <InputText
-          v-model="reason"
-          class="w-full tl-control"
-          placeholder="Optional"
-        />
+        <TlLabel>Note</TlLabel>
+        <TlInput v-model="reason" placeholder="Optional" />
       </div>
 
       <div class="flex flex-wrap gap-2">
-        <Button
+        <TlButton
           :label="editingAdjustmentId ? 'Save payment' : 'Record payment'"
-          :icon="editingAdjustmentId ? 'pi pi-check' : 'pi pi-plus'"
+          :icon="editingAdjustmentId ? 'check' : 'plus'"
           type="button"
           @click="onSaveAdj"
         />
-        <Button label="Cancel" severity="secondary" outlined @click="cancel" />
       </div>
     </div>
   </div>

@@ -1,11 +1,13 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from "vue";
 import { useRouter } from "vue-router";
-import Button from "primevue/button";
-import InputText from "primevue/inputtext";
 import { isSupabaseConfigured } from "@/services/supabase";
 import { toApiError } from "@/services/errors";
 import PushNotifyToggle from "@/components/PushNotifyToggle.vue";
+import TlButton from "@/components/ui/TlButton.vue";
+import TlIcon from "@/components/ui/TlIcon.vue";
+import TlInput from "@/components/ui/TlInput.vue";
+import TlLabel from "@/components/ui/TlLabel.vue";
 import { useFeedback } from "@/composables/useFeedback";
 import { useTheme } from "@/composables/useTheme";
 import { useAuthStore } from "@/stores/auth";
@@ -82,14 +84,13 @@ async function onSignOut() {
     <section v-if="auth.cloud" class="tl-card space-y-3">
       <h2 class="tl-section-title">Profile</h2>
       <div>
-        <label class="tl-input-label">Display name</label>
-        <InputText v-model="nameDraft" class="w-full" />
+        <TlLabel>Display name</TlLabel>
+        <TlInput v-model="nameDraft" />
       </div>
-      <Button
+      <TlButton
         v-if="nameDirty"
         label="Save name"
-        icon="pi pi-check"
-        size="small"
+        icon="check"
         :loading="saving"
         @click="saveName"
       />
@@ -104,7 +105,7 @@ async function onSignOut() {
             {{ isDark ? "Dark mode" : "Light mode" }}
           </div>
         </div>
-        <i :class="isDark ? 'pi pi-moon' : 'pi pi-sun'" class="text-tl-muted" />
+        <TlIcon :name="isDark ? 'moon' : 'sun'" class="text-tl-muted" />
       </button>
       <div class="tl-list-row">
         <div>
@@ -124,19 +125,18 @@ async function onSignOut() {
 
     <section class="tl-card space-y-3">
       <template v-if="isSupabaseConfigured() && auth.isSignedIn">
-        <Button
+        <TlButton
           label="Log out"
-          icon="pi pi-sign-out"
-          severity="secondary"
-          outlined
+          icon="sign-out"
+          variant="outlined"
           class="w-full"
           @click="onSignOut"
         />
       </template>
       <template v-else-if="isSupabaseConfigured()">
-        <Button
+        <TlButton
           label="Sign in"
-          icon="pi pi-sign-in"
+          icon="sign-in"
           class="w-full"
           @click="router.push({ name: 'auth' })"
         />

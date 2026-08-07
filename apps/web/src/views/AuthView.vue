@@ -1,9 +1,11 @@
 <script setup lang="ts">
 import { computed, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
-import Button from "primevue/button";
-import InputText from "primevue/inputtext";
 import Password from "primevue/password";
+import TlButton from "@/components/ui/TlButton.vue";
+import TlChip from "@/components/ui/TlChip.vue";
+import TlInput from "@/components/ui/TlInput.vue";
+import TlLabel from "@/components/ui/TlLabel.vue";
 import { toApiError } from "@/services/errors";
 import { useAuthStore } from "@/stores/auth";
 
@@ -94,47 +96,37 @@ function switchMode(next: "signin" | "signup") {
       confirmation email is sent.
     </p>
 
-    <div class="flex gap-2">
-      <Button
-        label="Sign in"
-        size="small"
-        :severity="mode === 'signin' ? undefined : 'secondary'"
-        :outlined="mode !== 'signin'"
-        @click="switchMode('signin')"
-      />
-      <Button
-        label="Sign up"
-        size="small"
-        :severity="mode === 'signup' ? undefined : 'secondary'"
-        :outlined="mode !== 'signup'"
-        @click="switchMode('signup')"
-      />
+    <div class="tl-chip-bar">
+      <TlChip :active="mode === 'signin'" @click="switchMode('signin')">
+        Sign in
+      </TlChip>
+      <TlChip :active="mode === 'signup'" @click="switchMode('signup')">
+        Sign up
+      </TlChip>
     </div>
 
     <form class="space-y-3" @submit.prevent="submit">
       <div v-if="mode === 'signup'">
-        <label class="tl-input-label" for="auth-name">Display name</label>
-        <InputText
+        <TlLabel html-for="auth-name">Display name</TlLabel>
+        <TlInput
           id="auth-name"
           v-model="displayName"
-          class="w-full"
           placeholder="How others see you"
           autocomplete="name"
         />
       </div>
       <div>
-        <label class="tl-input-label" for="auth-email">Email</label>
-        <InputText
+        <TlLabel html-for="auth-email">Email</TlLabel>
+        <TlInput
           id="auth-email"
           v-model="email"
           type="email"
-          class="w-full"
           placeholder="you@example.com"
           autocomplete="email"
         />
       </div>
       <div>
-        <label class="tl-input-label" for="auth-password">Password</label>
+        <TlLabel html-for="auth-password">Password</TlLabel>
         <Password
           input-id="auth-password"
           v-model="password"
@@ -148,10 +140,10 @@ function switchMode(next: "signin" | "signup") {
 
       <div v-if="formError" class="tl-alert" role="alert">{{ formError }}</div>
 
-      <Button
+      <TlButton
         type="submit"
         :label="mode === 'signin' ? 'Sign in' : 'Create account'"
-        icon="pi pi-sign-in"
+        icon="sign-in"
         class="w-full"
         :loading="submitting"
       />

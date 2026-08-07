@@ -1,9 +1,12 @@
 <script setup lang="ts">
-import Button from "primevue/button";
-import InputText from "primevue/inputtext";
 import Tag from "primevue/tag";
 import { formatPkr } from "@tripledger/engine";
 import type { TripRow } from "@/db/dexie";
+import TlButton from "@/components/ui/TlButton.vue";
+import TlIcon from "@/components/ui/TlIcon.vue";
+import TlIconButton from "@/components/ui/TlIconButton.vue";
+import TlInput from "@/components/ui/TlInput.vue";
+import TlLabel from "@/components/ui/TlLabel.vue";
 
 defineProps<{
   trip: TripRow;
@@ -31,39 +34,34 @@ const emit = defineEmits<{
       >
       <div v-if="!editingTrip" class="mt-1 flex flex-wrap items-center gap-2">
         <h1 class="text-2xl font-semibold text-tl">{{ trip.name }}</h1>
-        <Button
+        <TlIconButton
           v-if="canEditTrip"
-          icon="pi pi-pencil"
-          text
-          rounded
-          size="small"
+          icon="pencil"
+          aria-label="Edit group"
           v-tooltip="'Edit group'"
           @click="emit('startEdit')"
         />
       </div>
       <div v-else class="mt-2 flex flex-col gap-2">
         <div>
-          <label class="tl-input-label">Group name</label>
-          <InputText
+          <TlLabel>Group name</TlLabel>
+          <TlInput
             :model-value="tripNameDraft"
-            class="w-full"
             @update:model-value="emit('update:tripNameDraft', String($event))"
           />
         </div>
         <div class="flex flex-wrap gap-2">
-          <Button label="Save" size="small" @click="emit('save')" />
-          <Button
+          <TlButton label="Save" @click="emit('save')" />
+          <TlButton
             label="Cancel"
-            size="small"
-            severity="secondary"
-            outlined
+            variant="outlined"
             @click="emit('cancelEdit')"
           />
         </div>
       </div>
       <div class="mt-2 flex flex-wrap items-center gap-2">
         <span class="tl-member-chip">
-          <i class="pi pi-users" aria-hidden="true" />
+          <TlIcon name="users" />
           {{ memberCount }} {{ memberCount === 1 ? "person" : "people" }}
         </span>
         <Tag

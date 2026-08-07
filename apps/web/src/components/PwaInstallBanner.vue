@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import Button from "primevue/button";
 import { usePwaInstall } from "@/composables/usePwaInstall";
+import TlButton from "@/components/ui/TlButton.vue";
+import TlIcon from "@/components/ui/TlIcon.vue";
 
 const { showBanner, mode, dismiss, install } = usePwaInstall();
 </script>
@@ -32,19 +33,18 @@ const { showBanner, mode, dismiss, install } = usePwaInstall();
       </div>
     </div>
     <div class="tl-install-banner__actions">
-      <Button
+      <TlButton
         v-if="mode === 'chromium'"
         label="Install"
-        size="small"
         @click="install"
       />
       <button
         type="button"
-        class="tl-install-banner__dismiss"
+        class="tl-icon-btn tl-install-banner__dismiss"
         aria-label="Dismiss install prompt"
         @click="dismiss"
       >
-        <i class="pi pi-times" />
+        <TlIcon name="times" />
       </button>
     </div>
   </div>

@@ -30,6 +30,7 @@
   --tl-space-5: 1.5rem; /* 24 */
   --tl-space-6: 2rem; /* 32 */
   --tl-space-7: 3rem; /* 48 */
+  --tl-space-8: 4rem; /* 64 */
 
   --tl-radius-sm: 0.5rem;
   --tl-radius-md: 0.75rem;
@@ -45,6 +46,19 @@
   --tl-input-pad-x: 0.875rem;
   --tl-input-pad-y: 0.65rem;
   --tl-tap: 2.75rem; /* 44px */
+
+  /* Shared interactive control scale (buttons, inputs, chips, FABs, menus) */
+  --tl-control-h: var(--tl-tap);
+  --tl-control-pad-x: var(--tl-input-pad-x);
+  --tl-control-pad-y: var(--tl-input-pad-y);
+  --tl-control-radius: var(--tl-radius-md);
+  --tl-control-font: var(--tl-text-sm);
+  --tl-icon-size: 1.125rem;
+
+  /* Display-only badges (non-interactive) */
+  --tl-badge-pad-x: 0.65rem;
+  --tl-badge-pad-y: 0.2rem;
+  --tl-badge-font: var(--tl-text-xs);
 
   --tl-shell-pad-x: max(1rem, env(safe-area-inset-left, 0px));
   --tl-shell-pad-x-end: max(1rem, env(safe-area-inset-right, 0px));

@@ -1,9 +1,11 @@
 <script setup lang="ts">
 import { storeToRefs } from "pinia";
 import { useRoute, useRouter } from "vue-router";
-import Button from "primevue/button";
 import { usePeoplePoolsUi } from "@/composables/usePeoplePoolsUi";
 import { useWorkspaceStore } from "@/stores/workspace";
+import TlButton from "@/components/ui/TlButton.vue";
+import TlIcon from "@/components/ui/TlIcon.vue";
+import TlIconButton from "@/components/ui/TlIconButton.vue";
 
 const emit = defineEmits<{ openFriends: [] }>();
 
@@ -39,10 +41,9 @@ function goEdit(poolId: string) {
       <p class="text-sm text-tl-muted">
         Add at least one friend before creating a pool.
       </p>
-      <Button
+      <TlButton
         label="Add friends"
-        icon="pi pi-users"
-        size="small"
+        icon="users"
         @click="emit('openFriends')"
       />
     </div>
@@ -63,20 +64,14 @@ function goEdit(poolId: string) {
             <div class="text-xs text-tl-muted">{{ pool.splitMode }}</div>
           </div>
           <div class="flex gap-1">
-            <Button
-              icon="pi pi-pencil"
-              text
-              rounded
-              size="small"
+            <TlIconButton
+              icon="pencil"
               aria-label="Edit pool"
               @click="goEdit(pool.id)"
             />
-            <Button
-              icon="pi pi-trash"
-              text
-              severity="danger"
-              rounded
-              size="small"
+            <TlIconButton
+              icon="trash"
+              variant="danger"
               aria-label="Delete pool"
               @click="confirmRemovePool(pool.id, pool.name)"
             />
@@ -85,7 +80,7 @@ function goEdit(poolId: string) {
       </div>
 
       <button type="button" class="tl-fab" @click="goAdd">
-        <i class="pi pi-th-large" aria-hidden="true" />
+        <TlIcon name="th-large" />
         Add pool
       </button>
     </template>

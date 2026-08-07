@@ -2,8 +2,9 @@
 import { onMounted, ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { useToast } from "primevue/usetoast";
-import Button from "primevue/button";
-import InputText from "primevue/inputtext";
+import TlButton from "@/components/ui/TlButton.vue";
+import TlInput from "@/components/ui/TlInput.vue";
+import TlLabel from "@/components/ui/TlLabel.vue";
 import { toApiError } from "@/services/errors";
 import { joinWithToken } from "@/services/invites";
 import { isSupabaseConfigured } from "@/services/supabase";
@@ -85,19 +86,18 @@ async function join() {
     </p>
     <div v-if="error" class="tl-alert" role="alert">{{ error }}</div>
     <div v-else>
-      <label class="tl-input-label" for="join-name">Your display name</label>
-      <InputText
+      <TlLabel html-for="join-name">Your display name</TlLabel>
+      <TlInput
         id="join-name"
         v-model="displayName"
-        class="w-full"
         placeholder="e.g. Bilal"
         autofocus
         @keyup.enter="join"
       />
       <div class="mt-3 flex flex-wrap gap-2">
-        <Button
+        <TlButton
           label="Join group"
-          icon="pi pi-sign-in"
+          icon="sign-in"
           :loading="joining"
           @click="join"
         />

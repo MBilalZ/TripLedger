@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import { onMounted, watch } from "vue";
 import { useRouter } from "vue-router";
-import Button from "primevue/button";
-import InputText from "primevue/inputtext";
 import AppLoading from "@/components/AppLoading.vue";
+import TlButton from "@/components/ui/TlButton.vue";
+import TlInput from "@/components/ui/TlInput.vue";
+import TlLabel from "@/components/ui/TlLabel.vue";
 import { usePeoplePoolsUi } from "@/composables/usePeoplePoolsUi";
 import { useTripWorkspace } from "@/composables/useTripWorkspace";
 import { storeToRefs } from "pinia";
@@ -66,35 +67,27 @@ watch(
     <div class="tl-card grid gap-3">
       <div class="flex items-center justify-between gap-2">
         <h3 class="tl-section-title mb-0">{{ friendFormTitle }}</h3>
-        <Button
-          label="Cancel"
-          size="small"
-          severity="secondary"
-          text
-          @click="cancel"
-        />
+        <TlButton label="Cancel" variant="text" @click="cancel" />
       </div>
 
       <div>
-        <label class="tl-input-label">Name</label>
-        <InputText
+        <TlLabel>Name</TlLabel>
+        <TlInput
           v-model="friendName"
-          class="w-full tl-control"
           placeholder="Friend name"
           aria-label="Friend name"
-          maxlength="80"
+          :maxlength="80"
           @keyup.enter="onSaveFriend"
         />
       </div>
 
       <div class="flex flex-wrap gap-2">
-        <Button
+        <TlButton
           :label="editingParticipantId ? 'Save friend' : 'Add friend'"
-          :icon="editingParticipantId ? 'pi pi-check' : 'pi pi-plus'"
+          :icon="editingParticipantId ? 'check' : 'plus'"
           type="button"
           @click="onSaveFriend"
         />
-        <Button label="Cancel" severity="secondary" outlined @click="cancel" />
       </div>
     </div>
   </div>

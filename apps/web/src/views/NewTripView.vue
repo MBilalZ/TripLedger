@@ -2,8 +2,9 @@
 import { computed, ref } from "vue";
 import { useRouter } from "vue-router";
 import { useToast } from "primevue/usetoast";
-import Button from "primevue/button";
-import InputText from "primevue/inputtext";
+import TlButton from "@/components/ui/TlButton.vue";
+import TlInput from "@/components/ui/TlInput.vue";
+import TlLabel from "@/components/ui/TlLabel.vue";
 import { toApiError } from "@/services/errors";
 import { useTripsStore } from "@/stores/trips";
 
@@ -64,10 +65,9 @@ async function save() {
       </div>
 
       <div>
-        <label class="tl-input-label">Group name</label>
-        <InputText
+        <TlLabel>Group name</TlLabel>
+        <TlInput
           v-model="name"
-          class="w-full"
           placeholder="e.g. Abbottabad weekend"
           autofocus
           @keyup.enter="save"
@@ -77,17 +77,16 @@ async function save() {
       <p class="text-xs text-tl-muted">Amounts are in Pakistani rupees (Rs.).</p>
 
       <div class="flex flex-wrap gap-2">
-        <Button
+        <TlButton
           label="Save group"
-          icon="pi pi-check"
+          icon="check"
           :disabled="!canSave"
           :loading="saving"
           @click="save"
         />
-        <Button
+        <TlButton
           label="Cancel"
-          severity="secondary"
-          outlined
+          variant="outlined"
           :disabled="saving"
           @click="discard"
         />

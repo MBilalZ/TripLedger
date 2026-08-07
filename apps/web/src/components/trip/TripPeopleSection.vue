@@ -2,12 +2,14 @@
 import { onMounted } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { storeToRefs } from "pinia";
-import Button from "primevue/button";
 import { useInviteLink } from "@/composables/useInviteLink";
 import { usePeoplePoolsUi } from "@/composables/usePeoplePoolsUi";
 import { useFeedback } from "@/composables/useFeedback";
 import { useAuthStore } from "@/stores/auth";
 import { useWorkspaceStore } from "@/stores/workspace";
+import TlButton from "@/components/ui/TlButton.vue";
+import TlIcon from "@/components/ui/TlIcon.vue";
+import TlIconButton from "@/components/ui/TlIconButton.vue";
 
 const auth = useAuthStore();
 const store = useWorkspaceStore();
@@ -72,10 +74,9 @@ function confirmRevokeInvite(token: string) {
           Prefer inviting friends — they enter their own name and can edit
           expenses with you. Links expire after 7 days.
         </p>
-        <Button
+        <TlButton
           label="Copy invite link"
-          icon="pi pi-link"
-          size="small"
+          icon="link"
           :loading="inviting"
           @click="copyInviteLink"
         />
@@ -91,16 +92,14 @@ function confirmRevokeInvite(token: string) {
           >
             <span class="text-tl-muted">{{ formatExpiry(inv.expires_at) }}</span>
             <div class="flex gap-1">
-              <Button
+              <TlButton
                 label="Copy"
-                size="small"
-                text
+                variant="text"
                 @click="copyExisting(inv.token)"
               />
-              <Button
+              <TlButton
                 label="Revoke"
-                size="small"
-                severity="danger"
+                variant="danger"
                 text
                 @click="confirmRevokeInvite(inv.token)"
               />
@@ -116,25 +115,19 @@ function confirmRevokeInvite(token: string) {
         <li
           v-for="p in participants"
           :key="p.id"
-          class="tl-list-row py-2"
+          class="tl-list-row"
         >
           <span>{{ p.displayName }}</span>
           <div class="flex gap-1">
-            <Button
-              icon="pi pi-pencil"
-              text
-              rounded
-              size="small"
+            <TlIconButton
+              icon="pencil"
               aria-label="Edit friend"
               @click="goEdit(p.id)"
             />
-            <Button
+            <TlIconButton
               v-if="isOwner"
-              icon="pi pi-trash"
-              text
-              severity="danger"
-              rounded
-              size="small"
+              icon="trash"
+              variant="danger"
               aria-label="Remove friend"
               @click="confirmRemoveParticipant(p.id, p.displayName)"
             />
@@ -147,7 +140,7 @@ function confirmRevokeInvite(token: string) {
     </div>
 
     <button type="button" class="tl-fab" @click="goAdd">
-      <i class="pi pi-user-plus" aria-hidden="true" />
+      <TlIcon name="user-plus" />
       Add friend
     </button>
   </div>

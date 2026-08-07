@@ -1,14 +1,15 @@
 <script setup lang="ts">
 import { onMounted, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
-import Button from "primevue/button";
 import Checkbox from "primevue/checkbox";
 import InputNumber from "primevue/inputnumber";
-import InputText from "primevue/inputtext";
 import Select from "primevue/select";
 import Textarea from "primevue/textarea";
 import AppLoading from "@/components/AppLoading.vue";
 import SplitMatrix from "@/components/SplitMatrix.vue";
+import TlButton from "@/components/ui/TlButton.vue";
+import TlInput from "@/components/ui/TlInput.vue";
+import TlLabel from "@/components/ui/TlLabel.vue";
 import { EXPENSE_CATEGORIES, SPLIT_MODES } from "@/constants/tripOptions";
 import { useExpenseForm } from "@/composables/useExpenseForm";
 import { useTripWorkspace } from "@/composables/useTripWorkspace";
@@ -81,23 +82,17 @@ watch(
     <p class="text-sm text-tl-muted">
       Add at least one friend before logging expenses.
     </p>
-    <Button label="Back" severity="secondary" @click="cancel" />
+    <TlButton label="Back" variant="secondary" @click="cancel" />
   </div>
   <div v-else class="space-y-4">
     <div class="tl-card grid gap-3">
       <div class="flex items-center justify-between gap-2">
         <h3 class="tl-section-title mb-0">{{ expenseFormTitle }}</h3>
-        <Button
-          label="Cancel"
-          size="small"
-          severity="secondary"
-          text
-          @click="cancel"
-        />
+        <TlButton label="Cancel" variant="text" @click="cancel" />
       </div>
 
       <div>
-        <label class="tl-input-label">Pool</label>
+        <TlLabel>Pool</TlLabel>
         <Select
           v-model="expenseForm.poolId"
           :options="pools"
@@ -117,16 +112,15 @@ watch(
       </div>
 
       <div>
-        <label class="tl-input-label">Description</label>
-        <InputText
+        <TlLabel>Description</TlLabel>
+        <TlInput
           v-model="expenseForm.description"
-          class="w-full"
           placeholder="What was this for?"
         />
       </div>
 
       <div>
-        <label class="tl-input-label">Amount (PKR)</label>
+        <TlLabel>Amount (PKR)</TlLabel>
         <InputNumber
           v-model="expenseForm.amountRupees"
           class="w-full"
@@ -136,7 +130,7 @@ watch(
       </div>
 
       <div>
-        <label class="tl-input-label">Paid by</label>
+        <TlLabel>Paid by</TlLabel>
         <Select
           v-model="expenseForm.paidById"
           :options="participants"
@@ -149,7 +143,7 @@ watch(
 
       <div class="grid gap-3 sm:grid-cols-2">
         <div>
-          <label class="tl-input-label">Category</label>
+          <TlLabel>Category</TlLabel>
           <Select
             v-model="expenseForm.category"
             :options="[...EXPENSE_CATEGORIES]"
@@ -157,13 +151,13 @@ watch(
           />
         </div>
         <div>
-          <label class="tl-input-label">Date</label>
-          <InputText v-model="expenseForm.date" type="date" class="w-full" />
+          <TlLabel>Date</TlLabel>
+          <TlInput v-model="expenseForm.date" type="date" />
         </div>
       </div>
 
       <div>
-        <label class="tl-input-label">Notes</label>
+        <TlLabel>Notes</TlLabel>
         <Textarea v-model="expenseForm.notes" rows="2" class="w-full" />
       </div>
 
@@ -193,12 +187,11 @@ watch(
       </div>
 
       <div class="flex flex-wrap gap-2">
-        <Button
+        <TlButton
           :label="editingExpenseId ? 'Save expense' : 'Add expense'"
-          :icon="editingExpenseId ? 'pi pi-check' : 'pi pi-plus'"
+          :icon="editingExpenseId ? 'check' : 'plus'"
           @click="onSaveExpense"
         />
-        <Button label="Cancel" severity="secondary" outlined @click="cancel" />
       </div>
     </div>
     <p v-if="route.name === 'expense-edit'" class="text-xs text-tl-muted">
