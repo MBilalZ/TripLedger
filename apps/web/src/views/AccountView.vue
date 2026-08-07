@@ -29,6 +29,11 @@ const email = computed(
   () => auth.profile?.email || auth.user?.email || "Local device",
 );
 
+const nameDirty = computed(() => {
+  const saved = (auth.profile?.displayName ?? "").trim();
+  return nameDraft.value.trim() !== saved;
+});
+
 async function saveName() {
   if (!auth.cloud) return;
   const next = nameDraft.value.trim();
@@ -81,6 +86,7 @@ async function onSignOut() {
         <InputText v-model="nameDraft" class="w-full" />
       </div>
       <Button
+        v-if="nameDirty"
         label="Save name"
         icon="pi pi-check"
         size="small"

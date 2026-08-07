@@ -15,6 +15,7 @@ defineProps<{
   exportItems: MenuItem[];
   showInvite: boolean;
   inviting: boolean;
+  canLeaveTrip: boolean;
   canDeleteTrip: boolean;
 }>();
 
@@ -22,6 +23,7 @@ const emit = defineEmits<{
   "update:moreSection": [section: MoreSection];
   openMore: [section: MoreSection];
   invite: [];
+  leave: [];
   delete: [];
   exportCommand: [item: MenuItem];
 }>();
@@ -105,6 +107,18 @@ function runExport(item: MenuItem) {
             <div class="text-xs text-tl-muted">Share so friends can join</div>
           </div>
           <i class="pi pi-link text-tl-muted" />
+        </button>
+        <button
+          v-if="canLeaveTrip"
+          type="button"
+          class="tl-list-row w-full text-left"
+          @click="emit('leave')"
+        >
+          <div>
+            <div class="font-medium money-neg">Leave group</div>
+            <div class="text-xs text-tl-muted">You’ll lose access until invited again</div>
+          </div>
+          <i class="pi pi-sign-out money-neg" />
         </button>
         <button
           v-if="canDeleteTrip"

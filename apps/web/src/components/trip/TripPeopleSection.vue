@@ -7,16 +7,14 @@ import { useInviteLink } from "@/composables/useInviteLink";
 import { usePeoplePoolsUi } from "@/composables/usePeoplePoolsUi";
 import { useFeedback } from "@/composables/useFeedback";
 import { useAuthStore } from "@/stores/auth";
-import { useTripsStore } from "@/stores/trips";
 import { useWorkspaceStore } from "@/stores/workspace";
 
 const auth = useAuthStore();
 const store = useWorkspaceStore();
-const trips = useTripsStore();
 const route = useRoute();
 const router = useRouter();
-const { error: showError, success, confirmDanger, confirmAction } = useFeedback();
-const { participants, isOwner, myRole } = storeToRefs(store);
+const { confirmAction } = useFeedback();
+const { participants, isOwner } = storeToRefs(store);
 const {
   inviting,
   invites,
@@ -61,34 +59,6 @@ function confirmRevokeInvite(token: string) {
     message: "People with this link won’t be able to join.",
     onAccept: () => {
       void revoke(token);
-    },
-  });
-}
-
-function confirmLeave() {
-  const message =
-    myRole.value === "owner"
-      ? "If you’re the last member, the group is deleted for everyone. Otherwise another member becomes the owner."
-      : "You’ll lose access until you’re invited again.";
-  confirmDanger({
-    header: "Leave group?",
-    message,
-    onAccept: async () => {
-      try {
-        const result = await trips.leaveTrip(store.tripId);
-        if (result.action === "deleted") {
-          success("Group deleted");
-        } else {
-          success(
-            result.promotedUserId
-              ? "Left — another member is now the owner"
-              : "Left group",
-          );
-        }
-        await router.push("/");
-      } catch (e) {
-        showError("Could not leave", e, 5000);
-      }
     },
   });
 }
@@ -174,18 +144,6 @@ function confirmLeave() {
           No friends yet.
         </li>
       </ul>
-
-      <div v-if="auth.cloud && myRole" class="mt-0 border-t border-tl-hairline p-0">
-        <Button
-          class="mt-3"
-          label="Leave group"
-          icon="pi pi-sign-out"
-          severity="danger"
-          size="small"
-          text
-          @click="confirmLeave"
-        />
-      </div>
     </div>
 
     <button type="button" class="tl-fab" @click="goAdd">
