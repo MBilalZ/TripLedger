@@ -1,10 +1,7 @@
 import { settleTrip } from "@tripledger/engine";
 import { db } from "@/db/dexie";
 import { loadTripFacts } from "@/lib/tripFacts";
-import {
-  buildSettlementReport,
-  buildSettlementReportText,
-} from "@/lib/tripReport";
+import { buildSettlementReport, buildSettlementReportText } from "@/lib/tripReport";
 
 export async function copyWhatsAppSummary(
   tripName: string,

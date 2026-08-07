@@ -2,20 +2,17 @@ import { formatPkr, settleTrip } from "@tripledger/engine";
 import { saveAs } from "file-saver";
 import {
   PDFDocument,
-  rgb,
-  StandardFonts,
   type PDFFont,
   type PDFImage,
   type PDFPage,
   type RGB,
+  rgb,
+  StandardFonts,
 } from "pdf-lib";
 import { db } from "@/db/dexie";
 import { BRAND, hexToRgb, loadBrandLogoPng, toPdfSafeAscii } from "@/lib/exportBrand";
 import { loadTripFacts } from "@/lib/tripFacts";
-import {
-  buildSettlementReport,
-  type SettlementReport,
-} from "@/lib/tripReport";
+import { buildSettlementReport, type SettlementReport } from "@/lib/tripReport";
 
 const PAGE_WIDTH = 595;
 const PAGE_HEIGHT = 842;

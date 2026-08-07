@@ -61,10 +61,7 @@ export async function exportTripExcel(tripId: string): Promise<void> {
   );
 }
 
-function applyFont(
-  row: ExcelJS.Row,
-  opts: Partial<ExcelJS.Font> = {},
-) {
+function applyFont(row: ExcelJS.Row, opts: Partial<ExcelJS.Font> = {}) {
   row.font = { name: FONT, size: 10, color: { argb: `FF${BRAND.text}` }, ...opts };
 }
 
@@ -296,7 +293,7 @@ function writeSettlementSheet(
         argb: `FF${c.differencePaisa >= 0 ? BRAND.ok : BRAND.danger}`,
       },
     };
-    diffCell.numFmt = '+#,##0.00;-#,##0.00;0.00';
+    diffCell.numFmt = "+#,##0.00;-#,##0.00;0.00";
   }
   const check = dataRow(sheet, [
     "Check",
@@ -311,12 +308,7 @@ function writeSettlementSheet(
     for (const a of report.adjustments) {
       dataRow(
         sheet,
-        [
-          a.fromName,
-          a.toName,
-          reportAmountRupees(a.amountPaisa, 2),
-          a.reason,
-        ],
+        [a.fromName, a.toName, reportAmountRupees(a.amountPaisa, 2), a.reason],
         { moneyCols: [3] },
       );
     }
@@ -331,12 +323,7 @@ function writeSettlementSheet(
     for (const t of report.transfers) {
       const row = dataRow(
         sheet,
-        [
-          t.fromName,
-          t.toName,
-          reportAmountRupees(t.amountPaisa, 2),
-          t.roundedRupees,
-        ],
+        [t.fromName, t.toName, reportAmountRupees(t.amountPaisa, 2), t.roundedRupees],
         { bold: true, moneyCols: [3, 4] },
       );
       row.getCell(3).font = {

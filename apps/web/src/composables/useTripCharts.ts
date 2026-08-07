@@ -1,10 +1,7 @@
 import type { SettleTripResult } from "@tripledger/types";
 import { computed, type Ref } from "vue";
 import type { ExpenseRow, PoolRow } from "@/db/dexie";
-import {
-  buildTripReportCharts,
-  type ChartSlice,
-} from "@/lib/tripCharts";
+import { buildTripReportCharts, type ChartSlice } from "@/lib/tripCharts";
 
 export type { ChartSlice };
 
@@ -14,11 +11,7 @@ export function useTripCharts(
   settlement?: Ref<SettleTripResult | null>,
 ) {
   const charts = computed(() =>
-    buildTripReportCharts(
-      expenses.value,
-      pools?.value ?? [],
-      settlement?.value,
-    ),
+    buildTripReportCharts(expenses.value, pools?.value ?? [], settlement?.value),
   );
 
   const chartByCategory = computed(() => charts.value.byCategory);

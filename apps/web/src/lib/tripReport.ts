@@ -158,9 +158,7 @@ function formatSignedDiff(paisa: number): string {
  * Per-pool share matrix mirroring settleTrip allocation
  * (pool-default batch + per-expense overrides).
  */
-export function buildPoolShareMatrix(
-  facts: TripFacts,
-): Map<string, Map<string, number>> {
+export function buildPoolShareMatrix(facts: TripFacts): Map<string, Map<string, number>> {
   const matrix = new Map<string, Map<string, number>>();
   const ensure = (poolId: string, participantId: string) => {
     let row = matrix.get(poolId);
@@ -181,9 +179,7 @@ export function buildPoolShareMatrix(
       .filter((e) => e.poolId === pool.id)
       .reduce((s, e) => s + e.amountPaisa, 0);
     if (poolTotal <= 0) continue;
-    const lines = facts.poolMembers
-      .filter((m) => m.poolId === pool.id)
-      .map(asSplitLine);
+    const lines = facts.poolMembers.filter((m) => m.poolId === pool.id).map(asSplitLine);
     const alloc = allocateSplit(poolTotal, pool.splitMode, lines);
     if (alloc.error) continue;
     for (const slice of alloc.slices) {
@@ -240,7 +236,11 @@ export function buildSettlementReport(opts: {
   const activeExpenses = facts.expenses.filter((e) => !e.supersededById);
 
   const expenses: SettlementReportExpense[] = [...activeExpenses]
-    .sort((a, b) => (a.date ?? "").localeCompare(b.date ?? "") || a.description.localeCompare(b.description))
+    .sort(
+      (a, b) =>
+        (a.date ?? "").localeCompare(b.date ?? "") ||
+        a.description.localeCompare(b.description),
+    )
     .map((e) => ({
       date: e.date ?? "",
       description: e.description,
@@ -265,67 +265,69 @@ export function buildSettlementReport(opts: {
   // Sample shows only people who paid. Keep paid > 0; total from trip total.
   const paymentsTotalPaisa = settlement.summary.tripTotalPaisa;
 
-  const pools: SettlementReportPoolPart[] = facts.pools.map((pool) => {
-    const totalPaisa = activeExpenses
-      .filter((e) => e.poolId === pool.id)
-      .reduce((s, e) => s + e.amountPaisa, 0);
-    const members = facts.poolMembers.filter((m) => m.poolId === pool.id);
-    const weights = new Map(
-      members.map((m) => [m.participantId, memberWeight(pool.splitMode, m)] as const),
-    );
-    const totalWeight = [...weights.values()].reduce((a, b) => a + b, 0);
-    const poolShares = matrix.get(pool.id) ?? new Map<string, number>();
+  const pools: SettlementReportPoolPart[] = facts.pools
+    .map((pool) => {
+      const totalPaisa = activeExpenses
+        .filter((e) => e.poolId === pool.id)
+        .reduce((s, e) => s + e.amountPaisa, 0);
+      const members = facts.poolMembers.filter((m) => m.poolId === pool.id);
+      const weights = new Map(
+        members.map((m) => [m.participantId, memberWeight(pool.splitMode, m)] as const),
+      );
+      const totalWeight = [...weights.values()].reduce((a, b) => a + b, 0);
+      const poolShares = matrix.get(pool.id) ?? new Map<string, number>();
 
-    const partMembers: SettlementReportPoolMember[] = [];
-    for (const p of facts.participants) {
-      const weight = weights.get(p.id) ?? 0;
-      const sharePaisa = poolShares.get(p.id) ?? 0;
-      if (weight <= 0 && sharePaisa <= 0) continue;
-      partMembers.push({
-        participantId: p.id,
-        displayName: p.displayName,
-        weight,
-        weightLabel: formatWeight(pool.splitMode, weight),
-        sharePaisa,
-        shareLabel: formatPkr(sharePaisa),
-      });
-    }
-    sortByName(partMembers);
+      const partMembers: SettlementReportPoolMember[] = [];
+      for (const p of facts.participants) {
+        const weight = weights.get(p.id) ?? 0;
+        const sharePaisa = poolShares.get(p.id) ?? 0;
+        if (weight <= 0 && sharePaisa <= 0) continue;
+        partMembers.push({
+          participantId: p.id,
+          displayName: p.displayName,
+          weight,
+          weightLabel: formatWeight(pool.splitMode, weight),
+          sharePaisa,
+          shareLabel: formatPkr(sharePaisa),
+        });
+      }
+      sortByName(partMembers);
 
-    let costPerUnitLabel: string | null = null;
-    if (pool.splitMode === "shares" && totalWeight > 0 && totalPaisa > 0) {
-      const perHead = paisaToRupees(totalPaisa) / totalWeight;
-      costPerUnitLabel = `Rs. ${perHead.toLocaleString("en-PK", {
-        minimumFractionDigits: 4,
-        maximumFractionDigits: 4,
-      })}`;
-    }
+      let costPerUnitLabel: string | null = null;
+      if (pool.splitMode === "shares" && totalWeight > 0 && totalPaisa > 0) {
+        const perHead = paisaToRupees(totalPaisa) / totalWeight;
+        costPerUnitLabel = `Rs. ${perHead.toLocaleString("en-PK", {
+          minimumFractionDigits: 4,
+          maximumFractionDigits: 4,
+        })}`;
+      }
 
-    const weightNoun =
-      pool.splitMode === "shares"
-        ? "people"
-        : pool.splitMode === "equal"
+      const weightNoun =
+        pool.splitMode === "shares"
           ? "people"
-          : pool.splitMode === "percent"
-            ? "percent weight"
-            : "exact total";
+          : pool.splitMode === "equal"
+            ? "people"
+            : pool.splitMode === "percent"
+              ? "percent weight"
+              : "exact total";
 
-    return {
-      poolId: pool.id,
-      name: pool.name,
-      splitMode: pool.splitMode,
-      totalPaisa,
-      totalLabel: formatPkr(totalPaisa, 0),
-      totalWeight,
-      weightColumn: weightColumnLabel(pool.splitMode),
-      sharedAmongLabel:
-        pool.splitMode === "shares" || pool.splitMode === "equal"
-          ? `Shared among ${totalWeight} ${weightNoun}`
-          : `Split mode: ${pool.splitMode} (total weight ${totalWeight})`,
-      costPerUnitLabel,
-      members: partMembers,
-    };
-  }).filter((p) => p.totalPaisa > 0 || p.members.length > 0);
+      return {
+        poolId: pool.id,
+        name: pool.name,
+        splitMode: pool.splitMode,
+        totalPaisa,
+        totalLabel: formatPkr(totalPaisa, 0),
+        totalWeight,
+        weightColumn: weightColumnLabel(pool.splitMode),
+        sharedAmongLabel:
+          pool.splitMode === "shares" || pool.splitMode === "equal"
+            ? `Shared among ${totalWeight} ${weightNoun}`
+            : `Split mode: ${pool.splitMode} (total weight ${totalWeight})`,
+        costPerUnitLabel,
+        members: partMembers,
+      };
+    })
+    .filter((p) => p.totalPaisa > 0 || p.members.length > 0);
 
   const poolNames = pools.map((p) => p.name);
 
@@ -349,9 +351,14 @@ export function buildSettlementReport(opts: {
         totalShareLabel: formatPkr(totalSharePaisa),
       };
     }),
-  ).filter((r) => r.totalSharePaisa > 0 || settlement.participants.some(
-    (p) => p.participantId === r.participantId && (p.paidPaisa > 0 || p.adjNetPaisa !== 0),
-  ));
+  ).filter(
+    (r) =>
+      r.totalSharePaisa > 0 ||
+      settlement.participants.some(
+        (p) =>
+          p.participantId === r.participantId && (p.paidPaisa > 0 || p.adjNetPaisa !== 0),
+      ),
+  );
 
   // Prefer showing all participants who have any money activity
   const compareParticipants = sortByName(
@@ -455,13 +462,17 @@ export function buildSettlementReportText(report: SettlementReport): string {
       lines.push(`*${pool.name}:* ${pool.totalLabel} (${pool.sharedAmongLabel})`);
       for (const m of pool.members) {
         if (pool.splitMode === "shares" || pool.splitMode === "equal") {
-          lines.push(`* ${m.displayName}: ${m.weightLabel} ${pool.splitMode === "shares" ? "people" : "included"}`);
+          lines.push(
+            `* ${m.displayName}: ${m.weightLabel} ${pool.splitMode === "shares" ? "people" : "included"}`,
+          );
         } else {
           lines.push(`* ${m.displayName}: ${m.weightLabel}`);
         }
       }
       if (pool.costPerUnitLabel) {
-        lines.push(`Cost per person: ${pool.totalLabel.replace("Rs. ", "")} ÷ ${pool.totalWeight} = *${pool.costPerUnitLabel}*`);
+        lines.push(
+          `Cost per person: ${pool.totalLabel.replace("Rs. ", "")} ÷ ${pool.totalWeight} = *${pool.costPerUnitLabel}*`,
+        );
       }
       lines.push("*Shares*");
       for (const m of pool.members) {
