@@ -2,12 +2,16 @@ import { settleTrip } from "@tripledger/engine";
 import ExcelJS from "exceljs";
 import { saveAs } from "file-saver";
 import { db } from "@/db/dexie";
+import { BRAND, loadBrandLogoPng } from "@/lib/exportBrand";
 import { loadTripFacts } from "@/lib/tripFacts";
 import {
   buildSettlementReport,
   reportAmountRupees,
   type SettlementReport,
 } from "@/lib/tripReport";
+
+const FONT = "Calibri";
+const COLS = 6;
 
 export async function exportTripExcel(tripId: string): Promise<void> {
   const trip = await db.trips.get(tripId);
@@ -23,8 +27,29 @@ export async function exportTripExcel(tripId: string): Promise<void> {
 
   const wb = new ExcelJS.Workbook();
   wb.creator = "TripLedger";
-  const sheet = wb.addWorksheet("Settlement");
-  writeSettlementSheet(sheet, report);
+  wb.company = "TripLedger";
+
+  const sheet = wb.addWorksheet("Settlement", {
+    properties: { defaultRowHeight: 18 },
+    views: [{ state: "frozen", ySplit: 4 }],
+  });
+
+  sheet.columns = [
+    { width: 22 },
+    { width: 18 },
+    { width: 16 },
+    { width: 16 },
+    { width: 16 },
+    { width: 16 },
+  ];
+
+  const logoBytes = await loadBrandLogoPng();
+  const logoId = wb.addImage({
+    buffer: logoBytes as unknown as ExcelJS.Buffer,
+    extension: "png",
+  });
+
+  writeSettlementSheet(sheet, report, logoId);
 
   const buf = await wb.xlsx.writeBuffer();
   const safe = trip.name.replace(/[^\w-]+/g, "_");
@@ -36,119 +61,290 @@ export async function exportTripExcel(tripId: string): Promise<void> {
   );
 }
 
+function applyFont(
+  row: ExcelJS.Row,
+  opts: Partial<ExcelJS.Font> = {},
+) {
+  row.font = { name: FONT, size: 10, color: { argb: `FF${BRAND.text}` }, ...opts };
+}
+
+function styleBanner(sheet: ExcelJS.Worksheet, report: SettlementReport, logoId: number) {
+  for (let r = 1; r <= 3; r++) {
+    for (let c = 1; c <= COLS; c++) {
+      const cell = sheet.getCell(r, c);
+      cell.fill = {
+        type: "pattern",
+        pattern: "solid",
+        fgColor: { argb: `FF${BRAND.teal}` },
+      };
+    }
+  }
+  sheet.getRow(1).height = 24;
+  sheet.getRow(2).height = 20;
+  sheet.getRow(3).height = 12;
+
+  sheet.mergeCells(1, 2, 1, COLS);
+  sheet.mergeCells(2, 2, 2, COLS);
+
+  const title = sheet.getCell(1, 2);
+  title.value = "TripLedger - Expense Settlement Summary";
+  title.font = {
+    name: FONT,
+    bold: true,
+    size: 18,
+    color: { argb: `FF${BRAND.white}` },
+  };
+  title.alignment = { vertical: "middle", horizontal: "left" };
+
+  const subtitle = sheet.getCell(2, 2);
+  subtitle.value = `${report.tripName}  |  Total ${report.tripTotalLabel}  |  ${report.currency}  |  ${report.balancedLabel}`;
+  subtitle.font = {
+    name: FONT,
+    size: 11,
+    color: { argb: `FF${BRAND.white}` },
+  };
+  subtitle.alignment = { vertical: "middle" };
+
+  sheet.addImage(logoId, {
+    tl: { col: 0.2, row: 0.35 },
+    ext: { width: 40, height: 40 },
+  });
+
+  sheet.getRow(4).height = 8;
+}
+
 function sectionTitle(sheet: ExcelJS.Worksheet, title: string) {
   const row = sheet.addRow([title]);
-  row.font = { bold: true, size: 13 };
+  applyFont(row, { bold: true, size: 12, color: { argb: `FF${BRAND.teal}` } });
+  sheet.mergeCells(row.number, 1, row.number, COLS);
+  for (let c = 1; c <= COLS; c++) {
+    const cell = row.getCell(c);
+    cell.fill = {
+      type: "pattern",
+      pattern: "solid",
+      fgColor: { argb: `FF${BRAND.tealLight}` },
+    };
+    cell.border = thinBorder();
+  }
+  row.height = 22;
+  return row;
+}
+
+function thinBorder(): Partial<ExcelJS.Borders> {
+  const edge: Partial<ExcelJS.Border> = {
+    style: "thin",
+    color: { argb: `FF${BRAND.border}` },
+  };
+  return { top: edge, bottom: edge, left: edge, right: edge };
+}
+
+function headerRow(sheet: ExcelJS.Worksheet, labels: string[]) {
+  const row = sheet.addRow(labels);
+  applyFont(row, { bold: true, size: 10 });
+  for (let c = 1; c <= labels.length; c++) {
+    const cell = row.getCell(c);
+    cell.fill = {
+      type: "pattern",
+      pattern: "solid",
+      fgColor: { argb: `FF${BRAND.slate}` },
+    };
+    cell.border = thinBorder();
+    cell.alignment = { vertical: "middle" };
+  }
+  return row;
+}
+
+function dataRow(
+  sheet: ExcelJS.Worksheet,
+  values: (string | number | null)[],
+  opts?: { bold?: boolean; moneyCols?: number[] },
+) {
+  const row = sheet.addRow(values);
+  applyFont(row, opts?.bold ? { bold: true } : {});
+  for (let c = 1; c <= values.length; c++) {
+    const cell = row.getCell(c);
+    cell.border = thinBorder();
+    if (opts?.moneyCols?.includes(c)) {
+      cell.numFmt = "#,##0.00";
+      cell.alignment = { horizontal: "right" };
+    }
+  }
+  return row;
 }
 
 function spacer(sheet: ExcelJS.Worksheet) {
   sheet.addRow([]);
 }
 
-function writeSettlementSheet(sheet: ExcelJS.Worksheet, report: SettlementReport) {
-  sectionTitle(sheet, "Expense Settlement Summary");
-  sheet.addRow(["Trip", report.tripName]);
-  sheet.addRow(["Currency", report.currency]);
-  sheet.addRow(["Total Trip Expense", reportAmountRupees(report.tripTotalPaisa, 0)]);
-  sheet.addRow(["Status", report.balancedLabel]);
-  spacer(sheet);
+function writeSettlementSheet(
+  sheet: ExcelJS.Worksheet,
+  report: SettlementReport,
+  logoId: number,
+) {
+  styleBanner(sheet, report, logoId);
 
   sectionTitle(sheet, "Expense List");
-  sheet.addRow(["Date", "Description", "Category", "Pool", "Payer", "Amount"]);
-  for (const e of report.expenses) {
-    sheet.addRow([
-      e.date,
-      e.description,
-      e.category,
-      e.poolName,
-      e.payerName,
-      reportAmountRupees(e.amountPaisa, 0),
-    ]);
+  headerRow(sheet, ["Date", "Description", "Category", "Pool", "Payer", "Amount"]);
+  if (report.expenses.length === 0) {
+    dataRow(sheet, ["None", "", "", "", "", ""]);
+  } else {
+    for (const e of report.expenses) {
+      dataRow(
+        sheet,
+        [
+          e.date,
+          e.description,
+          e.category,
+          e.poolName,
+          e.payerName,
+          reportAmountRupees(e.amountPaisa, 0),
+        ],
+        { moneyCols: [6] },
+      );
+    }
   }
   spacer(sheet);
 
-  sectionTitle(sheet, "1. Payments");
-  sheet.addRow(["Person", "Paid"]);
+  sectionTitle(sheet, "Payments");
+  headerRow(sheet, ["Person", "Paid"]);
   for (const p of report.payments) {
-    sheet.addRow([p.displayName, reportAmountRupees(p.paidPaisa, 0)]);
+    dataRow(sheet, [p.displayName, reportAmountRupees(p.paidPaisa, 0)], {
+      moneyCols: [2],
+    });
   }
-  const totalRow = sheet.addRow(["Total", reportAmountRupees(report.paymentsTotalPaisa, 0)]);
-  totalRow.font = { bold: true };
+  const totalRow = dataRow(
+    sheet,
+    ["Total", reportAmountRupees(report.paymentsTotalPaisa, 0)],
+    { bold: true, moneyCols: [2] },
+  );
+  totalRow.getCell(1).font = {
+    name: FONT,
+    bold: true,
+    size: 10,
+    color: { argb: `FF${BRAND.teal}` },
+  };
+  totalRow.getCell(2).font = {
+    name: FONT,
+    bold: true,
+    size: 10,
+    color: { argb: `FF${BRAND.teal}` },
+  };
   spacer(sheet);
 
   for (const pool of report.pools) {
     sectionTitle(sheet, pool.name);
-    sheet.addRow(["Pool total", reportAmountRupees(pool.totalPaisa, 0)]);
-    sheet.addRow([pool.sharedAmongLabel]);
+    dataRow(sheet, ["Pool total", reportAmountRupees(pool.totalPaisa, 0)], {
+      moneyCols: [2],
+    });
+    dataRow(sheet, [pool.sharedAmongLabel]);
     if (pool.costPerUnitLabel) {
-      sheet.addRow(["Cost per person", pool.costPerUnitLabel]);
+      dataRow(sheet, ["Cost per person", pool.costPerUnitLabel]);
     }
-    sheet.addRow(["Person", pool.weightColumn, "Share"]);
+    headerRow(sheet, ["Person", pool.weightColumn, "Share"]);
     for (const m of pool.members) {
-      sheet.addRow([
-        m.displayName,
-        pool.splitMode === "percent" || pool.splitMode === "exact"
-          ? m.weightLabel
-          : m.weight,
-        reportAmountRupees(m.sharePaisa, 2),
-      ]);
+      dataRow(
+        sheet,
+        [
+          m.displayName,
+          pool.splitMode === "percent" || pool.splitMode === "exact"
+            ? m.weightLabel
+            : m.weight,
+          reportAmountRupees(m.sharePaisa, 2),
+        ],
+        { moneyCols: [3] },
+      );
     }
     spacer(sheet);
   }
 
   sectionTitle(sheet, "Total each person should contribute");
-  const matrixHeader = ["Person", ...report.poolNames, "Total Share"];
-  sheet.addRow(matrixHeader);
+  headerRow(sheet, ["Person", ...report.poolNames, "Total Share"]);
   for (const row of report.matrix) {
-    sheet.addRow([
+    const values: (string | number)[] = [
       row.displayName,
       ...row.cells.map((c) =>
-        c.sharePaisa === 0 ? "—" : reportAmountRupees(c.sharePaisa, 2),
+        c.sharePaisa === 0 ? "-" : reportAmountRupees(c.sharePaisa, 2),
       ),
       reportAmountRupees(row.totalSharePaisa, 2),
-    ]);
+    ];
+    const moneyCols = values
+      .map((v, i) => (typeof v === "number" ? i + 1 : -1))
+      .filter((i) => i > 0);
+    dataRow(sheet, values, { moneyCols });
   }
   spacer(sheet);
 
   sectionTitle(sheet, "Compare with actual payments");
-  sheet.addRow(["Person", "Paid", "Should Pay", "Difference"]);
+  headerRow(sheet, ["Person", "Paid", "Should Pay", "Difference"]);
   for (const c of report.compare) {
-    sheet.addRow([
-      c.displayName,
-      reportAmountRupees(c.paidPaisa, 2),
-      reportAmountRupees(c.shouldPayPaisa, 2),
-      reportAmountRupees(c.differencePaisa, 2),
-    ]);
+    const row = dataRow(
+      sheet,
+      [
+        c.displayName,
+        reportAmountRupees(c.paidPaisa, 2),
+        reportAmountRupees(c.shouldPayPaisa, 2),
+        reportAmountRupees(c.differencePaisa, 2),
+      ],
+      { moneyCols: [2, 3, 4] },
+    );
+    const diffCell = row.getCell(4);
+    diffCell.font = {
+      name: FONT,
+      bold: true,
+      size: 10,
+      color: {
+        argb: `FF${c.differencePaisa >= 0 ? BRAND.ok : BRAND.danger}`,
+      },
+    };
+    diffCell.numFmt = '+#,##0.00;-#,##0.00;0.00';
   }
-  sheet.addRow(["Check", report.differenceChecksumLabel]);
+  const check = dataRow(sheet, [
+    "Check",
+    report.differenceChecksumLabel.replace(/[✓✔]/g, "OK"),
+  ]);
+  applyFont(check, { italic: true, color: { argb: `FF${BRAND.muted}` } });
   spacer(sheet);
 
   if (report.adjustments.length > 0) {
     sectionTitle(sheet, "Adjustments");
-    sheet.addRow(["From", "To", "Amount", "Reason"]);
+    headerRow(sheet, ["From", "To", "Amount", "Reason"]);
     for (const a of report.adjustments) {
-      sheet.addRow([
-        a.fromName,
-        a.toName,
-        reportAmountRupees(a.amountPaisa, 2),
-        a.reason,
-      ]);
+      dataRow(
+        sheet,
+        [
+          a.fromName,
+          a.toName,
+          reportAmountRupees(a.amountPaisa, 2),
+          a.reason,
+        ],
+        { moneyCols: [3] },
+      );
     }
     spacer(sheet);
   }
 
   sectionTitle(sheet, "Final Settlement");
-  sheet.addRow(["From", "To", "Amount", "Rounded (nearest Rs)"]);
+  headerRow(sheet, ["From", "To", "Amount", "Rounded (nearest Rs)"]);
   if (report.transfers.length === 0) {
-    sheet.addRow(["", "", "No transfers needed — everyone is settled.", ""]);
+    dataRow(sheet, ["", "", "No transfers needed - everyone is settled.", ""]);
   } else {
     for (const t of report.transfers) {
-      sheet.addRow([
-        t.fromName,
-        t.toName,
-        reportAmountRupees(t.amountPaisa, 2),
-        t.roundedRupees,
-      ]);
+      const row = dataRow(
+        sheet,
+        [
+          t.fromName,
+          t.toName,
+          reportAmountRupees(t.amountPaisa, 2),
+          t.roundedRupees,
+        ],
+        { bold: true, moneyCols: [3, 4] },
+      );
+      row.getCell(3).font = {
+        name: FONT,
+        bold: true,
+        size: 10,
+        color: { argb: `FF${BRAND.teal}` },
+      };
     }
   }
 }
