@@ -19,11 +19,7 @@ const MAIN_TABS: ReadonlySet<MainTab> = new Set([
   "more",
 ]);
 
-const MORE_SECTIONS: ReadonlySet<MoreSection> = new Set([
-  "menu",
-  "people",
-  "pools",
-]);
+const MORE_SECTIONS: ReadonlySet<MoreSection> = new Set(["menu", "people", "pools"]);
 
 type PersistedTripUi = {
   activeTab: MainTab;

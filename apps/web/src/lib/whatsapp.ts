@@ -1,10 +1,7 @@
 import { formatPkr } from "@tripledger/engine";
 import type { SettleTripResult } from "@tripledger/types";
 
-export function buildWhatsAppSummary(
-  tripName: string,
-  result: SettleTripResult,
-): string {
+export function buildWhatsAppSummary(tripName: string, result: SettleTripResult): string {
   const lines: string[] = [
     `*TripLedger — ${tripName}*`,
     "",
