@@ -73,7 +73,7 @@ function runExport(item: MenuItem) {
       <div v-if="isEnabled('exports')" class="tl-card space-y-1">
         <h2 class="tl-section-title">Exports & reports</h2>
         <p class="mb-2 text-xs text-tl-muted">
-          Share when the group is balanced. WhatsApp, Excel, PDF, and JSON backup.
+          Share balances and suggested transfers when the group is balanced.
         </p>
         <button
           v-for="item in exportItems"

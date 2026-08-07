@@ -1,64 +1,30 @@
 import type { SettleTripResult } from "@tripledger/types";
 import { computed, type Ref } from "vue";
 import type { ExpenseRow, PoolRow } from "@/db/dexie";
+import {
+  buildTripReportCharts,
+  type ChartSlice,
+} from "@/lib/tripReport";
 
-export type ChartSlice = {
-  name: string;
-  paisa: number;
-  pct: number;
-};
-
-function toSlices(map: Map<string, number>): ChartSlice[] {
-  const total = [...map.values()].reduce((a, b) => a + b, 0) || 1;
-  return [...map.entries()]
-    .map(([name, paisa]) => ({
-      name,
-      paisa,
-      pct: Math.round((paisa / total) * 100),
-    }))
-    .sort((a, b) => b.paisa - a.paisa);
-}
+export type { ChartSlice };
 
 export function useTripCharts(
   expenses: Ref<ExpenseRow[]>,
   pools?: Ref<PoolRow[]>,
   settlement?: Ref<SettleTripResult | null>,
 ) {
-  const chartByCategory = computed(() => {
-    const map = new Map<string, number>();
-    for (const e of expenses.value) {
-      map.set(e.category || "Misc", (map.get(e.category || "Misc") ?? 0) + e.amountPaisa);
-    }
-    return toSlices(map);
-  });
+  const charts = computed(() =>
+    buildTripReportCharts(
+      expenses.value,
+      pools?.value ?? [],
+      settlement?.value,
+    ),
+  );
 
-  const chartByPool = computed(() => {
-    const nameById = new Map((pools?.value ?? []).map((p) => [p.id, p.name]));
-    const map = new Map<string, number>();
-    for (const e of expenses.value) {
-      const name = nameById.get(e.poolId) ?? "Pool";
-      map.set(name, (map.get(name) ?? 0) + e.amountPaisa);
-    }
-    return toSlices(map);
-  });
-
-  const chartByPersonPaid = computed(() => {
-    const list = settlement?.value?.participants ?? [];
-    const map = new Map<string, number>();
-    for (const p of list) {
-      if (p.paidPaisa > 0) map.set(p.displayName, p.paidPaisa);
-    }
-    return toSlices(map);
-  });
-
-  const chartByPersonShare = computed(() => {
-    const list = settlement?.value?.participants ?? [];
-    const map = new Map<string, number>();
-    for (const p of list) {
-      if (p.sharePaisa > 0) map.set(p.displayName, p.sharePaisa);
-    }
-    return toSlices(map);
-  });
+  const chartByCategory = computed(() => charts.value.byCategory);
+  const chartByPool = computed(() => charts.value.byPool);
+  const chartByPersonPaid = computed(() => charts.value.byPersonPaid);
+  const chartByPersonShare = computed(() => charts.value.byPersonShare);
 
   return {
     chartByCategory,

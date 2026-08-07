@@ -1,41 +1,51 @@
-import { formatPkr } from "@tripledger/engine";
 import type { SettleTripResult } from "@tripledger/types";
+import { db } from "@/db/dexie";
+import { buildTripReport, buildTripReportText } from "@/lib/tripReport";
 
-export function buildWhatsAppSummary(tripName: string, result: SettleTripResult): string {
-  const lines: string[] = [
-    `*TripLedger — ${tripName}*`,
-    "",
-    `Trip Total: ${formatPkr(result.summary.tripTotalPaisa, 0)}`,
-    "",
-    "*Paid*",
-  ];
-
-  for (const p of result.participants) {
-    const adj = p.adjNetPaisa !== 0 ? ` · Adj ${formatPkr(p.adjNetPaisa)}` : "";
-    lines.push(
-      `${p.displayName}: Paid ${formatPkr(p.paidPaisa, 0)} · Share ${formatPkr(p.sharePaisa)}${adj}`,
-    );
-  }
-
-  lines.push("", "*Final Settlement*");
-  if (!result.consistency.ok) {
-    lines.push("_Consistency error — do not settle until fixed._");
-  } else if (result.settlements.length === 0) {
-    lines.push("All settled — nothing to pay.");
-  } else {
-    for (const t of result.settlements) {
-      lines.push(`${t.fromName} → ${t.toName}: ${formatPkr(t.amountPaisa)}`);
-    }
-  }
-
-  return lines.join("\n");
+export function buildWhatsAppSummary(
+  tripName: string,
+  result: SettleTripResult,
+  opts?: {
+    currency?: string;
+    expenses?: { category?: string; amountPaisa: number; poolId: string }[];
+    pools?: { id: string; name: string }[];
+  },
+): string {
+  const report = buildTripReport({
+    tripName,
+    currency: opts?.currency ?? "PKR",
+    settlement: result,
+    expenses: opts?.expenses ?? [],
+    pools: opts?.pools ?? [],
+  });
+  return buildTripReportText(report);
 }
 
 export async function copyWhatsAppSummary(
   tripName: string,
   result: SettleTripResult,
+  tripId?: string,
 ): Promise<void> {
-  const text = buildWhatsAppSummary(tripName, result);
+  let currency = "PKR";
+  let expenses: { category?: string; amountPaisa: number; poolId: string }[] = [];
+  let pools: { id: string; name: string }[] = [];
+
+  if (tripId) {
+    const trip = await db.trips.get(tripId);
+    currency = trip?.currency ?? "PKR";
+    const [expenseRows, poolRows] = await Promise.all([
+      db.expenses
+        .where("tripId")
+        .equals(tripId)
+        .filter((e) => !e.supersededById)
+        .toArray(),
+      db.pools.where("tripId").equals(tripId).toArray(),
+    ]);
+    expenses = expenseRows;
+    pools = poolRows;
+  }
+
+  const text = buildWhatsAppSummary(tripName, result, { currency, expenses, pools });
   if (!navigator.clipboard?.writeText) {
     throw new Error("Clipboard is not available in this browser");
   }

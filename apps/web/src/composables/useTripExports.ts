@@ -31,7 +31,11 @@ export function useTripExports(opts: {
     if (!assertBalancedForExport()) return;
     try {
       const { copyWhatsAppSummary } = await import("@/lib/whatsapp");
-      await copyWhatsAppSummary(opts.trip.value.name, opts.settlement.value);
+      await copyWhatsAppSummary(
+        opts.trip.value.name,
+        opts.settlement.value,
+        opts.tripId(),
+      );
       success("Copied for WhatsApp");
     } catch (e) {
       error("Copy failed", e, 4000);
@@ -82,19 +86,6 @@ export function useTripExports(opts: {
             await exportTripPdf(opts.tripId());
           },
           true,
-        ),
-    },
-    {
-      label: "JSON",
-      icon: "pi pi-download",
-      command: () =>
-        runExport(
-          "JSON",
-          async () => {
-            const { downloadTripJson } = await import("@/lib/backup");
-            await downloadTripJson(opts.tripId());
-          },
-          false,
         ),
     },
   ]);
