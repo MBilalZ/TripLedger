@@ -1,53 +1,37 @@
-import type { SettleTripResult } from "@tripledger/types";
+import { settleTrip } from "@tripledger/engine";
 import { db } from "@/db/dexie";
-import { buildTripReport, buildTripReportText } from "@/lib/tripReport";
-
-export function buildWhatsAppSummary(
-  tripName: string,
-  result: SettleTripResult,
-  opts?: {
-    currency?: string;
-    expenses?: { category?: string; amountPaisa: number; poolId: string }[];
-    pools?: { id: string; name: string }[];
-  },
-): string {
-  const report = buildTripReport({
-    tripName,
-    currency: opts?.currency ?? "PKR",
-    settlement: result,
-    expenses: opts?.expenses ?? [],
-    pools: opts?.pools ?? [],
-  });
-  return buildTripReportText(report);
-}
+import { loadTripFacts } from "@/lib/tripFacts";
+import {
+  buildSettlementReport,
+  buildSettlementReportText,
+} from "@/lib/tripReport";
 
 export async function copyWhatsAppSummary(
   tripName: string,
-  result: SettleTripResult,
+  _result: unknown,
   tripId?: string,
 ): Promise<void> {
-  let currency = "PKR";
-  let expenses: { category?: string; amountPaisa: number; poolId: string }[] = [];
-  let pools: { id: string; name: string }[] = [];
-
-  if (tripId) {
-    const trip = await db.trips.get(tripId);
-    currency = trip?.currency ?? "PKR";
-    const [expenseRows, poolRows] = await Promise.all([
-      db.expenses
-        .where("tripId")
-        .equals(tripId)
-        .filter((e) => !e.supersededById)
-        .toArray(),
-      db.pools.where("tripId").equals(tripId).toArray(),
-    ]);
-    expenses = expenseRows;
-    pools = poolRows;
-  }
-
-  const text = buildWhatsAppSummary(tripName, result, { currency, expenses, pools });
+  if (!tripId) throw new Error("Trip id is required for WhatsApp summary");
+  const trip = await db.trips.get(tripId);
+  if (!trip) throw new Error("Trip not found");
+  const facts = await loadTripFacts(tripId);
+  const settlement = settleTrip(facts);
+  const report = buildSettlementReport({
+    tripName: trip.name || tripName,
+    currency: trip.currency,
+    facts,
+    settlement,
+  });
+  const text = buildSettlementReportText(report);
   if (!navigator.clipboard?.writeText) {
     throw new Error("Clipboard is not available in this browser");
   }
   await navigator.clipboard.writeText(text);
+}
+
+/** Sync helper for tests. */
+export function buildWhatsAppSummaryFromReport(
+  report: ReturnType<typeof buildSettlementReport>,
+): string {
+  return buildSettlementReportText(report);
 }

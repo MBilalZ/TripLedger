@@ -4,7 +4,7 @@ import type { ExpenseRow, PoolRow } from "@/db/dexie";
 import {
   buildTripReportCharts,
   type ChartSlice,
-} from "@/lib/tripReport";
+} from "@/lib/tripCharts";
 
 export type { ChartSlice };
 
