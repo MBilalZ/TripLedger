@@ -71,6 +71,12 @@ export async function loadWorkspace(tripId: string): Promise<WorkspaceSnapshot> 
       .filter((e) => !e.supersededById && !e.removed)
       .sort((a, b) => a.createdAt.localeCompare(b.createdAt));
 
+    const pools = (poolsRes.data ?? []).map(poolFromDb);
+    const activePoolIds = new Set(pools.map((p) => p.id));
+    const poolMembers = (membersRes.data ?? [])
+      .map(poolMemberFromDb)
+      .filter((m) => activePoolIds.has(m.poolId));
+
     const role = roleRes.data?.role;
     const myRole = role === "owner" || role === "member" ? role : null;
 
@@ -78,8 +84,8 @@ export async function loadWorkspace(tripId: string): Promise<WorkspaceSnapshot> 
       data: {
         trip: tripRes.data ? tripFromDb(tripRes.data as DbTrip) : null,
         participants: (partsRes.data ?? []).map(participantFromDb),
-        pools: (poolsRes.data ?? []).map(poolFromDb),
-        poolMembers: (membersRes.data ?? []).map(poolMemberFromDb),
+        pools,
+        poolMembers,
         expenses,
         expenseSplits: (splitsRes.data ?? []).map(expenseSplitFromDb),
         adjustments: (adjRes.data ?? []).map(adjustmentFromDb),

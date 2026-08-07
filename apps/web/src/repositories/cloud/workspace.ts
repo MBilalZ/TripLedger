@@ -109,6 +109,7 @@ export const cloudWorkspaceRepo: WorkspaceRepo = {
   },
 
   async removePool(poolId) {
+    await poolsApi.deletePoolMembersByPool(poolId);
     await poolsApi.updatePool(poolId, {
       deleted_at: new Date().toISOString(),
     });
