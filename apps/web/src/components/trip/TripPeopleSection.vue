@@ -177,7 +177,7 @@ function confirmLeave() {
 
       <div v-if="auth.cloud && myRole" class="mt-0 border-t border-tl-hairline p-0">
         <Button
-          class="pt-3"
+          class="mt-3"
           label="Leave group"
           icon="pi pi-sign-out"
           severity="danger"
