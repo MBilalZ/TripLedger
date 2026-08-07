@@ -132,7 +132,10 @@ function runExport(item: MenuItem) {
         <h2 class="text-lg font-semibold text-tl">{{ moreTitle }}</h2>
       </div>
       <TripPeopleSection v-if="moreSection === 'people'" />
-      <TripPoolsSection v-else-if="moreSection === 'pools'" />
+      <TripPoolsSection
+        v-else-if="moreSection === 'pools'"
+        @open-friends="emit('openMore', 'people')"
+      />
     </template>
   </div>
 </template>

@@ -5,7 +5,7 @@ import type { WorkspaceState } from "./state";
 export function createParticipantActions(state: WorkspaceState, core: CoreActions) {
   async function addParticipant(displayName: string) {
     const name = displayName.trim();
-    if (!name) return;
+    if (!name) throw new Error("Name is required");
     const { participant, members } = await getWorkspaceRepo().addParticipant(
       state.tripId.value,
       name,

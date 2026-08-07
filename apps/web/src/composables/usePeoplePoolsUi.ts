@@ -1,11 +1,15 @@
 import { formatPkr } from "@tripledger/engine";
 import { storeToRefs } from "pinia";
-import { ref } from "vue";
+import { computed, ref } from "vue";
 import type { SplitPerson } from "@/components/SplitMatrix.vue";
 import { useWorkspaceStore } from "@/stores/workspace";
 import { useFeedback } from "./useFeedback";
 
-export function usePeoplePoolsUi() {
+export type PeoplePoolsUiOptions = {
+  onClose?: () => void;
+};
+
+export function usePeoplePoolsUi(options: PeoplePoolsUiOptions = {}) {
   const store = useWorkspaceStore();
   const { participants, pools, settlement } = storeToRefs(store);
   const { success, error, run, confirmDanger } = useFeedback();
@@ -13,11 +17,26 @@ export function usePeoplePoolsUi() {
   const editingTrip = ref(false);
   const tripNameDraft = ref("");
   const editingParticipantId = ref<string | null>(null);
-  const newParticipant = ref("");
+  const friendName = ref("");
   const editingPoolId = ref<string | null>(null);
-  const newPool = ref("");
-  const poolNameDraft = ref("");
+  const poolName = ref("");
   let poolMemberPersistTimer: ReturnType<typeof setTimeout> | null = null;
+
+  const friendFormTitle = computed(() =>
+    editingParticipantId.value ? "Edit friend" : "Add friend",
+  );
+  const poolFormTitle = computed(() =>
+    editingPoolId.value ? "Edit pool" : "Add pool",
+  );
+  const canAddPools = computed(() => participants.value.length > 0);
+
+  const editingPool = computed(
+    () => pools.value.find((p) => p.id === editingPoolId.value) ?? null,
+  );
+
+  function finish() {
+    options.onClose?.();
+  }
 
   function startEditTrip() {
     if (!store.trip) return;
@@ -39,28 +58,43 @@ export function usePeoplePoolsUi() {
     );
   }
 
-  function startEditParticipant(id: string, name: string) {
-    editingParticipantId.value = id;
-    newParticipant.value = name;
-  }
-
-  function cancelEditParticipant() {
+  function clearFriendForm() {
     editingParticipantId.value = null;
-    newParticipant.value = "";
+    friendName.value = "";
   }
 
-  async function saveParticipant() {
+  function openAddFriend() {
+    clearFriendForm();
+  }
+
+  function startEditFriend(id: string) {
+    const p = participants.value.find((x) => x.id === id);
+    if (!p) {
+      editingParticipantId.value = null;
+      return;
+    }
+    editingParticipantId.value = id;
+    friendName.value = p.displayName;
+  }
+
+  async function onSaveFriend() {
+    const name = friendName.value.trim();
+    if (!name) {
+      error("Name is required");
+      return;
+    }
     try {
       if (editingParticipantId.value) {
         await store.updateParticipant(editingParticipantId.value, {
-          displayName: newParticipant.value,
+          displayName: name,
         });
         success("Friend updated");
       } else {
-        await store.addParticipant(newParticipant.value);
+        await store.addParticipant(name);
         success("Friend added");
       }
-      cancelEditParticipant();
+      clearFriendForm();
+      finish();
     } catch (e) {
       error("Failed", e);
     }
@@ -81,44 +115,57 @@ export function usePeoplePoolsUi() {
     });
   }
 
-  async function onAddPool() {
+  function clearPoolForm() {
+    editingPoolId.value = null;
+    poolName.value = "";
+  }
+
+  function openAddPool() {
+    clearPoolForm();
+  }
+
+  function startEditPool(id: string) {
+    const pool = pools.value.find((p) => p.id === id);
+    if (!pool) {
+      editingPoolId.value = null;
+      return;
+    }
+    editingPoolId.value = id;
+    poolName.value = pool.name;
+  }
+
+  async function onSavePool() {
+    const name = poolName.value.trim();
+    if (!name) {
+      error("Pool name is required");
+      return;
+    }
     try {
-      const id = await store.addPool(newPool.value);
+      if (editingPoolId.value) {
+        const pool = pools.value.find((p) => p.id === editingPoolId.value);
+        if (pool && name !== pool.name.trim()) {
+          await store.updatePool(editingPoolId.value, { name });
+        }
+        success("Pool updated");
+        clearPoolForm();
+        finish();
+        return;
+      }
+      const id = await store.addPool(name);
       if (!id) return;
-      newPool.value = "";
+      clearPoolForm();
       success("Pool added");
+      finish();
     } catch (e) {
       const msg = e instanceof Error ? e.message : "";
       if (/saved locally|sync/i.test(msg)) {
-        newPool.value = "";
+        clearPoolForm();
         error("Pool saved on this device", e, 5000);
+        finish();
         return;
       }
-      error("Cannot add pool", e, 4000);
+      error(editingPoolId.value ? "Failed" : "Cannot add pool", e, 4000);
     }
-  }
-
-  function startEditPoolName(id: string, name: string) {
-    editingPoolId.value = id;
-    poolNameDraft.value = name;
-  }
-
-  function cancelEditPoolName() {
-    editingPoolId.value = null;
-    poolNameDraft.value = "";
-  }
-
-  async function savePoolName() {
-    if (!editingPoolId.value) return;
-    await run(
-      async () => {
-        await store.updatePool(editingPoolId.value!, {
-          name: poolNameDraft.value,
-        });
-        cancelEditPoolName();
-      },
-      { success: "Pool updated" },
-    );
   }
 
   function confirmRemovePool(id: string, poolLabel: string) {
@@ -177,21 +224,25 @@ export function usePeoplePoolsUi() {
     editingTrip,
     tripNameDraft,
     editingParticipantId,
-    newParticipant,
+    friendName,
+    friendFormTitle,
     editingPoolId,
-    newPool,
-    poolNameDraft,
+    editingPool,
+    poolName,
+    poolFormTitle,
+    canAddPools,
     startEditTrip,
     cancelEditTrip,
     saveTrip,
-    startEditParticipant,
-    cancelEditParticipant,
-    saveParticipant,
+    clearFriendForm,
+    openAddFriend,
+    startEditFriend,
+    onSaveFriend,
     confirmRemoveParticipant,
-    onAddPool,
-    startEditPoolName,
-    cancelEditPoolName,
-    savePoolName,
+    clearPoolForm,
+    openAddPool,
+    startEditPool,
+    onSavePool,
     confirmRemovePool,
     peopleForPool,
     poolTotal,

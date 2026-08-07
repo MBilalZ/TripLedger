@@ -74,6 +74,34 @@ const router = createRouter({
       props: true,
       meta: { requiresAuth: true },
     },
+    {
+      path: "/trips/:tripId/friends/new",
+      name: "friend-new",
+      component: () => import("@/views/FriendFormView.vue"),
+      props: true,
+      meta: { requiresAuth: true },
+    },
+    {
+      path: "/trips/:tripId/friends/:participantId/edit",
+      name: "friend-edit",
+      component: () => import("@/views/FriendFormView.vue"),
+      props: true,
+      meta: { requiresAuth: true },
+    },
+    {
+      path: "/trips/:tripId/pools/new",
+      name: "pool-new",
+      component: () => import("@/views/PoolFormView.vue"),
+      props: true,
+      meta: { requiresAuth: true },
+    },
+    {
+      path: "/trips/:tripId/pools/:poolId/edit",
+      name: "pool-edit",
+      component: () => import("@/views/PoolFormView.vue"),
+      props: true,
+      meta: { requiresAuth: true },
+    },
   ],
 });
 

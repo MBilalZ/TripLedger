@@ -1,176 +1,93 @@
 <script setup lang="ts">
-import { ref } from "vue";
 import { storeToRefs } from "pinia";
+import { useRoute, useRouter } from "vue-router";
 import Button from "primevue/button";
-import InputText from "primevue/inputtext";
-import Select from "primevue/select";
-import type { SplitMode } from "@tripledger/types";
-import SplitMatrix from "@/components/SplitMatrix.vue";
-import { SPLIT_MODES } from "@/constants/tripOptions";
 import { usePeoplePoolsUi } from "@/composables/usePeoplePoolsUi";
 import { useWorkspaceStore } from "@/stores/workspace";
 
+const emit = defineEmits<{ openFriends: [] }>();
+
+const route = useRoute();
+const router = useRouter();
 const store = useWorkspaceStore();
-const { participants, pools } = storeToRefs(store);
-const {
-  editingPoolId,
-  newPool,
-  poolNameDraft,
-  onAddPool,
-  startEditPoolName,
-  cancelEditPoolName,
-  savePoolName,
-  confirmRemovePool,
-  peopleForPool,
-  poolTotal,
-  onPoolMemberChange,
-} = usePeoplePoolsUi();
+const { pools } = storeToRefs(store);
+const { canAddPools, confirmRemovePool } = usePeoplePoolsUi();
 
-const expandedId = ref<string | null>(null);
-const showAdd = ref(false);
-
-function togglePool(id: string, name: string) {
-  if (expandedId.value === id) {
-    expandedId.value = null;
-    cancelEditPoolName();
-    return;
-  }
-  expandedId.value = id;
-  showAdd.value = false;
-  startEditPoolName(id, name);
+function currentTripId() {
+  return store.tripId || String(route.params.tripId ?? "");
 }
 
-function cancelExpand() {
-  expandedId.value = null;
-  cancelEditPoolName();
+function goAdd() {
+  void router.push({
+    name: "pool-new",
+    params: { tripId: currentTripId() },
+  });
 }
 
-async function saveName() {
-  await savePoolName();
-}
-
-function openAdd() {
-  showAdd.value = true;
-  expandedId.value = null;
-  cancelEditPoolName();
-  newPool.value = "";
-}
-
-async function addPool() {
-  await onAddPool();
-  showAdd.value = false;
+function goEdit(poolId: string) {
+  void router.push({
+    name: "pool-edit",
+    params: { tripId: currentTripId(), poolId },
+  });
 }
 </script>
 
 <template>
   <div class="space-y-4">
-    <div v-if="!participants.length" class="tl-card text-sm text-tl-muted">
-      Add friends first before creating a pool.
+    <div v-if="!canAddPools" class="tl-card space-y-3">
+      <h3 class="tl-section-title mb-0">Add friends first</h3>
+      <p class="text-sm text-tl-muted">
+        Add at least one friend before creating a pool.
+      </p>
+      <Button
+        label="Add friends"
+        icon="pi pi-users"
+        size="small"
+        @click="emit('openFriends')"
+      />
     </div>
-    <template v-else>
-      <div
-        v-if="!pools.length"
-        class="tl-card text-sm text-tl-muted"
-      >
-        No pools yet. Optional — saving an expense will create a “General” pool
-        automatically.
-      </div>
 
-      <div v-for="pool in pools" :key="pool.id" class="tl-card">
-        <button
-          type="button"
-          class="tl-list-row w-full text-left"
-          :aria-expanded="expandedId === pool.id"
-          @click="togglePool(pool.id, pool.name)"
+    <template v-else>
+      <div class="tl-card">
+        <p v-if="!pools.length" class="text-sm text-tl-muted">
+          No pools yet. Optional — saving an expense will create a “General” pool
+          automatically.
+        </p>
+        <div
+          v-for="pool in pools"
+          :key="pool.id"
+          class="tl-list-row"
         >
           <div class="min-w-0">
-            <h3 class="font-medium text-tl">{{ pool.name }}</h3>
-            <p class="text-xs text-tl-muted">
-              {{ pool.splitMode }} · tap to
-              {{ expandedId === pool.id ? "collapse" : "edit" }}
-            </p>
+            <div class="font-medium text-tl">{{ pool.name }}</div>
+            <div class="text-xs text-tl-muted">{{ pool.splitMode }}</div>
           </div>
-          <i
-            class="pi text-tl-muted"
-            :class="expandedId === pool.id ? 'pi-chevron-up' : 'pi-chevron-down'"
-            aria-hidden="true"
-          />
-        </button>
-
-        <div v-if="expandedId === pool.id" class="mt-3 space-y-3 border-t border-tl-hairline pt-3">
-          <div class="flex flex-col gap-2 sm:flex-row sm:items-center">
-            <InputText v-model="poolNameDraft" class="w-full" aria-label="Pool name" />
-            <div class="flex gap-2">
-              <Button
-                v-if="editingPoolId === pool.id && poolNameDraft.trim() !== pool.name.trim()"
-                icon="pi pi-check"
-                size="small"
-                aria-label="Save name"
-                @click="saveName"
-              />
-              <Button
-                icon="pi pi-times"
-                size="small"
-                severity="secondary"
-                outlined
-                aria-label="Collapse"
-                @click="cancelExpand"
-              />
-            </div>
+          <div class="flex gap-1">
+            <Button
+              icon="pi pi-pencil"
+              text
+              rounded
+              size="small"
+              aria-label="Edit pool"
+              @click="goEdit(pool.id)"
+            />
+            <Button
+              icon="pi pi-trash"
+              text
+              severity="danger"
+              rounded
+              size="small"
+              aria-label="Delete pool"
+              @click="confirmRemovePool(pool.id, pool.name)"
+            />
           </div>
-          <Select
-            :model-value="pool.splitMode"
-            :options="SPLIT_MODES"
-            option-label="label"
-            option-value="value"
-            class="w-full"
-            @update:model-value="
-              (v) => store.setPoolSplitMode(pool.id, v as SplitMode)
-            "
-          />
-          <SplitMatrix
-            :mode="pool.splitMode"
-            :people="peopleForPool(pool.id)"
-            :total-paisa="poolTotal(pool.id)"
-            @change="(pid, patch) => onPoolMemberChange(pool.id, pid, patch)"
-          />
-          <Button
-            label="Delete pool"
-            icon="pi pi-trash"
-            severity="danger"
-            size="small"
-            text
-            @click="confirmRemovePool(pool.id, pool.name)"
-          />
         </div>
       </div>
 
-      <div v-if="showAdd" class="tl-card flex flex-col gap-3 sm:flex-row sm:items-center">
-        <InputText
-          v-model="newPool"
-          placeholder="Pool name (e.g. Part A)"
-          class="w-full"
-          maxlength="80"
-          @keyup.enter="addPool"
-        />
-        <div class="flex gap-2">
-          <Button label="Add" class="shrink-0" @click="addPool" />
-          <Button
-            label="Cancel"
-            severity="secondary"
-            outlined
-            @click="showAdd = false"
-          />
-        </div>
-      </div>
-      <Button
-        v-else
-        label="Add pool"
-        icon="pi pi-plus"
-        size="small"
-        outlined
-        @click="openAdd"
-      />
+      <button type="button" class="tl-fab" @click="goAdd">
+        <i class="pi pi-th-large" aria-hidden="true" />
+        Add pool
+      </button>
     </template>
   </div>
 </template>
