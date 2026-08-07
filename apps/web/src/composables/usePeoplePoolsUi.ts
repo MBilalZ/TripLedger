@@ -25,9 +25,7 @@ export function usePeoplePoolsUi(options: PeoplePoolsUiOptions = {}) {
   const friendFormTitle = computed(() =>
     editingParticipantId.value ? "Edit friend" : "Add friend",
   );
-  const poolFormTitle = computed(() =>
-    editingPoolId.value ? "Edit pool" : "Add pool",
-  );
+  const poolFormTitle = computed(() => (editingPoolId.value ? "Edit pool" : "Add pool"));
   const canAddPools = computed(() => participants.value.length > 0);
 
   const editingPool = computed(
